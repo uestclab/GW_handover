@@ -1,11 +1,11 @@
 {
 	"listen_port": 44444,
-    "num_baseStation": 2,
+    "num_baseStation": 1,
     "max_listen_backlog": 16,
     "timer_duration": 200000,
     "water_max_read": 204800,
     "water_low_read": 0,
-    "init_num_baseStation": 3,
+    "init_num_baseStation": 1,
     "train_mac_addr": "44-45-53-54-00-00"
 }
 

@@ -1,6 +1,5 @@
 #ifndef GLORY_COMMON_H
 #define GLORY_COMMON_H
-#include <string>
 
 using namespace std;
 
@@ -41,7 +40,7 @@ typedef struct signal_json{
 typedef struct messageInfo{
     int32_t length;
     signalType signal;
-    char* buf; // cjson define payload
+    char* buf; // cjson define payload : signal_json
 }messageInfo;
 
 enum systemState {PAIR_ID=1, RELOCALIZATION, RUNNING};

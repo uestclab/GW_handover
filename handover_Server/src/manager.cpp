@@ -87,15 +87,16 @@ void Manager::set_NodeOption(serverConfigureNode* options){
 }
 
 int Manager::config_watermaxRead(){
-    LOG(INFO) << "water_max_read " << pOptions_->water_max_read;
     return pOptions_->water_max_read;
 }
 
 int Manager::config_waterlowRead(){
-    LOG(INFO) << "water_low_read " << pOptions_->water_low_read;
     return pOptions_->water_low_read;
 }
 
+void Manager::getTrainMac(char* dest){
+	memcpy(dest,pOptions_->train_mac_addr,strlen(pOptions_->train_mac_addr)+1);
+}
 
 // ----------------------------- BaseStation Info -------------------------------
 
@@ -103,7 +104,7 @@ int Manager::addBaseStation(BaseStation* bs){
     struct bufferevent* temp = bs->getBufferevent();
     mapBs_.insert(pair<struct bufferevent*,BaseStation*>(temp,bs));
     numBaseStation_ = mapBs_.size();
-    LOG(INFO) << "addBaseStation() bs = " << bs ;
+    LOG(INFO) << "addBaseStation() bs = " << bs << " numBaseStation_ = " << numBaseStation_;
 }
 
 BaseStation* Manager::findBaseStation(struct bufferevent *bev){

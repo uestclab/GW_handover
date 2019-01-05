@@ -117,29 +117,38 @@ void BaseStation::processMessage(char* buf, int32_t length){
         case glory::ID_PAIR:
         {
             item = cJSON_GetObjectItem(root, "signal");
-            LOG(INFO) << "signal : " << cJSON_Print(item);
+            LOG(INFO) << "signal : " << item->valuestring;
             if(getIdReady() == false){
                 item = cJSON_GetObjectItem(root, "bs_id");
                 baseStationID_ = item->valueint;
+				item = cJSON_GetObjectItem(root, "rssi");
+                LOG(INFO) << "rssi : " << item->valuedouble;
                 item = cJSON_GetObjectItem(root, "bs_mac_addr");
                 //mac_
-                memcpy(mac_,item->string,strlen(item->string)+1);
+                memcpy(mac_,item->valuestring,strlen(item->valuestring)+1);
+				LOG(INFO) << "mac : " << mac_;
                 IDReady_ = true;
+				glory::signal_json* json = clear_json();
+		        json->bsId_ = baseStationID_;
+				pManager_->getTrainMac(json->trainMacAddr_);
+		        sendSignal(glory::ID_RECEIVED,json);
                 pManager_->updateIDInfo(this);
                 pManager_->completeIdCount();
-            }
-            glory::signal_json* json = clear_json();
-            json->bsId_ = baseStationID_;
-            sendSignal(glory::ID_RECEIVED,json);
+            }else{
+		        glory::signal_json* json = clear_json();
+		        json->bsId_ = baseStationID_;
+		        sendSignal(glory::ID_RECEIVED,json);
+			}
             break;
         }
         case glory::READY_HANDOVER:
         {
             item = cJSON_GetObjectItem(root, "signal");
-            LOG(INFO) << "signal : " << cJSON_Print(item);
+            LOG(INFO) << "signal : " << item->valuestring;
             if(pManager_->state() == glory::RELOCALIZATION){
                 item = cJSON_GetObjectItem(root, "rssi");
                 receiveRssi_ = item->valuedouble;
+				LOG(INFO) << "receiveRssi_ = " << receiveRssi_;
                 pManager_->init_num_check(this);
             }else if(pManager_->state() == glory::RUNNING){
                 item = cJSON_GetObjectItem(root, "rssi");
@@ -151,7 +160,7 @@ void BaseStation::processMessage(char* buf, int32_t length){
         case glory::INIT_COMPLETED:
         {
             item = cJSON_GetObjectItem(root, "signal");
-            LOG(INFO) << "signal : " << cJSON_Print(item);
+            LOG(INFO) << "signal : " << item->valuestring;
             // tunnel set ----------- to do
             pManager_->establishLink(this);
             break;
@@ -159,14 +168,14 @@ void BaseStation::processMessage(char* buf, int32_t length){
         case glory::LINK_CLOSED:
         {
             item = cJSON_GetObjectItem(root, "signal");
-            LOG(INFO) << "signal : " << cJSON_Print(item);
+            LOG(INFO) << "signal : " << item->valuestring;
             pManager_->incChangeLink(this,0);
             break;
         }
         case glory::LINK_OPEN:
         {
             item = cJSON_GetObjectItem(root, "signal");
-            LOG(INFO) << "signal : " << cJSON_Print(item);
+            LOG(INFO) << "signal : " << item->valuestring;
             pManager_->incChangeLink(this,1);
             break;
         }
@@ -203,9 +212,11 @@ void BaseStation::mac(char* buf){
 glory::signal_json* clear_json(){
     glory::signal_json* input = (glory::signal_json*)malloc(sizeof(glory::signal_json));
     input->bsId_ = -1;
-    input->rssi_ = -99;
+    input->rssi_ = -99.9;
     memset(input->bsMacAddr_,0x00,32);
+	input->bsMacAddr_[31] = '\0';
     memset(input->trainMacAddr_,0x00,32);
+	input->trainMacAddr_[31] = '\0';
     return input;
 }
 
@@ -215,18 +226,19 @@ void BaseStation::sendSignal(glory::signalType type, glory::signal_json* json){
     message->signal = type;
     cJSON* root = cJSON_CreateObject();
     if(type == glory::ID_RECEIVED)
-        cJSON_AddItemToObject(root, "signal", cJSON_CreateString("id_received_signal"));
+		cJSON_AddStringToObject(root, "signal", "id_received_signal");
     else if(type == glory::INIT_LOCATION)
-        cJSON_AddItemToObject(root, "signal", cJSON_CreateString("init_location_signal"));
+        cJSON_AddStringToObject(root, "signal", "init_location_signal");
     else if(type == glory::INIT_LINK)
-        cJSON_AddItemToObject(root, "signal", cJSON_CreateString("init_link_signal"));
+        cJSON_AddStringToObject(root, "signal", "init_link_signal");
     else if(type == glory::START_HANDOVER)
-        cJSON_AddItemToObject(root, "signal", cJSON_CreateString("start_handover_signal"));
-    cJSON_AddItemToObject(root, "bs_id", cJSON_CreateNumber(json->bsId_));
-    cJSON_AddItemToObject(root, "rssi", cJSON_CreateNumber(json->rssi_));
+        cJSON_AddStringToObject(root, "signal", "start_handover_signal");
+	cJSON_AddNumberToObject(root, "bs_id", json->bsId_);
+	cJSON_AddNumberToObject(root, "rssi", json->rssi_);
     cJSON_AddStringToObject(root, "bs_mac_addr", json->bsMacAddr_);
     cJSON_AddStringToObject(root, "train_mac_addr", json->trainMacAddr_);
     message->buf = cJSON_Print(root);
+	LOG(INFO) << endl << " server send : cjson = " << message->buf;
     codec(message);
     free(message->buf);
     delete message;

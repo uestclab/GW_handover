@@ -193,7 +193,6 @@ run(void){
     if(!base)
         return;
 
-//        char      train_mac_addr[8];
     struct serverConfigureNode* node_options = 
             (struct serverConfigureNode*)malloc(sizeof(struct serverConfigureNode));
     
@@ -281,7 +280,7 @@ run(void){
         perror("listen");
         return;
     }
-
+	free(node_options);
     listener_event = event_new(base, listener, EV_READ|EV_PERSIST, do_accept, (void*)pManager);
     /*XXX check it */
     event_add(listener_event, NULL);
