@@ -1,4 +1,5 @@
 {
+	"local_ip": "127.0.0.1",
 	"listen_port": 44444,
     "num_baseStation": 1,
     "max_listen_backlog": 16,

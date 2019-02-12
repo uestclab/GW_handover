@@ -47,6 +47,10 @@ public:
     int                                config_watermaxRead();
     int                                config_waterlowRead();
 	void                               getTrainMac(char* dest);
+	char*                              getLocalIp();
+
+	//change tunnel
+	int                                changeTunnel(BaseStation* bs);
 
 private:    
     Manager();

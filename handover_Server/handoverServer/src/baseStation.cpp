@@ -3,6 +3,7 @@
 #include <string>
 
 #include <glog/logging.h>
+#include "gw_tunnel.h"
 
 using namespace std;
 
@@ -140,21 +141,19 @@ void BaseStation::processMessage(char* buf, int32_t length){
             if(pManager_->state() == glory::RELOCALIZATION){
                 item = cJSON_GetObjectItem(root, "rssi");
                 receiveRssi_ = item->valuedouble;
-				LOG(INFO) << "receiveRssi_ = " << receiveRssi_;
                 pManager_->init_num_check(this);
             }else if(pManager_->state() == glory::RUNNING){
                 item = cJSON_GetObjectItem(root, "rssi");
                 receiveRssi_ = item->valuedouble;
-				LOG(INFO) << "receiveRssi_ = " << receiveRssi_;
                 pManager_->notifyHandover(this);
             }
             break;
         }
-        case glory::INIT_COMPLETED:
+        case glory::INIT_COMPLETED: // init_num_check 
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-            // tunnel set ----------- to do
+            // tunnel set in establishLink() -----------
             pManager_->establishLink(this);
             break;
         }
@@ -184,20 +183,31 @@ void BaseStation::processMessage(char* buf, int32_t length){
 struct bufferevent* BaseStation::getBufferevent(){
     return bev_;
 }
+
 int BaseStation::setSockaddr(struct sockaddr* ss){
     sockaddr_in* pSin = (sockaddr_in*)ss;
     ip_ = inet_ntoa(pSin->sin_addr);
-    LOG(INFO) << "ip = " << ip_ ;
+    LOG(INFO) << "BaseStation ip = " << ip_ ;
 }
+
+char* BaseStation::getBsIP(){
+	char* cstr = new char [ip_.length()+1];
+  	std::strcpy (cstr, ip_.c_str());
+	return cstr; 
+} 
+
 int BaseStation::getBaseStationID(){
     return baseStationID_;
 }
+
 bool BaseStation::getIdReady(){
     return IDReady_;
 }
+
 double BaseStation::receiverssi(){
     return receiveRssi_;
 }
+
 void BaseStation::mac(char* buf){
     memcpy(buf,mac_,32);
 }

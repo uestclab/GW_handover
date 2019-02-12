@@ -52,6 +52,9 @@ enum glory::systemState Manager::state(){
 
 void Manager::establishLink(BaseStation* bs){
     linkBs_ = bs;
+
+	changeTunnel(linkBs_);
+
     state_ = glory::RUNNING;
     LOG(INFO) << "state change : RELOCALIZATION ----> RUNNING";
     LOG(INFO) << "uplink and downlink start to work";
@@ -106,6 +109,21 @@ int Manager::config_waterlowRead(){
 
 void Manager::getTrainMac(char* dest){
 	memcpy(dest,pOptions_->train_mac_addr,strlen(pOptions_->train_mac_addr)+1);
+}
+
+char* Manager::getLocalIp(){
+	char* ip = (char*)malloc(32);
+	memcpy(ip,pOptions_->local_ip,strlen(pOptions_->local_ip)+1);
+	return ip;
+}
+
+// ----------------------------- change tunnel -------------------------------
+int Manager::changeTunnel(BaseStation* bs){
+	char* remote = bs->getBsIP();
+	char* local = getLocalIp();
+	change_tunnel(remote,local,NULL);
+	delete remote;
+	free(local);
 }
 
 // ----------------------------- BaseStation Info -------------------------------

@@ -164,7 +164,7 @@ run(void){
 
     struct serverConfigureNode* node_options = 
             (struct serverConfigureNode*)malloc(sizeof(struct serverConfigureNode));
-    
+     
     node_options->listen_port = 44444;
     node_options->num_baseStation = 2;
     node_options->max_listen_backlog = 16;
@@ -202,9 +202,12 @@ run(void){
         node_options->init_num_baseStation = item->valueint;
         item = cJSON_GetObjectItem(root, "train_mac_addr");
         memcpy(node_options->train_mac_addr,item->valuestring,strlen(item->valuestring)+1);
+		item = cJSON_GetObjectItem(root, "local_ip");
+        memcpy(node_options->local_ip,item->valuestring,strlen(item->valuestring)+1);
         cJSON_Delete(root);
     }
     
+	LOG(INFO) << " local_ip = " << node_options->local_ip ;
     LOG(INFO) << " listen_port = " << node_options->listen_port ;
     LOG(INFO) << " max_listen_backlog = " << node_options->max_listen_backlog ;
     LOG(INFO) << " timer_duration = " << node_options->timer_duration ;

@@ -12,6 +12,7 @@ typedef struct serverConfigureNode{
     int32_t   water_low_read;
     int32_t   init_num_baseStation;
     char      train_mac_addr[32];
+	char      local_ip[32];
 }serverConfigureNode;
 
 

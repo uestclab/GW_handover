@@ -39,7 +39,8 @@ public:
     int                    setSockaddr(struct sockaddr* ss);
     struct bufferevent*    getBufferevent();
     int                    getBaseStationID();
-    bool                   getIdReady();   
+    bool                   getIdReady();
+	char*                  getBsIP();   
     // receive and process
     void                   receive();
     void                   processMessage(char* buf, int32_t length);
