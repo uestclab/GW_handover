@@ -181,7 +181,10 @@ int do_add(int cmd, char* daddr, char* saddr,char* dual_daddr) // SIOCADDTUNNEL 
 	return tnl_add_ioctl(cmd, basedev, p.name, &p);
 }
 
-
+int change_tunnel(char* daddr, char* saddr,char* dual_daddr){
+	int status = do_add(SIOCCHGTUNNEL,daddr,saddr,dual_daddr);
+	return status;
+}
 
 
 

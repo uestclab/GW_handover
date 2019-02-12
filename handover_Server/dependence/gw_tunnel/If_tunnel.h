@@ -7,6 +7,7 @@
 #include <linux/in6.h>
 #include <asm/byteorder.h>
 
+//#define SIOCDEVPRIVATE 35312 // add on 20190212
 
 #define SIOCGETTUNNEL   (SIOCDEVPRIVATE + 0)
 #define SIOCADDTUNNEL   (SIOCDEVPRIVATE + 1)

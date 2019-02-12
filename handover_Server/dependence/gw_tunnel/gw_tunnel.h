@@ -7,7 +7,7 @@ extern "C" {
 
 #include "If_tunnel.h"
 
-int do_add(int cmd, char* daddr, char* saddr,char* dual_daddr);
+int change_tunnel(char* daddr, char* saddr,char* dual_daddr);
 
 #ifdef __cplusplus
 }
