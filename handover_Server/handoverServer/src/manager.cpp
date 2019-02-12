@@ -1,8 +1,11 @@
-#include "manager.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <fstream>
 #include <glog/logging.h>
+
+#include "manager.h"
+#include "gw_tunnel.h"
 
 Manager* Manager::m_pInstance = NULL;
 Manager::GarbageCollection Manager::m_gc;
@@ -69,9 +72,16 @@ void Manager::notifyHandover(BaseStation* bs){
     linkBs_->sendSignal(glory::START_HANDOVER,json); // notify linkBs
     // change tunnel to next link bs
     //...
+	LOG(INFO) << "notifyHandover :: START_HANDOVER ";
 }
 
 int Manager::incChangeLink(BaseStation* bs, int open){
+	if(bs == linkBs_){
+		LOG(INFO) << "server receive LINK_CLOSED";	
+	}else if(bs == nextLinkBs_){
+		LOG(INFO) << "server receive LINK_OPEN";
+	}
+
     changeLink_ = changeLink_ + 1;
     if(changeLink_ == 2){
         changeLink_ = 0;

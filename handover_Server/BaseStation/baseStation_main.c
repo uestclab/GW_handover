@@ -9,10 +9,13 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <sys/shm.h>
-#include "cJSON.h"
+
 #include "baseStationTR_arm.h"
 #include "define_common.h"
 #include "zlog.h"
+
+#include "cJSON.h"
+#include "gw_utility.h"
 
 
 zlog_category_t *zlog_handler = NULL;
@@ -52,10 +55,10 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->my_id = 0;
 	clientConfigure->my_mac = (char*)malloc(32);
 
-	const char* configure_path = "../client_configure.json";
+	const char* configure_path = "../configuration_files/client_configure.json";
 	char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
-		printf("error configure_path !");
+		zlog_error(log_handler,"open file %s error.\n",configure_path);
 		return clientConfigure;
 	}
 	cJSON * root = NULL;
@@ -80,7 +83,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
 int main() // main thread
 {
-	int status = serverLog("/home/gyl/liqingSpace/code/GW_handover/handover_Server/BaseStation/zlog.conf");
+	int status = serverLog("../zlog.conf");
 
 	struct ConfigureNode* configureNode_ = configure(zlog_handler);
 	if(configureNode_ == NULL){
@@ -103,17 +106,23 @@ int main() // main thread
 	memcpy(json->bsMacAddr_, configureNode_->my_mac, strlen(configureNode_->my_mac)+1);
 	sendSignal(ID_PAIR,json);
 
-	user_wait();
+	user_wait(); // 1.wait init_location_signal, 2.get and caculate rssi, then make decision   
 	json = clear_json();
 	json->bsId_ = configureNode_->my_id;
 	json->rssi_ = 10;
 	sendSignal(READY_HANDOVER,json);
 
-	user_wait();
+	user_wait(); // 1.my bs is choosed as link one after init_link_signal, process air interface , then send completed when air interface prepared
 	json = clear_json();
 	json->bsId_ = configureNode_->my_id;
 	json->rssi_ = 10;
 	sendSignal(INIT_COMPLETED,json);
+
+	user_wait(); // 1.send when running? (notification)
+	json = clear_json();
+	json->bsId_ = configureNode_->my_id;
+	json->rssi_ = 20;
+	sendSignal(READY_HANDOVER,json);
 
 	user_wait();
 	freeThread();

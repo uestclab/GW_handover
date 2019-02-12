@@ -11,8 +11,9 @@
 #include <pthread.h>
 #include "baseStationTR_arm.h"
 #include "cJSON.h"
+#include "gw_utility.h"
 
-para_thread para_t;
+para_thread* para_t = NULL;
 int sock_cli = 0;
 int connected = 0;
 
@@ -23,67 +24,17 @@ int	 gMoreData_ = 0;
 //log
 zlog_category_t* log_handler = NULL;
 
-int32_t myNtohl(const char* buf){
-  int32_t be32 = 0;
-  memcpy(&be32, buf, sizeof(be32));
-  return ntohl(be32);
-}
-
-void user_wait()
-{
-	int c;
-/*
-	#ifdef __cplusplus
-		cout << WAIT_MSG << endl;
-	#else
-		printf("%s\n", WAIT_MSG);
-	#endif
-*/
-	do
-	{
-		c = getchar();
-		if(c == 'g') break;
-	} while(c != '\n');
-}
-
-int filelength(FILE *fp)
-{
-	int num;
-	fseek(fp,0,SEEK_END);
-	num=ftell(fp);
-	fseek(fp,0,SEEK_SET);
-	return num;
-}
-
-char* readfile(const char *path)
-{
-	FILE *fp;
-	int length;
-	char *ch;
-	if((fp=fopen(path,"r"))==NULL)
-	{
-		zlog_error(log_handler,"open file %s error.\n",path);
-		return NULL;
-	}
-	length=filelength(fp);
-	ch=(char *)malloc(length);
-	fread(ch,length,1,fp);
-	*(ch+length-1)='\0';
-	fclose(fp);
-	return ch;
-}
-
 void *
 receive_thread(void* args){
 	int sock_cli = *((int*)args);
 
-	pthread_mutex_lock(para_t.mutex_);
+	pthread_mutex_lock(para_t->mutex_);
     while(1){
 		while (connected == 0 )
 		{
-			pthread_cond_wait(para_t.cond_, para_t.mutex_);
+			pthread_cond_wait(para_t->cond_, para_t->mutex_);
 		}
-		pthread_mutex_unlock(para_t.mutex_);
+		pthread_mutex_unlock(para_t->mutex_);
     	receive();
     }
     zlog_info(log_handler,"Exit receive_thread()");
@@ -161,23 +112,13 @@ int  initThread(struct ConfigureNode* Node, zlog_category_t* handler)
 	recvbuf = malloc(BUFFER_SIZE);
 	sendMessage = malloc(BUFFER_SIZE);
 	// create thread
-	para_t.thread_ = (pthread_t*)malloc(sizeof(pthread_t));
-    
-    para_t.mutex_ = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    int n = pthread_mutex_init(para_t.mutex_,NULL);
-    if(n != 0)
-        zlog_error(log_handler,"mutex init failed !");
-    
-    para_t.cond_ = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
-    n = pthread_cond_init(para_t.cond_,NULL);
-    if(n != 0)
-        zlog_error(log_handler,"condition variable init failed !");
+	para_t = newThreadPara();
 
     ///sockfd
     sock_cli = socket(AF_INET,SOCK_STREAM, 0);
 	
 	// create thread
-	int ret = pthread_create(para_t.thread_, NULL, receive_thread, (void*)&sock_cli);
+	int ret = pthread_create(para_t->thread_pid, NULL, receive_thread, (void*)&sock_cli);
     if(ret != 0){
         zlog_error(log_handler,"pthread_create error ! error_code = %d", ret);
 		return 1;
@@ -196,7 +137,7 @@ int  initThread(struct ConfigureNode* Node, zlog_category_t* handler)
     }
 	free(Node->server_ip);
 	connected = 1;
-	pthread_cond_signal(para_t.cond_);
+	pthread_cond_signal(para_t->cond_);
 	
 	return 0;
 }
@@ -204,11 +145,7 @@ int  initThread(struct ConfigureNode* Node, zlog_category_t* handler)
 int freeThread()
 {
 	close(sock_cli);
-	pthread_cond_destroy(para_t.cond_);
-    pthread_mutex_destroy(para_t.mutex_);
-    free(para_t.cond_);
-    free(para_t.mutex_);
-    free(para_t.thread_);
+	destoryThreadPara(para_t);
 	if(recvbuf != NULL){	
 		free(recvbuf);
 	}
@@ -252,6 +189,7 @@ void processMessage(char* buf, int32_t length){
     switch(message->signal){
         case ID_RECEIVED:
         {
+			// reserver train mac address 
 			printcjson(root);
             break;
         }
@@ -262,11 +200,13 @@ void processMessage(char* buf, int32_t length){
         }
         case INIT_LINK:
         {
+			// communicate with air interface immediatatly , and send INIT_COMPLETED signal to server
 			printcjson(root);
             break;
         }
         case START_HANDOVER:
         {
+			printcjson(root);
             break;
         }
         default:
@@ -291,7 +231,7 @@ signal_json* clear_json(){
 }
 
 void sendSignal(signalType type, signal_json* json){
-	pthread_mutex_lock(para_t.mutex_); // called by 2 thread
+	pthread_mutex_lock(para_t->mutex_); // called by 2 thread
     messageInfo* message = (messageInfo*)malloc(sizeof(messageInfo));
     message->length = 0;
     message->signal = type;
@@ -326,7 +266,7 @@ void sendSignal(signalType type, signal_json* json){
     free(message);
     free(json);
     cJSON_Delete(root);
-	pthread_mutex_unlock(para_t.mutex_);
+	pthread_mutex_unlock(para_t->mutex_);
 }
 
 //cJSON_AddNumberToObject(temp_root, "register", *((int*)(callback_buffer->buf_)));

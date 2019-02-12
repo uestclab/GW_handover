@@ -16,13 +16,15 @@
 #include <sys/queue.h>
 #include <sys/time.h>
 #include <signal.h>
-#include "common.h"
-#include "baseStation.h"
-#include "manager.h"
 #include <vector>
 
 #include <fstream>
 #include <glog/logging.h>
+
+#include "common.h"
+#include "baseStation.h"
+#include "manager.h"
+#include "gw_utility.h"
 
 using namespace std;
 vector<struct event*> eventSet; // add to manage and delete event to end event-loop
@@ -43,34 +45,6 @@ public:
     }
 };
 
-int filelength(FILE *fp)
-{
-    int num;
-    fseek(fp,0,SEEK_END);
-    num=ftell(fp);
-    fseek(fp,0,SEEK_SET);
-    return num;
-}
-char* readfile(const char *path)
-{
-    FILE *fp;
-    int length;
-    char *ch;
-    if((fp=fopen(path,"r"))==NULL)
-    {
-        LOG(ERROR) << "open file " << path << " error.";
-        exit(0);
-    }
-    length=filelength(fp);
-    ch=(char *)malloc(length);
-    fread(ch,length,1,fp);
-    *(ch+length-1)='\0';
-    fclose(fp);
-    return ch;
-}
-
-
-//exit event-loop Ctrl+c
 static void
 signal_callback(evutil_socket_t fd, short event, void *pArg){
     LOG(INFO) << "signal_callback: got signal ";
@@ -85,7 +59,6 @@ signal_callback(evutil_socket_t fd, short event, void *pArg){
     }
 }
 
-//定时器事件回调函数
 void
 handle_timeout(evutil_socket_t fd, short event, void *pArg){
 
@@ -97,14 +70,12 @@ read_callback(struct bufferevent *pBufEv, void *pArg){
     pManager->dispatch(pBufEv);
 }
 
-//写回调处理
 void
 write_callback( struct bufferevent * pBufEv, void * pArg ){
     //cout << "write_callback " << endl;
     return ;
 }
 
-//事件回调处理 for bufferevent
 void
 event_callback(struct bufferevent * pBufEv, short sEvent, void * pArg){
     LOG(INFO) << "call event_callback!" ; 
@@ -115,13 +86,11 @@ event_callback(struct bufferevent * pBufEv, short sEvent, void * pArg){
     
     if( BEV_EVENT_CONNECTED == sEvent )
     {
-      //bufferevent_enable( pBufEv, EV_READ );
         LOG(INFO) << "BEV_EVENT_CONNECTED == sEvent";
     }
-    //出现错误
+
     if( 0 != (sEvent & (BEV_EVENT_ERROR)) )
     {
-      //关闭fd 并更改状态
       int fd = bufferevent_getfd(pBufEv);
       if( fd > 0 )
       {
@@ -136,7 +105,7 @@ event_callback(struct bufferevent * pBufEv, short sEvent, void * pArg){
         /* must be a timeout event handle, handle it */
         /* ... */
     }
-    LOG(INFO) << "end call event_callback () !" ; // disconnect will call event_callback()
+    LOG(INFO) << "end call event_callback () !" ;
     
     bufferevent_free(pBufEv);
     return ;
@@ -205,6 +174,10 @@ run(void){
     node_options->init_num_baseStation = 2;
     const char* configure_path = "../configuration_files/server_configure.json";
     char* pConfigure_file = readfile(configure_path);
+	if(pConfigure_file == NULL){
+		LOG(ERROR) << "open file " << configure_path << " error.";
+		return;
+	}
     cJSON * root = NULL;
     cJSON * item = NULL;
     root = cJSON_Parse(pConfigure_file);

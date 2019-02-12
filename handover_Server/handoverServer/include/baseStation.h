@@ -17,6 +17,7 @@
 #include "common.h"
 #include "manager.h"
 #include "cJSON.h"
+#include "gw_utility.h"
 
 #define RECEIVE_BUFFER 1000 * 20
  
@@ -40,7 +41,6 @@ public:
     int                    getBaseStationID();
     bool                   getIdReady();   
     // receive and process
-    int32_t                myNtohl(const char* buf);
     void                   receive();
     void                   processMessage(char* buf, int32_t length);
     glory::messageInfo*    parseMessage(char* buf, int32_t length);

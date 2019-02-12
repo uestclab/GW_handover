@@ -31,12 +31,6 @@ BaseStation::~BaseStation(void){
 
 // ------------------------------------------------------------------------------------
 
-int32_t BaseStation::myNtohl(const char* buf){
-  int32_t be32 = 0;
-  ::memcpy(&be32, buf, sizeof(be32));
-  return ::ntohl(be32);
-}
-
 void BaseStation::receive(){  
     size_t n;
     int size = 0;
@@ -121,8 +115,6 @@ void BaseStation::processMessage(char* buf, int32_t length){
             if(getIdReady() == false){
                 item = cJSON_GetObjectItem(root, "bs_id");
                 baseStationID_ = item->valueint;
-				item = cJSON_GetObjectItem(root, "rssi");
-                LOG(INFO) << "rssi : " << item->valuedouble;
                 item = cJSON_GetObjectItem(root, "bs_mac_addr");
                 //mac_
                 memcpy(mac_,item->valuestring,strlen(item->valuestring)+1);
@@ -153,6 +145,7 @@ void BaseStation::processMessage(char* buf, int32_t length){
             }else if(pManager_->state() == glory::RUNNING){
                 item = cJSON_GetObjectItem(root, "rssi");
                 receiveRssi_ = item->valuedouble;
+				LOG(INFO) << "receiveRssi_ = " << receiveRssi_;
                 pManager_->notifyHandover(this);
             }
             break;

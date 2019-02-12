@@ -5,8 +5,9 @@ SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 #add_definitions(-std=c++11)
 
-include_directories("./dependence/include")
-link_directories("./dependence/lib")
+
+include_directories("../dependence/include")
+link_directories("../dependence/lib")
 link_directories("/usr/local/lib")
 
 project(handoverServer)
@@ -14,10 +15,10 @@ project(handoverServer)
 SET(CMAKE_VERBOSE_MAKEFILE ON)    
 SET(ROOT_PATH ".")
 
-#find_package(Protobuf REQUIRED)
 
 file(GLOB_RECURSE ALL_LIBRARY_HDRS "include/*.h")
 file(GLOB_RECURSE ALL_LIBRARY_SRCS "src/*.cpp")
+
 
 file(GLOB_RECURSE ALL_EXECUTABLES "*_main.cpp")
 
@@ -34,7 +35,8 @@ target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -ldl)
 target_link_libraries(${PROJECT_NAME} -lglog)
 target_link_libraries(${PROJECT_NAME} cjson)
-
+target_link_libraries(${PROJECT_NAME} gwtunnel)
+target_link_libraries(${PROJECT_NAME} gwutility)
 
 
 
