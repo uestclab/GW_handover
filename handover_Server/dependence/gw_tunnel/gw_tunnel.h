@@ -8,6 +8,7 @@ extern "C" {
 #include "If_tunnel.h"
 
 int change_tunnel(char* daddr, char* saddr,char* dual_daddr);
+void initTunnelSystem(char* script);
 
 #ifdef __cplusplus
 }

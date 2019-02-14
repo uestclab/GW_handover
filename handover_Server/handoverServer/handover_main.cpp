@@ -25,6 +25,7 @@
 #include "baseStation.h"
 #include "manager.h"
 #include "gw_utility.h"
+#include "gw_tunnel.h"
 
 using namespace std;
 vector<struct event*> eventSet; // add to manage and delete event to end event-loop
@@ -204,6 +205,8 @@ run(void){
         memcpy(node_options->train_mac_addr,item->valuestring,strlen(item->valuestring)+1);
 		item = cJSON_GetObjectItem(root, "local_ip");
         memcpy(node_options->local_ip,item->valuestring,strlen(item->valuestring)+1);
+		item = cJSON_GetObjectItem(root, "script");
+        memcpy(node_options->script,item->valuestring,strlen(item->valuestring)+1);
         cJSON_Delete(root);
     }
     
@@ -216,11 +219,14 @@ run(void){
     LOG(INFO) << " num_baseStation = " << node_options->num_baseStation ;
     LOG(INFO) << " init_num_baseStation = " << node_options->init_num_baseStation;
     LOG(INFO) << " train_mac_addr = " << node_options->train_mac_addr;
+	LOG(INFO) << " train_mac_addr = " << node_options->script;
     
     //Singleton design
     Manager* pManager = Manager::getInstance();
     pManager->setBase(base);
     pManager->set_NodeOption(node_options);
+	//init tunnel system
+	initTunnelSystem(node_options->script);	
     /* Initalize signal event */
     signal_int = evsignal_new(base, SIGINT, signal_callback, (void*)pManager);
     event_add(signal_int, NULL);

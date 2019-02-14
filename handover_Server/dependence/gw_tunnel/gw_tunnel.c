@@ -186,5 +186,17 @@ int change_tunnel(char* daddr, char* saddr,char* dual_daddr){
 	return status;
 }
 
+void initTunnelSystem(char* script){
+	printf("call initTunnelSystem()\n");
+	//system("./my_init.sh");
+	system(script);
+}
+
+
+
+
+
+
+
 
 
