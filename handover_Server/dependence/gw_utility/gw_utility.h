@@ -27,8 +27,10 @@ int filelength(FILE *fp);
 char* readfile(const char *path);
 int64_t now();
 
-void user_wait();
-void delay();
+void hexdump(const void* p, size_t size);
+int get_mac(char * mac, int len_limit, char *arg);
+void change_mac_buf(char* in_addr, char* out_addr);
+void reverseBuf(char* in_buf, char* out_buf, int number);
 
 #ifdef __cplusplus
 }
