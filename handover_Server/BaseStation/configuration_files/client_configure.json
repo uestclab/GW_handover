@@ -1,6 +1,6 @@
 {
 	"server_ip": "127.0.0.1",
 	"server_port": 44444,
-	"my_mac": "ee-ff-aa-54-00-00",
+	"my_Ethernet": "ens33",
 	"my_id": 321
 }

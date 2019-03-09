@@ -54,6 +54,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->server_port = 44445;
 	clientConfigure->my_id = 0;
 	clientConfigure->my_mac = (char*)malloc(32);
+	clientConfigure->my_Ethernet = (char*)malloc(32);
 
 	const char* configure_path = "../configuration_files/client_configure.json";
 	char* pConfigure_file = readfile(configure_path);
@@ -74,10 +75,20 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 		clientConfigure->server_port = item->valueint;
 		item = cJSON_GetObjectItem(root,"my_id");
 		clientConfigure->my_id = item->valueint;
-		item = cJSON_GetObjectItem(root, "my_mac");
-		memcpy(clientConfigure->my_mac,item->valuestring,strlen(item->valuestring)+1);
+		item = cJSON_GetObjectItem(root, "my_Ethernet");
+		memcpy(clientConfigure->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
 		cJSON_Delete(root);
     }
+
+	//get mac addr
+	int	nRtn = get_mac(clientConfigure->my_mac, 32, clientConfigure->my_Ethernet);
+    if(nRtn > 0) // nRtn = 12
+    {	
+        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac);
+    }else{
+		printf("get mac address failed!\n");
+	}
+
 	return clientConfigure;
 }
 

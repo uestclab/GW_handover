@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     int        nRtn = get_mac(szMac, sizeof(szMac),argv[1]);
     if(nRtn > 0) // nRtn = 12
     {	
-        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,szMac);
+        printf("argv[1] = %s , nRtn = %d , MAC ADDR : %s\n", argv[1],nRtn,szMac);
 		printf("mac_1 : %s \n",mac_1);
 		printf("mac_2 : %s \n",mac_2);
     }else{

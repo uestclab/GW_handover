@@ -32,6 +32,9 @@ int get_mac(char * mac, int len_limit, char *arg);
 void change_mac_buf(char* in_addr, char* out_addr);
 void reverseBuf(char* in_buf, char* out_buf, int number);
 
+// -- temp 
+void user_wait();
+
 #ifdef __cplusplus
 }
 #endif

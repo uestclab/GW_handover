@@ -180,6 +180,23 @@ void reverseBuf(char* in_buf, char* out_buf, int number){
 
 
 
+/* ==== temp */
+
+void user_wait()
+{
+	int c;
+	printf("user_wait... ");
+	do
+	{
+		c = getchar();
+		if(c == 'g') break;
+	} while(c != '\n');
+}
+
+
+
+
+
 
 
 

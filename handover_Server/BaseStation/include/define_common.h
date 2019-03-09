@@ -6,6 +6,7 @@ typedef struct ConfigureNode{
 	int32_t server_port;
 	int32_t my_id;
 	char* my_mac;
+	char* my_Ethernet;
 }ConfigureNode;
 
 typedef enum signalType{
