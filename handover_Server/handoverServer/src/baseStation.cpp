@@ -123,7 +123,7 @@ void BaseStation::processMessage(char* buf, int32_t length){
                 IDReady_ = true;
 				glory::signal_json* json = clear_json();
 		        json->bsId_ = baseStationID_;
-				pManager_->getTrainMac(json->trainMacAddr_);
+				//pManager_->getTrainMac(json->trainMacAddr_); // 20190309 continue change train mac get method
 		        sendSignal(glory::ID_RECEIVED,json);
                 pManager_->updateIDInfo(this);
                 pManager_->completeIdCount();
