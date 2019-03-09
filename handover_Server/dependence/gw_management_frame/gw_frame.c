@@ -121,7 +121,7 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	
 	memcpy(frame_Info->source_mac_addr,buf+4,6);
 	memcpy(frame_Info->dest_mac_addr,buf+10,6);
-	memcpy(frame_Info->dest_mac_addr,buf+16,6);
+	memcpy(frame_Info->Next_dest_mac_addr,buf+16,6);
 	
 	printf("subtype = %d ,length = %d \n",frame_Info->subtype,frame_Info->length);
 

@@ -219,7 +219,7 @@ run(void){
     LOG(INFO) << " num_baseStation = " << node_options->num_baseStation ;
     LOG(INFO) << " init_num_baseStation = " << node_options->init_num_baseStation;
     LOG(INFO) << " train_mac_addr = " << node_options->train_mac_addr;
-	LOG(INFO) << " train_mac_addr = " << node_options->script;
+	LOG(INFO) << " script = " << node_options->script;
     
     //Singleton design
     Manager* pManager = Manager::getInstance();

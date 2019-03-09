@@ -95,7 +95,6 @@ void receive(){
                 totalByte = totalByte - messageLength - MinHeaderLen;
                 if(totalByte == 0){
                     gMoreData_ = 0;
-					//printf("No more message !\n");
                     break;
                 }
             }//else             
@@ -200,7 +199,8 @@ void processMessage(char* buf, int32_t length){
         }
         case INIT_LINK:
         {
-			// communicate with air interface immediatatly , and send INIT_COMPLETED signal to server
+			// communicate with air interface immediatatly 
+			// send current bs mac to train , and send INIT_COMPLETED signal to server
 			printcjson(root);
             break;
         }

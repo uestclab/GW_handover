@@ -59,12 +59,12 @@ int get_mac(char * mac, int len_limit, char *arg)
     strcpy (ifreq.ifr_name, arg);
 
     if (ioctl (sock, SIOCGIFHWADDR, &ifreq) < 0)
-
-
     {
         perror ("ioctl");
         return -1;
     }
+
+	close(sock);
     
     return snprintf (mac, len_limit, "%02x%02x%02x%02x%02x%02x", (unsigned char) ifreq.ifr_hwaddr.sa_data[0], (unsigned char) ifreq.ifr_hwaddr.sa_data[1], (unsigned char) ifreq.ifr_hwaddr.sa_data[2], (unsigned char) ifreq.ifr_hwaddr.sa_data[3], (unsigned char) ifreq.ifr_hwaddr.sa_data[4], (unsigned char) ifreq.ifr_hwaddr.sa_data[5]);
 }
@@ -105,6 +105,7 @@ void reverseBuf(char* in_buf, char* out_buf, int number){
 void fill_buffer(management_frame_Info* frame_Info, char* buf);
 void parse_buffer(management_frame_Info* frame_Info , char* buf);
 
+
 int main(int argc, char *argv[])
 {
 	printf("argc = %d \n",argc);
@@ -116,17 +117,31 @@ int main(int argc, char *argv[])
 	
 	char buf[1500];
 	char mac_buf[6];
+	char mac_buf_1[6];
+	char mac_buf_2[6];
+
+	char* mac_1 = "10ec2bd46c58";
+	char* mac_2 = "ffffffffddd0";
 
     char    szMac[18];
     int        nRtn = get_mac(szMac, sizeof(szMac),argv[1]);
     if(nRtn > 0) // nRtn = 12
     {	
         printf("nRtn = %d , MAC ADDR : %s\n", nRtn,szMac);
-    }
+		printf("mac_1 : %s \n",mac_1);
+		printf("mac_2 : %s \n",mac_2);
+    }else{
+		return 0;
+	}
 	
 	change_mac_buf(szMac,mac_buf);
 	hexdump(mac_buf,6);
+	
+	change_mac_buf(mac_1,mac_buf_1);
+	hexdump(mac_buf_1,6);
 
+	change_mac_buf(mac_2,mac_buf_2);
+	hexdump(mac_buf_2,6);
 	
 // ------------- send frame ------------------------	
 	char* json = "Hello managetment frame!";	
@@ -137,8 +152,8 @@ int main(int argc, char *argv[])
 	temp_Info->subtype = 1;
 	temp_Info->length  = 24 + json_length;
 	memcpy(temp_Info->source_mac_addr,mac_buf,6);
-	memcpy(temp_Info->dest_mac_addr,mac_buf,6);
-	memcpy(temp_Info->Next_dest_mac_addr,mac_buf,6);
+	memcpy(temp_Info->dest_mac_addr,mac_buf_1,6);
+	memcpy(temp_Info->Next_dest_mac_addr,mac_buf_2,6);
 	
 	if(temp_Info->length > 24){
 		temp_Info->payload = malloc(json_length);
@@ -170,7 +185,13 @@ int main(int argc, char *argv[])
 	printf("--- receive : subtype = %d, length = %d \n", rece_Info->subtype , rece_Info->length);
 	if(rece_Info->length > 24)
 		printf(" receive payload = %s \n",rece_Info->payload);
-
+	printf("\nreceive source_mac_addr: \n");
+	hexdump(rece_Info->source_mac_addr,6);
+	printf("\nreceive dest_mac_addr: \n");
+	hexdump(rece_Info->dest_mac_addr,6);
+	printf("\nreceive Next_dest_mac_addr: \n");
+	hexdump(rece_Info->Next_dest_mac_addr,6);
+	
     return 0;
 }
 

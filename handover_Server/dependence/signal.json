@@ -6,9 +6,12 @@
     "train_mac_addr": "44-45-53-54-00-00",
 }
 
-typedef struct signal_json{
-    int32_t bsId_;
-    double rssi_;
-    char bsMacAddr_[8];
-    char trainMacAddr_[8];
-}signal_json;
+
+
+"typedef struct signal_json{
+    "int32_t bsId_;
+    "double rssi_;
+    "char bsMacAddr_[8];
+    "char trainMacAddr_[8];
+"}signal_json
+

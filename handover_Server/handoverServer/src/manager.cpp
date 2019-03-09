@@ -60,7 +60,7 @@ void Manager::establishLink(BaseStation* bs){
     LOG(INFO) << "uplink and downlink start to work";
 }
 
-void Manager::notifyHandover(BaseStation* bs){
+void Manager::notifyHandover(BaseStation* bs){ 
     nextLinkBs_ = bs;
     glory::signal_json* json = clear_json();
     json->bsId_ = bs->getBaseStationID();
@@ -72,7 +72,7 @@ void Manager::notifyHandover(BaseStation* bs){
             LOG(WARNING) << "access bs is not the next neighbour";
         }
     }
-    linkBs_->sendSignal(glory::START_HANDOVER,json); // notify linkBs
+    linkBs_->sendSignal(glory::START_HANDOVER,json); // notify linkBs , air send signal to vehicle
     // change tunnel to next link bs
     //...
 	LOG(INFO) << "notifyHandover :: START_HANDOVER ";
