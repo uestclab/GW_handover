@@ -35,6 +35,10 @@ void reverseBuf(char* in_buf, char* out_buf, int number);
 // -- temp 
 void user_wait();
 
+typedef void (*timer_Callback_type)();
+void init_sigaction(timer_Callback_type callback); // init timer configuration
+void start_timer(int usec);
+
 #ifdef __cplusplus
 }
 #endif

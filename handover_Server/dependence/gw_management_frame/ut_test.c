@@ -106,6 +106,16 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf);
 void parse_buffer(management_frame_Info* frame_Info , char* buf);
 
 
+/*
+#define BEACON                  0
+#define ASSOCIATION_REQUEST     1
+#define ASSOCIATION_RESPONSE    2
+#define REASSOCIATION           3
+#define DEASSOCIATION           4
+#define HANDOVER_START_REQUEST  5
+#define HANDOVER_START_RESPONSE 6
+*/
+
 int main(int argc, char *argv[])
 {
 	printf("argc = %d \n",argc);
@@ -149,7 +159,7 @@ int main(int argc, char *argv[])
 
 	management_frame_Info* temp_Info = (management_frame_Info*)malloc(sizeof(management_frame_Info));
 	temp_Info->type = 0;
-	temp_Info->subtype = 1;
+	temp_Info->subtype = HANDOVER_START_RESPONSE; ///---------subtype
 	temp_Info->length  = 24 + json_length;
 	memcpy(temp_Info->source_mac_addr,mac_buf,6);
 	memcpy(temp_Info->dest_mac_addr,mac_buf_1,6);
@@ -164,6 +174,7 @@ int main(int argc, char *argv[])
 
 	fill_buffer(temp_Info,buf);
 	hexdump(buf,temp_Info->length);
+	printf("buf str = %d \n",temp_Info->length); // error
 
 	printf("------------------- parse -------------------\n");
 

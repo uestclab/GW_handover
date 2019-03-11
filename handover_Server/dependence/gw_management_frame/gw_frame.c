@@ -142,7 +142,7 @@ int handle_monitor_tx_with_response(management_frame_Info* frame_Info, int time_
 	int loop = 0;
 	// fill buffer using frame_Info , then rc = write(fd,buf,ARRAY_SIZE(buf));
 	fill_buffer(frame_Info, g_paramter->buf);
-	int fill_len = strlen(g_paramter->buf);
+	int fill_len = frame_Info->length;//strlen(g_paramter->buf);
 	rc = write(g_paramter->fd,g_paramter->buf,fill_len);	
 
 	if(time_cnt == 0){

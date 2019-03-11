@@ -7,12 +7,16 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <signal.h>
+#include <sys/time.h>
+
 #include <stdio.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>        //for struct ifreq
 #include "gw_utility.h"
+
 
 para_thread* newThreadPara(){
 
@@ -177,6 +181,31 @@ void reverseBuf(char* in_buf, char* out_buf, int number){
 
 
 
+/* 
+	---------------------- timer -------------------------------------
+*/
+void init_sigaction(timer_Callback_type callback)
+{
+    struct sigaction act;
+          
+    act.sa_handler = callback;//
+    act.sa_flags  = 0;
+
+    sigemptyset(&act.sa_mask);
+    sigaction(SIGPROF, &act, NULL);//send SIGROF signal when timer is arrived
+}
+
+void start_timer(int usec)
+{
+    struct itimerval val;
+         
+    val.it_value.tv_sec = 0;
+    val.it_value.tv_usec = usec;
+
+    val.it_interval = val.it_value;
+
+    setitimer(ITIMER_PROF, &val, NULL);
+}
 
 
 
