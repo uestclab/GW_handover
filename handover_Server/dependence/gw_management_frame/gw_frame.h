@@ -37,13 +37,23 @@ int ManagementFrame_create_monitor_interface();
 		0: only send once without response
 		!0 : wait for getting respose , configure time_cnt as timeout
   return : 
-	0: sucess , frame_Info updated by new response management frame
-	1: sucess , tx without response 
+	0: success , frame_Info updated by new response management frame
+	1: success , tx without response 
 	2: failed
 	3: timeout, No response management frame
 */
 int handle_monitor_tx_with_response(management_frame_Info* frame_Info, int time_cnt);
- 
+
+/*
+	input :
+		time_cnt : poll cnt
+	return :
+		3: timeout
+		0: success
+*/
+int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt);
+
+management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len);
 
 void close_monitor_interface();
 

@@ -57,14 +57,14 @@ int ManagementFrame_create_monitor_interface(){
 void bits_set_subtype(unsigned int* frame_control, unsigned int subtype){
 	(*frame_control) &= (~(0xf<<26));
 	(*frame_control) |= (subtype<<26);
-	printf("frame_control = 0x%x.\n", *frame_control);
+	//printf("frame_control = 0x%x.\n", *frame_control);
 }
 
 //bit8 ~ bit25
 void bits_set_length(unsigned int* frame_control, unsigned int length){
 	(*frame_control) &= (~(0x3ffff<<8));
 	(*frame_control) |= (length<<8);
-	printf("frame_control = 0x%x.\n", *frame_control);
+	//printf("frame_control = 0x%x.\n", *frame_control);
 }
 
 unsigned int bits_get_subtype(unsigned int frame_control){
@@ -80,6 +80,10 @@ unsigned int bits_get_length(unsigned int frame_control){
 }
   
 
+/*
+	reserve 2 byte in front of frame_control -- 20190319
+*/
+
 void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	// 4 byte Frame_control
 	unsigned int frame_control = 0;
@@ -89,19 +93,24 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	char tmp_buf[4];
 	memcpy(tmp_buf,&frame_control,4);
 	reverseBuf(tmp_buf,reverse_buf,4);
-	memcpy(buf, reverse_buf, 4);
+
+	memset(buf,0,2);
+	memcpy(buf + 2, reverse_buf, 4);
 	// 6 byte source_mac_addr
-	memcpy(buf+4,frame_Info->source_mac_addr,6);
+	memcpy(buf + 6,frame_Info->source_mac_addr,6);
 
 	// 6 byte Dest_mac_addr
-	memcpy(buf+10,frame_Info->dest_mac_addr,6);
+	memcpy(buf + 12,frame_Info->dest_mac_addr,6);
 	
 	// 6 byte next_dest_mac_addr
-	memcpy(buf+16,frame_Info->Next_dest_mac_addr,6);
+	memcpy(buf + 18,frame_Info->Next_dest_mac_addr,6);
 	
+	// 2 byte seq_id
+	memset(buf + 24, 0, 2);
+
 	// payload
-	if(frame_Info->length > 24){
-		memcpy(buf+24,frame_Info->payload,frame_Info->length-24);
+	if(frame_Info->length > 26){
+		memcpy(buf + 26,frame_Info->payload,frame_Info->length - 26);
 	}
 }
 
@@ -111,7 +120,7 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	// parse Frame_control
 	char tmp_buf[4];
 	char control_buf[4];
-	memcpy(tmp_buf,buf,4);
+	memcpy(tmp_buf,buf + 2,4);
 	reverseBuf(tmp_buf,control_buf,4);
 	unsigned int frame_control = *((unsigned int*)(control_buf));
 	printf("parse_buffer : frame_control = 0x%x.\n", frame_control);
@@ -119,19 +128,19 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	frame_Info->subtype = bits_get_subtype(frame_control);
 	frame_Info->length  = bits_get_length(frame_control);
 	
-	memcpy(frame_Info->source_mac_addr,buf+4,6);
-	memcpy(frame_Info->dest_mac_addr,buf+10,6);
-	memcpy(frame_Info->Next_dest_mac_addr,buf+16,6);
+	memcpy(frame_Info->source_mac_addr,buf + 6,6);
+	memcpy(frame_Info->dest_mac_addr,buf + 12,6);
+	memcpy(frame_Info->Next_dest_mac_addr,buf + 18,6);
 	
 	printf("subtype = %d ,length = %d \n",frame_Info->subtype,frame_Info->length);
 
-	if(frame_Info->length > 24){
+	if(frame_Info->length > 26){
 		if(pre_length < frame_Info->length){
 			printf("resize and remalloc new payload buffer \n");
 			free(frame_Info->payload);
-			frame_Info->payload = malloc(frame_Info->length-24);
+			frame_Info->payload = malloc(frame_Info->length - 26);
 		}
-		memcpy(frame_Info->payload,buf+24,frame_Info->length-24);
+		memcpy(frame_Info->payload,buf + 26,frame_Info->length - 26);
 	}
 }
 
@@ -153,13 +162,21 @@ int handle_monitor_tx_with_response(management_frame_Info* frame_Info, int time_
 		}
 	}
 
+	rc = gw_monitor_poll(frame_Info,time_cnt);
+	return rc;
+}
+
+// thread safe ?
+int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt){
+	int loop = 0;
+	int rc = 0;
 	for(loop = 0; loop <time_cnt; loop++){
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
 			if(POLLIN == g_paramter->poll_fd.revents){
 				rc = read(g_paramter->fd, g_paramter->buf, ARRAY_SIZE(g_paramter->buf));
 				if(rc){
-					// get response management frame
+					// get management frame
 					parse_buffer(frame_Info,g_paramter->buf);
 					break;
 				}else{
@@ -169,22 +186,36 @@ int handle_monitor_tx_with_response(management_frame_Info* frame_Info, int time_
 				printf("POLL Error\n");
 			}
 		}else{
-				printf("POLL Error\n");
+				//printf("POLL Error\n");
 		}
 	}
-	
 	if(loop == time_cnt)
 		return 3;
 	else
 		return 0;
 }
 
-
 void close_monitor_interface(){
 	close(g_paramter->fd);
 	free(g_paramter->buf);
 	free(g_paramter);
 }
+
+management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len){
+	management_frame_Info* temp_Info = (management_frame_Info*)malloc(sizeof(management_frame_Info));
+	temp_Info->type = 0;
+	temp_Info->subtype = subtype; ///---------subtype
+	temp_Info->length  = 26 + payload_len;
+	memset(temp_Info->source_mac_addr,0,6);
+	memset(temp_Info->dest_mac_addr,0,6);
+	memset(temp_Info->Next_dest_mac_addr,0,6);
+	temp_Info->payload = NULL;
+	if(temp_Info->length > 26){
+		temp_Info->payload = malloc(payload_len);
+	}
+	return temp_Info;
+}
+
 
 
 // 0 == memcmp(buf, buf2, rc)

@@ -160,12 +160,12 @@ int main(int argc, char *argv[])
 	management_frame_Info* temp_Info = (management_frame_Info*)malloc(sizeof(management_frame_Info));
 	temp_Info->type = 0;
 	temp_Info->subtype = HANDOVER_START_RESPONSE; ///---------subtype
-	temp_Info->length  = 24 + json_length;
+	temp_Info->length  = 24 + 2 + json_length;
 	memcpy(temp_Info->source_mac_addr,mac_buf,6);
 	memcpy(temp_Info->dest_mac_addr,mac_buf_1,6);
 	memcpy(temp_Info->Next_dest_mac_addr,mac_buf_2,6);
 	
-	if(temp_Info->length > 24){
+	if(temp_Info->length > 24 + 2){
 		temp_Info->payload = malloc(json_length);
 		memcpy(temp_Info->payload,json,json_length);
 	}
@@ -185,16 +185,16 @@ int main(int argc, char *argv[])
 	management_frame_Info* rece_Info = (management_frame_Info*)malloc(sizeof(management_frame_Info));
 	rece_Info->type = 0;
 	rece_Info->subtype = 5;
-	rece_Info->length  = 24 + json_length_tmp;
+	rece_Info->length  = 26 + json_length_tmp;
 	
-	if(temp_Info->length > 24){
+	if(temp_Info->length > 26){
 		rece_Info->payload = malloc(json_length_tmp);
 		memcpy(rece_Info->payload,json_tmp,json_length_tmp);
 	}
 
 	parse_buffer(rece_Info , buf);
 	printf("--- receive : subtype = %d, length = %d \n", rece_Info->subtype , rece_Info->length);
-	if(rece_Info->length > 24)
+	if(rece_Info->length > 26)
 		printf(" receive payload = %s \n",rece_Info->payload);
 	printf("\nreceive source_mac_addr: \n");
 	hexdump(rece_Info->source_mac_addr,6);
