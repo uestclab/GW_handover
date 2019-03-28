@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-option(PUBLIC "This is a default option for PUBLIC" OFF)
+option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch: "${PUBLIC})
 project(Mylibrary)
 
@@ -19,6 +19,9 @@ if(${PUBLIC} STREQUAL "ON")
 	SET(CMAKE_C_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-gnueabihf-gcc-6.2.1)
 	SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-gnueabihf-g++)
 	# cross complie
+	# zlog
+	link_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/lib/")
+	include_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/include/")
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
 endif(${PUBLIC} STREQUAL "ON")
@@ -29,13 +32,14 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/..")
 
 
-SET(LIB_NAME gwutility)
+SET(LIB_NAME gw_utility)
 SET(CMAKE_VERBOSE_MAKEFILE ON)    
 SET(ROOT_PATH ".")  
 
 SET(ALL_LIBRARY_SRCS gw_utility.c)
 
 add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
+target_link_libraries(${LIB_NAME} -lzlog)
 
 
 if(${PUBLIC} STREQUAL "ON")

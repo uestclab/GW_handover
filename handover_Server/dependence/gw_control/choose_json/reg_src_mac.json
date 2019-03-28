@@ -1,0 +1,25 @@
+{
+	"_comment1": "base+offset",
+	"base": "0x43c20000",
+	"map_size": "0x1000",
+	"dst": "reg",
+	"gw_type": "src_mac",
+	"op_cmd": [
+	{
+		"name": "src_mac_0_low_32_bit",
+		"id": "0x0",
+		"offset": "0x830",
+		"cmd": "1",
+		"val": "0x0",
+		"waite_time": "0"
+	},
+	{
+		"name": "src_mac_1_high_16_bit",
+		"id": "0x0",
+		"offset": "0x834",
+		"cmd": "1",
+		"val": "0x0",
+		"waite_time": "0"
+	}
+	]
+}

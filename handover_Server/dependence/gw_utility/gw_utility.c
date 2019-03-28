@@ -88,30 +88,30 @@ int64_t now()
 }
 
 
-void hexdump(const void* p, size_t size) {
+void hexdump(const void* p, size_t size, zlog_category_t *zlog_handler) {
 	const uint8_t *c = p;
 	assert(p);
 
-	printf("Dumping %u bytes from %p:\n", (unsigned int)size, p);
+	zlog_info(zlog_handler,"Dumping %u bytes from %p:\n", (unsigned int)size, p);
 
 	while (size > 0) {
 		unsigned i;
 
 		for (i = 0; i < 16; i++) {
 			if (i < size)
-				printf("%02x ", c[i]);
+				zlog_info(zlog_handler,"%02x ", c[i]);
 			else
-				printf("  ");
+				zlog_info(zlog_handler,"  ");
 		}
 
 		for (i = 0; i < 16; i++) {
 			if (i < size)
-				printf("%c", c[i] >= 32 && c[i] < 127 ? c[i] : '.');
+				zlog_info(zlog_handler,"%c", c[i] >= 32 && c[i] < 127 ? c[i] : '.');
 			else
-				printf(" ");
+				zlog_info(zlog_handler," ");
 		}
 
-		printf("\n");
+		zlog_info(zlog_handler,"\n");
 
 		c += 16;
 
@@ -171,13 +171,6 @@ void change_mac_buf(char* in_addr, char* out_addr){
 	}
 }
 
-void reverseBuf(char* in_buf, char* out_buf, int number){
-	int i,j;
-	for(i=0,j=number-1;i<number;i++){
-		out_buf[i] = in_buf[j];
-		j=j-1;
-	}
-}
 
 
 

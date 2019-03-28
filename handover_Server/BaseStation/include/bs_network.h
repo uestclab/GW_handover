@@ -1,5 +1,5 @@
-#ifndef BASESTATION_TR_ARM_H
-#define BASESTATION_TR_ARM_H
+#ifndef BS_NETWORK_H
+#define BS_NETWORK_H
 #include <pthread.h>
 #include "cJSON.h"
 #include "zlog.h"
@@ -21,7 +21,7 @@ int  initThread(struct ConfigureNode* Node, zlog_category_t* log_handler);
 int  freeThread();
 
 
-#endif//CLIENT_H
+#endif//BS_NETWORK_H
 
 
 

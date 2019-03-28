@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <sys/shm.h>
 #include <pthread.h>
-#include "baseStationTR_arm.h"
+#include "bs_network.h"
 #include "cJSON.h"
 #include "gw_utility.h"
 
@@ -51,7 +51,7 @@ void receive(){
     char* pStart = NULL;
     char* pCopy = NULL;
 
-    n = recv(sock_cli, temp_receBuffer, BUFFER_SIZE,0);
+    n = recv(sock_cli, temp_receBuffer, BUFFER_SIZE,0); // block 
     if(n<=0){
 		return;
     }
@@ -268,10 +268,6 @@ void sendSignal(signalType type, signal_json* json){
     cJSON_Delete(root);
 	pthread_mutex_unlock(para_t->mutex_);
 }
-
-//cJSON_AddNumberToObject(temp_root, "register", *((int*)(callback_buffer->buf_)));
-//cJSON_AddNumberToObject(temp_root, "send_event", (int32_t)1);
-//cJSON_AddStringToObject(temp_root, "string", "TEST_1");
 
 
 

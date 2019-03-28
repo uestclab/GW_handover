@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 option(PUBLIC "This is a default option for PUBLIC" OFF)
 message(STATUS "build public platform switch:"${PUBLIC})
-project(baseStationTR_arm)
+project(bs_main)
 
 if(${PUBLIC} STREQUAL "ON")
 	message(STATUS "start to build ARM platform.")

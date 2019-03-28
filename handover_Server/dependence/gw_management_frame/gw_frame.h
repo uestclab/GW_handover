@@ -9,6 +9,7 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include "zlog.h"
 
 #define BEACON                  0
 #define ASSOCIATION_REQUEST     1
@@ -31,31 +32,31 @@ typedef struct management_frame_Info{
 
 
 int ManagementFrame_create_monitor_interface();
-/*
-  input  :
-	time_cnt : 
-		0: only send once without response
-		!0 : wait for getting respose , configure time_cnt as timeout
-  return : 
-	0: success , frame_Info updated by new response management frame
-	1: success , tx without response 
-	2: failed
-	3: timeout, No response management frame
-*/
-int handle_monitor_tx_with_response(management_frame_Info* frame_Info, int time_cnt);
+
+// new interface
 
 /*
+	air_tx : return : 0 success, -1 input parameter error, < 0 tx fail
+*/
+int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler);
+//
+
+/*
+	air_rx :
 	input :
-		time_cnt : poll cnt
+		time_cnt : poll cnt --> block time = cnt * 5ms
 	return :
 		3: timeout
 		0: success
 */
 int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt);
 
-management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len);
+management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, 
+								char* mac_buf, char* mac_buf_dest, char* mac_buf_next);
 
 void close_monitor_interface();
+
+void reverseBuf(char* in_buf, char* out_buf, int number);
 
 
 #ifdef __cplusplus

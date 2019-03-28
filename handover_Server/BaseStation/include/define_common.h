@@ -1,6 +1,10 @@
 #ifndef DEFINE_COMMON_H
 #define DEFINE_COMMON_H
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
 typedef struct ConfigureNode{
 	char* server_ip;
 	int32_t server_port;

@@ -26,6 +26,7 @@
 #include <sys/wait.h>
 
 #include "gw_frame.h"
+#include "gw_utility.h"
 
 
 #ifndef	ARRAY_SIZE
@@ -38,11 +39,12 @@ typedef struct g_args_frame{
 	char* buf;
 }g_args_frame;
 
-struct g_args_frame* g_paramter = NULL;
+struct g_args_frame* g_paramter = NULL; // thread safe ?
 
 
 int ManagementFrame_create_monitor_interface(){
-	int fd = open("/dev/sig-chan", O_RDWR|O_NONBLOCK);
+	int fd = -1;
+	fd = open("/dev/sig-chan", O_RDWR|O_NONBLOCK);
 	g_paramter = (g_args_frame*)malloc(sizeof(g_args_frame));
 
 	g_paramter->buf = malloc(1500);
@@ -92,7 +94,7 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	char reverse_buf[4];
 	char tmp_buf[4];
 	memcpy(tmp_buf,&frame_control,4);
-	reverseBuf(tmp_buf,reverse_buf,4);
+	reverseBuf(tmp_buf,reverse_buf,4); /// note that !!!!!!!!!!!!!
 
 	memset(buf,0,2);
 	memcpy(buf + 2, reverse_buf, 4);
@@ -121,7 +123,7 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	char tmp_buf[4];
 	char control_buf[4];
 	memcpy(tmp_buf,buf + 2,4);
-	reverseBuf(tmp_buf,control_buf,4);
+	reverseBuf(tmp_buf,control_buf,4); // note that !!!!!!
 	unsigned int frame_control = *((unsigned int*)(control_buf));
 	printf("parse_buffer : frame_control = 0x%x.\n", frame_control);
 
@@ -144,32 +146,30 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	}
 }
 
-int handle_monitor_tx_with_response(management_frame_Info* frame_Info, int time_cnt){
+int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler){
 	if(frame_Info == NULL)
-		return 1;
+		return -1;
 	int rc = 0;
-	int loop = 0;
-	// fill buffer using frame_Info , then rc = write(fd,buf,ARRAY_SIZE(buf));
+
 	fill_buffer(frame_Info, g_paramter->buf);
-	int fill_len = frame_Info->length;//strlen(g_paramter->buf);
-	rc = write(g_paramter->fd,g_paramter->buf,fill_len);	
+	int fill_len = frame_Info->length;
+	rc = write(g_paramter->fd,g_paramter->buf,fill_len);
+	// debug	
+	zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
+				rc , g_paramter->fd , fill_len);
+	hexdump(g_paramter->buf,frame_Info->length,zlog_handler);
+	// ------ 
+	if(rc < 0)
+		return rc;
 
-	if(time_cnt == 0){
-		if(rc == 0){
-			return 1;
-		}else{
-			return 2;
-		}
-	}
-
-	rc = gw_monitor_poll(frame_Info,time_cnt);
-	return rc;
+	return 0; // tx _ success
 }
 
 // thread safe ?
 int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt){
 	int loop = 0;
 	int rc = 0;
+	int ret = 3;
 	for(loop = 0; loop <time_cnt; loop++){
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
@@ -180,17 +180,17 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt){
 					parse_buffer(frame_Info,g_paramter->buf);
 					break;
 				}else{
-					printf("Error\n");
+					ret = 4;
 				}
 			}else{
-				printf("POLL Error\n");
+				ret = 5;
 			}
 		}else{
-				//printf("POLL Error\n");
+				ret = 6;
 		}
 	}
 	if(loop == time_cnt)
-		return 3;
+		return ret;
 	else
 		return 0;
 }
@@ -201,7 +201,7 @@ void close_monitor_interface(){
 	free(g_paramter);
 }
 
-management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len){
+management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, char* mac_buf, char* mac_buf_dest, char* mac_buf_next){
 	management_frame_Info* temp_Info = (management_frame_Info*)malloc(sizeof(management_frame_Info));
 	temp_Info->type = 0;
 	temp_Info->subtype = subtype; ///---------subtype
@@ -209,6 +209,15 @@ management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len){
 	memset(temp_Info->source_mac_addr,0,6);
 	memset(temp_Info->dest_mac_addr,0,6);
 	memset(temp_Info->Next_dest_mac_addr,0,6);
+	
+	if(mac_buf != NULL)
+		memcpy(temp_Info->source_mac_addr,mac_buf,6);
+	if(mac_buf_dest != NULL)
+		memcpy(temp_Info->dest_mac_addr,mac_buf_dest,6);
+	if(mac_buf_next != NULL)
+		memcpy(temp_Info->Next_dest_mac_addr,mac_buf_next,6);
+
+
 	temp_Info->payload = NULL;
 	if(temp_Info->length > 26){
 		temp_Info->payload = malloc(payload_len);
@@ -216,6 +225,14 @@ management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len){
 	return temp_Info;
 }
 
+
+void reverseBuf(char* in_buf, char* out_buf, int number){
+	int i,j;
+	for(i=0,j=number-1;i<number;i++){
+		out_buf[i] = in_buf[j];
+		j=j-1;
+	}
+}
 
 
 // 0 == memcmp(buf, buf2, rc)

@@ -10,7 +10,8 @@
 #include <fcntl.h>
 #include <sys/shm.h>
 
-#include "baseStationTR_arm.h"
+#include "bs_network.h"
+#include "bs_monitor.h"
 #include "define_common.h"
 #include "zlog.h"
 
@@ -104,9 +105,19 @@ int main() // main thread
 
 	int state = initThread(configureNode_, zlog_handler);
 	if(state == 1 || state == 2){
-		return 0;
+		//return 0;
 	}
 	
+	// test 0328
+	g_monitor_para* g_monitor = NULL;
+	int stat = initMonitorThread(configureNode_, &g_monitor, zlog_handler);
+	user_wait();
+	zlog_info(zlog_handler,"startMonitor() , g_monitor = %d \n",g_monitor);
+	startMonitor(g_monitor);
+
+	pthread_join(*(g_monitor->para_t->thread_pid),NULL);
+
+	return 0;
 	
 
 	//user_wait();
@@ -137,7 +148,6 @@ int main() // main thread
 
 	user_wait();
 	freeThread();
-	//printf("End client !\n");
 	closeServerLog();
     return 0;
 }

@@ -11,6 +11,7 @@ extern "C" {
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include "zlog.h"
 
 
 typedef struct para_thread{
@@ -27,10 +28,9 @@ int filelength(FILE *fp);
 char* readfile(const char *path);
 int64_t now();
 
-void hexdump(const void* p, size_t size);
+void hexdump(const void* p, size_t size, zlog_category_t *zlog_handler);
 int get_mac(char * mac, int len_limit, char *arg);
 void change_mac_buf(char* in_addr, char* out_addr);
-void reverseBuf(char* in_buf, char* out_buf, int number);
 
 // -- temp 
 void user_wait();
