@@ -13,64 +13,52 @@
 #include "cJSON.h"
 #include "gw_utility.h"
 
-para_thread* para_t = NULL;
-int sock_cli = 0;
-int connected = 0;
 
-char* sendMessage = NULL; // only in send
-char* recvbuf = NULL;
-int	 gMoreData_ = 0;
-
-//log
-zlog_category_t* log_handler = NULL;
-
-void *
-receive_thread(void* args){
-	int sock_cli = *((int*)args);
-
-	pthread_mutex_lock(para_t->mutex_);
+void* receive_thread(void* args){
+	g_network_para* g_network = (g_network_para*)args;
+	zlog_info(g_network->log_handler,"Enter receive_thread()");
+	pthread_mutex_lock(g_network->para_t->mutex_);
     while(1){
-		while (connected == 0 )
+		while (g_network->connected == 0 )
 		{
-			pthread_cond_wait(para_t->cond_, para_t->mutex_);
+			pthread_cond_wait(g_network->para_t->cond_, g_network->para_t->mutex_);
 		}
-		pthread_mutex_unlock(para_t->mutex_);
-    	receive();
+		pthread_mutex_unlock(g_network->para_t->mutex_);
+    	receive(g_network);
     }
-    zlog_info(log_handler,"Exit receive_thread()");
-
+    zlog_info(g_network->log_handler,"Exit receive_thread()");
 }
 
-void receive(){ 
+void receive(g_network_para* g_network){ 
     int n;
     int size = 0;
     int totalByte = 0;
     int messageLength = 0;
     
-    char* temp_receBuffer = recvbuf + 1000; //
+    char* temp_receBuffer = g_network->recvbuf + 1000; //
     char* pStart = NULL;
     char* pCopy = NULL;
 
-    n = recv(sock_cli, temp_receBuffer, BUFFER_SIZE,0); // block 
+    n = recv(g_network->sock_cli, temp_receBuffer, BUFFER_SIZE,0); // block 
     if(n<=0){
 		return;
     }
     size = n;
-    zlog_info(log_handler,"-------------------- size = %d", size);
+    zlog_info(g_network->log_handler,"-------------------- size = %d", size);
 
-    pStart = temp_receBuffer - gMoreData_;
-    totalByte = size + gMoreData_;
+    pStart = temp_receBuffer - g_network->gMoreData_;
+    totalByte = size + g_network->gMoreData_;
     
     const int MinHeaderLen = sizeof(int32_t);
 
     while(1){
         if(totalByte <= MinHeaderLen)
         {
-            gMoreData_ = totalByte;
+            g_network->gMoreData_ = totalByte;
             pCopy = pStart;
-            if(gMoreData_ > 0)
+            if(g_network->gMoreData_ > 0)
             {
-                memcpy(temp_receBuffer - gMoreData_, pCopy, gMoreData_);
+                memcpy(temp_receBuffer - g_network->gMoreData_, pCopy, g_network->gMoreData_);
             }
             break;
         }
@@ -80,46 +68,49 @@ void receive(){
 	
             if(totalByte < messageLength + MinHeaderLen )
             {
-                gMoreData_ = totalByte;
+                g_network->gMoreData_ = totalByte;
                 pCopy = pStart;
-                if(gMoreData_ > 0){
-                    memcpy(temp_receBuffer - gMoreData_, pCopy, gMoreData_);
+                if(g_network->gMoreData_ > 0){
+                    memcpy(temp_receBuffer - g_network->gMoreData_, pCopy, g_network->gMoreData_);
                 }
                 break;
             } 
             else// at least one message 
             {
-				processMessage(pStart,messageLength);
+				processMessage(pStart,messageLength,g_network);
 				// move to next message
                 pStart = pStart + messageLength + MinHeaderLen;
                 totalByte = totalByte - messageLength - MinHeaderLen;
                 if(totalByte == 0){
-                    gMoreData_ = 0;
+                    g_network->gMoreData_ = 0;
                     break;
                 }
-            }//else             
-        }//(totalByte > MinHeaderLen)
-    } //while(1)	
+            }         
+        }
+    }	
 }
 
-int  initThread(struct ConfigureNode* Node, zlog_category_t* handler)
-{
-	log_handler = handler;
-	zlog_info(log_handler,"Configure: server_ip = %s, server_port = %d",
-			Node->server_ip,Node->server_port);
+int initNetworkThread(struct ConfigureNode* Node, g_network_para** g_network, g_msg_queue_para* g_msg_queue, zlog_category_t* handler){
+	zlog_info(handler,"initThread()");
 
-	recvbuf = malloc(BUFFER_SIZE);
-	sendMessage = malloc(BUFFER_SIZE);
-	// create thread
-	para_t = newThreadPara();
+	*g_network = (g_network_para*)malloc(sizeof(struct g_network_para));
 
-    ///sockfd
-    sock_cli = socket(AF_INET,SOCK_STREAM, 0);
-	
+	(*g_network)->log_handler = handler;
+	(*g_network)->para_t = newThreadPara();
+	(*g_network)->connected = 0;
+	(*g_network)->recvbuf = malloc(BUFFER_SIZE);
+	(*g_network)->sendMessage = malloc(BUFFER_SIZE);
+	(*g_network)->gMoreData_ = 0;
+    (*g_network)->sock_cli = socket(AF_INET,SOCK_STREAM, 0);
+	(*g_network)->g_msg_queue = g_msg_queue;
+
+	zlog_info(handler,"Configure: server_ip = %s, server_port = %d",
+		Node->server_ip,Node->server_port);
+
 	// create thread
-	int ret = pthread_create(para_t->thread_pid, NULL, receive_thread, (void*)&sock_cli);
+	int ret = pthread_create((*g_network)->para_t->thread_pid, NULL, receive_thread, (void*)(*g_network));
     if(ret != 0){
-        zlog_error(log_handler,"pthread_create error ! error_code = %d", ret);
+        zlog_error(handler,"pthread_create error ! error_code = %d", ret);
 		return 1;
     }
     
@@ -129,29 +120,32 @@ int  initThread(struct ConfigureNode* Node, zlog_category_t* handler)
     servaddr.sin_port = htons(Node->server_port);
     servaddr.sin_addr.s_addr = inet_addr(Node->server_ip);
     
-    zlog_info(log_handler,"link %s:%d",Node->server_ip,Node->server_port);
-    if (connect(sock_cli, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0){
+    zlog_info(handler,"link %s:%d",Node->server_ip,Node->server_port);
+    if (connect((*g_network)->sock_cli, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0){
         perror("connect");
 		return 2;
     }
 	free(Node->server_ip);
-	connected = 1;
-	pthread_cond_signal(para_t->cond_);
+	(*g_network)->connected = 1;
+	pthread_cond_signal((*g_network)->para_t->cond_);
 	
 	return 0;
 }
 
-int freeThread()
+int freeNetworkThread(g_network_para* g_network)
 {
-	close(sock_cli);
-	destoryThreadPara(para_t);
-	if(recvbuf != NULL){	
-		free(recvbuf);
+	close(g_network->sock_cli);
+	destoryThreadPara(g_network->para_t);
+	if(g_network->recvbuf != NULL){	
+		free(g_network->recvbuf);
 	}
-	if(sendMessage != NULL){
-		free(sendMessage);
+	if(g_network->sendMessage != NULL){
+		free(g_network->sendMessage);
 	}
-	zlog_info(log_handler,"freeThread()");
+	g_network->gMoreData_ = 0;
+	g_network->connected  = 0;
+	zlog_info(g_network->log_handler,"freeThread()");
+	free(g_network);
 	return 0;
 }
 
@@ -180,7 +174,7 @@ void printcjson(cJSON* root){
 	printf("---------------\n");
 }
 
-void processMessage(char* buf, int32_t length){
+void processMessage(char* buf, int32_t length, g_network_para* g_network){
     messageInfo* message = parseMessage(buf,length);
     cJSON * root = NULL;
     cJSON * item = NULL;
@@ -230,8 +224,8 @@ signal_json* clear_json(){
     return input;
 }
 
-void sendSignal(signalType type, signal_json* json){
-	pthread_mutex_lock(para_t->mutex_); // called by 2 thread
+void sendSignal(signalType type, signal_json* json, g_network_para* g_network){
+	pthread_mutex_lock(g_network->para_t->mutex_); // called by 2 thread
     messageInfo* message = (messageInfo*)malloc(sizeof(messageInfo));
     message->length = 0;
     message->signal = type;
@@ -253,20 +247,20 @@ void sendSignal(signalType type, signal_json* json){
     message->buf = cJSON_Print(root);
 	printf("bs send : %s \n" , message->buf);
 	// ---- sendMessage send ---- 
-	*((int32_t*)(sendMessage+sizeof(int32_t))) = htonl((int32_t)(message->signal)); 
+	*((int32_t*)(g_network->sendMessage+sizeof(int32_t))) = htonl((int32_t)(message->signal)); 
 	int32_t buf_length = strlen(message->buf) + 1;
 	message->length = sizeof(int32_t) * 2 + buf_length;
-	*((int32_t*)sendMessage) = htonl(message->length);
-	memcpy(sendMessage + sizeof(int32_t) * 2, message->buf, buf_length);
-	int status = send(sock_cli, sendMessage, message->length + sizeof(int32_t), 0);
+	*((int32_t*)(g_network->sendMessage)) = htonl(message->length);
+	memcpy(g_network->sendMessage + sizeof(int32_t) * 2, message->buf, buf_length);
+	int status = send(g_network->sock_cli, g_network->sendMessage, message->length + sizeof(int32_t), 0);
 	if(status != message->length + sizeof(int32_t))
-		zlog_error(log_handler,"Error in client send socket: send length = %d , expected length = %d", status , message->length + sizeof(int32_t));
+		zlog_error(g_network->log_handler,"Error in client send socket: send length = %d , expected length = %d", status , message->length + sizeof(int32_t));
 
     free(message->buf);
     free(message);
     free(json);
     cJSON_Delete(root);
-	pthread_mutex_unlock(para_t->mutex_);
+	pthread_mutex_unlock(g_network->para_t->mutex_);
 }
 
 
