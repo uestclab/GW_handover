@@ -14,6 +14,29 @@
 #include "gw_utility.h"
 
 
+void test(g_network_para* g_network){
+	zlog_info(g_network->log_handler,"Enter test()");
+	
+	{
+			struct msg_st data;
+			data.msg_type = MSG_NETWORK;
+			data.json[0] = 'a';
+			data.json[1] = '\0';
+			data.msg_number = 0;
+	
+			int counter = 1000;
+			while(counter > 0){
+				enqueue(&data,g_network->g_msg_queue);
+				data.msg_number = data.msg_number + 1;
+				counter = counter - 1;
+			}
+			g_network->connected = 0;
+	}
+	
+	zlog_info(g_network->log_handler,"exit test()");
+}
+
+
 void* receive_thread(void* args){
 	g_network_para* g_network = (g_network_para*)args;
 	zlog_info(g_network->log_handler,"Enter receive_thread()");
@@ -24,7 +47,9 @@ void* receive_thread(void* args){
 			pthread_cond_wait(g_network->para_t->cond_, g_network->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_network->para_t->mutex_);
-    	receive(g_network);
+    	test(g_network);//receive(g_network);
+		if(g_network->connected == 0)
+			break;
     }
     zlog_info(g_network->log_handler,"Exit receive_thread()");
 }

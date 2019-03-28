@@ -12,6 +12,7 @@
 
 #include "bs_network.h"
 #include "bs_monitor.h"
+#include "bs_air.h"
 #include "msg_queue.h"
 #include "define_common.h"
 #include "zlog.h"
@@ -100,60 +101,69 @@ int main() // main thread
 	}
 	
 	// test 0328
+	/* msg_queue */
 	g_msg_queue_para* g_msg_queue = createMsgQueue(configureNode_, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
-
+	
+	/* network thread */
 	g_network_para* g_network = NULL;
 	int state = initNetworkThread(configureNode_, &g_network, g_msg_queue, zlog_handler);
 	if(state == 1 || state == 2){
 		//return 0;
 	}
-	
 	zlog_info(zlog_handler,"g_network = %d \n",g_network);
 
+	/* air process thread */
+	g_air_para* g_air = NULL;
+	int stat_1 = initProcessAirThread(configureNode_, &g_air, g_msg_queue, zlog_handler);
+
+
+	/* monitor thread */
 	g_monitor_para* g_monitor = NULL;
 	int stat = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, zlog_handler);
 	user_wait();
 	zlog_info(zlog_handler,"startMonitor() , g_monitor = %d \n",g_monitor);
 	startMonitor(g_monitor);
 
+	startProcessAir(g_air);
+
+	/* msg loop */ /* state machine */
 	while(1){
 		zlog_info(zlog_handler,"wait getdata ----- \n");
 		struct msg_st* getData = getMsgQueue(g_msg_queue);
-		if(getData != NULL)
-			zlog_info(zlog_handler,"getData.msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);	
+		if(getData == NULL)
+			continue;
+			//zlog_info(zlog_handler,"getData.msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+
+		switch(getData->msg_type){
+        case MSG_NETWORK:
+        {
+			zlog_info(zlog_handler,"MSG_NETWORK: msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+            break;
+        }
+        case MSG_AIR:
+        {
+			zlog_info(zlog_handler,"MSG_AIR: msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+            break;
+        }
+        case MSG_MONITOR:
+        {
+			zlog_info(zlog_handler,"MSG_MONITOR: msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+			
 	}
-	//user_wait();
 
-	user_wait();
-	signal_json* json = clear_json();
-	json->bsId_ = configureNode_->my_id;
-	memcpy(json->bsMacAddr_, configureNode_->my_mac, strlen(configureNode_->my_mac)+1);
-	sendSignal(ID_PAIR,json,g_network);
 
-	user_wait(); // 1.wait init_location_signal, 2.get and caculate rssi, then make decision   
-	json = clear_json();
-	json->bsId_ = configureNode_->my_id;
-	json->rssi_ = 10;
-	sendSignal(READY_HANDOVER,json,g_network);
-
-	user_wait(); // 1.my bs is choosed as link one after init_link_signal, process air interface , then send completed when air interface prepared
-	json = clear_json();
-	json->bsId_ = configureNode_->my_id;
-	json->rssi_ = 10;
-	sendSignal(INIT_COMPLETED,json,g_network);
-
-	user_wait(); // 1.send when running? (notification)
-	json = clear_json();
-	json->bsId_ = configureNode_->my_id;
-	json->rssi_ = 20;
-	sendSignal(READY_HANDOVER,json,g_network);
-
-	user_wait();
 	freeNetworkThread(g_network);
 	closeServerLog();
 	

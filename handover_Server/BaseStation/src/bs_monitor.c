@@ -12,7 +12,7 @@ void monitor(g_monitor_para* g_monitor){
 			data.json[1] = '\0';
 			data.msg_number = 0;
 	
-			int counter = 100;
+			int counter = 1000;
 			while(counter > 0){
 				enqueue(&data,g_monitor->g_msg_queue);
 				data.msg_number = data.msg_number + 1;
@@ -45,7 +45,6 @@ void* monitor_thread(void* args){
 
 void startMonitor(g_monitor_para* g_monitor){
 	g_monitor->running = 1;
-
 	pthread_cond_signal(g_monitor->para_t->cond_);
 }
 
