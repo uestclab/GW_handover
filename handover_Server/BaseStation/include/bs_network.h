@@ -23,8 +23,7 @@ typedef struct g_network_para{
 
 
 // send message
-signal_json* clear_json();
-void sendSignal(signalType type, signal_json* json, g_network_para* g_network);
+void sendSignal(signalType type, char* json, g_network_para* g_network);
 
 // receive message
 void receive(g_network_para* g_network);

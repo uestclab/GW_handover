@@ -25,13 +25,6 @@ typedef enum signalType{
     LINK_OPEN,
 }signalType;
 
-typedef struct signal_json{
-    int32_t bsId_;
-    double rssi_;
-    char bsMacAddr_[32];
-    char trainMacAddr_[32];
-}signal_json;
-
 typedef struct messageInfo{
     int32_t length;
     signalType signal;

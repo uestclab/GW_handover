@@ -47,7 +47,7 @@ void* receive_thread(void* args){
 			pthread_cond_wait(g_network->para_t->cond_, g_network->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_network->para_t->mutex_);
-    	test(g_network);//receive(g_network);
+    	receive(g_network);//receive(g_network);
 		if(g_network->connected == 0)
 			break;
     }
@@ -183,49 +183,35 @@ messageInfo* parseMessage(char* buf, int32_t length){
     return message;
 }
 
-void printcjson(cJSON* root){
-	cJSON * item = NULL;
-	printf("------- receive : \n");
-	item = cJSON_GetObjectItem(root, "signal");
-	printf("signal : %s \n", item->valuestring);
-	item = cJSON_GetObjectItem(root, "bs_id");
-	printf("id = %d \n", item->valueint);
-	item = cJSON_GetObjectItem(root, "rssi");
-	printf("rssi = %f \n", item->valuedouble);
-	item = cJSON_GetObjectItem(root, "bs_mac_addr");
-	printf("bs_mac_addr = %s \n" , item->valuestring);
-	item = cJSON_GetObjectItem(root, "train_mac_addr");
-	printf("train_mac_addr = %s \n" , item->valuestring);
-	printf("---------------\n");
+void printcjson(char* json, g_network_para* g_network){
+	zlog_info(g_network->log_handler,"receive : json = %s\n",json);
+	zlog_info(g_network->log_handler,"---------------\n");
 }
 
 void processMessage(char* buf, int32_t length, g_network_para* g_network){
     messageInfo* message = parseMessage(buf,length);
-    cJSON * root = NULL;
-    cJSON * item = NULL;
-    root = cJSON_Parse(message->buf);
     switch(message->signal){
         case ID_RECEIVED:
         {
 			// reserver train mac address 
-			printcjson(root);
+			printcjson(message->buf,g_network);
             break;
         }
         case INIT_LOCATION:
         {
-			printcjson(root);
+			printcjson(message->buf,g_network);
             break;
         }
         case INIT_LINK:
         {
 			// communicate with air interface immediatatly 
 			// send current bs mac to train , and send INIT_COMPLETED signal to server
-			printcjson(root);
+			printcjson(message->buf,g_network);
             break;
         }
         case START_HANDOVER:
         {
-			printcjson(root);
+			printcjson(message->buf,g_network);
             break;
         }
         default:
@@ -238,38 +224,12 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 
 // ---- send section : sendSignal thread safety ----
 
-signal_json* clear_json(){
-    signal_json* input = (signal_json*)malloc(sizeof(signal_json));
-    input->bsId_ = -1;
-    input->rssi_ = -99.9;
-    memset(input->bsMacAddr_,0x00,32);
-	input->bsMacAddr_[31] = '\0';
-    memset(input->trainMacAddr_,0x00,32);
-	input->trainMacAddr_[31] = '\0';
-    return input;
-}
-
-void sendSignal(signalType type, signal_json* json, g_network_para* g_network){
+void sendSignal(signalType type, char* json, g_network_para* g_network){
 	pthread_mutex_lock(g_network->para_t->mutex_); // called by 2 thread
     messageInfo* message = (messageInfo*)malloc(sizeof(messageInfo));
     message->length = 0;
     message->signal = type;
-    cJSON* root = cJSON_CreateObject();
-    if(type == ID_PAIR)
-		cJSON_AddStringToObject(root, "signal", "id_pair_signal");
-    else if(type == READY_HANDOVER)
-        cJSON_AddStringToObject(root, "signal", "ready_handover_signal");
-    else if(type == INIT_COMPLETED)
-        cJSON_AddStringToObject(root, "signal", "initcompleted_signal");
-    else if(type == LINK_CLOSED)
-        cJSON_AddStringToObject(root, "signal", "link_closed_signal");
-    else if(type == LINK_OPEN)
-        cJSON_AddStringToObject(root, "signal", "link_open_signal");
-    cJSON_AddNumberToObject(root, "bs_id", json->bsId_);
-    cJSON_AddNumberToObject(root, "rssi", json->rssi_);
-    cJSON_AddStringToObject(root, "bs_mac_addr", json->bsMacAddr_);
-    cJSON_AddStringToObject(root, "train_mac_addr", json->trainMacAddr_);
-    message->buf = cJSON_Print(root);
+    message->buf = json;
 	printf("bs send : %s \n" , message->buf);
 	// ---- sendMessage send ---- 
 	*((int32_t*)(g_network->sendMessage+sizeof(int32_t))) = htonl((int32_t)(message->signal)); 
@@ -281,10 +241,8 @@ void sendSignal(signalType type, signal_json* json, g_network_para* g_network){
 	if(status != message->length + sizeof(int32_t))
 		zlog_error(g_network->log_handler,"Error in client send socket: send length = %d , expected length = %d", status , message->length + sizeof(int32_t));
 
-    free(message->buf);
     free(message);
     free(json);
-    cJSON_Delete(root);
 	pthread_mutex_unlock(g_network->para_t->mutex_);
 }
 

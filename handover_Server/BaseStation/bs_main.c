@@ -131,6 +131,31 @@ int main() // main thread
 
 	startProcessAir(g_air);
 
+
+// -----------------------
+
+	user_wait();
+	send_id_pair_signal(configureNode_->my_id, configureNode_->my_mac, g_network);
+
+
+	user_wait();
+	send_ready_handover_signal(configureNode_->my_id, configureNode_->my_mac, 10, g_network);
+
+	user_wait(); 
+	send_initcompleted_signal(configureNode_->my_id, g_network);
+
+	user_wait(); 
+	send_ready_handover_signal(configureNode_->my_id, configureNode_->my_mac, 20, g_network);
+
+	user_wait();
+
+	return 0;
+
+
+
+
+// ------------------------
+
 	/* msg loop */ /* state machine */
 	while(1){
 		zlog_info(zlog_handler,"wait getdata ----- \n");

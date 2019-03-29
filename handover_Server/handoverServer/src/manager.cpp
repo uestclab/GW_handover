@@ -6,6 +6,7 @@
 
 #include "manager.h"
 #include "gw_tunnel.h"
+#include "signal_json.h"
 
 Manager* Manager::m_pInstance = NULL;
 Manager::GarbageCollection Manager::m_gc;
@@ -62,9 +63,6 @@ void Manager::establishLink(BaseStation* bs){
 
 void Manager::notifyHandover(BaseStation* bs){ 
     nextLinkBs_ = bs;
-    glory::signal_json* json = clear_json();
-    json->bsId_ = bs->getBaseStationID();
-    bs->mac(json->bsMacAddr_); // important info
     BaseStation* next_bs = NULL;
     if(linkBs_ != NULL){
         next_bs = findNextBaseStation(linkBs_);
@@ -72,7 +70,7 @@ void Manager::notifyHandover(BaseStation* bs){
             LOG(WARNING) << "access bs is not the next neighbour";
         }
     }
-    linkBs_->sendSignal(glory::START_HANDOVER,json); // notify linkBs , air send signal to vehicle
+	send_start_handover_signal(linkBs_, bs->getBaseStationID(), bs->getBsmac()); // notify linkBs , air send signal to vehicle
     // change tunnel to next link bs
     //...
 	LOG(INFO) << "notifyHandover :: START_HANDOVER ";
@@ -154,9 +152,7 @@ void Manager::completeIdCount(){
         map<struct bufferevent*,BaseStation*>::iterator iter;                
         for(iter = mapBs_.begin() ; iter != mapBs_.end() ; ++iter){
             BaseStation* bs_temp = iter->second;
-            glory::signal_json* json = clear_json();
-            json->bsId_ = bs_temp->getBaseStationID();
-            bs_temp->sendSignal(glory::INIT_LOCATION,json); // notify bs
+			send_init_location_signal(bs_temp, bs_temp->getBaseStationID());// notify bs
         }
         state_ = glory::RELOCALIZATION;
         LOG(INFO) << "state change : PAIR_ID ----> RELOCALIZATION";
@@ -224,10 +220,7 @@ void Manager::init_num_check(BaseStation* bs){
                 index = i;
             }
         }
-        glory::signal_json* json = clear_json();
-        json->bsId_ = activeBs_[index]->getBaseStationID();
-        activeBs_[index]->mac(json->bsMacAddr_);
-        activeBs_[index]->sendSignal(glory::INIT_LINK,json);
+		send_init_link_signal(activeBs_[index], activeBs_[index]->getBaseStationID(), activeBs_[index]->getBsmac());
         isRelocation = 1;
         LOG(INFO) << "send INIT_LINK signal";
     }

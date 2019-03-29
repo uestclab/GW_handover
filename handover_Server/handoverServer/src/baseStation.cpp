@@ -4,6 +4,7 @@
 
 #include <glog/logging.h>
 #include "gw_tunnel.h"
+#include "signal_json.h"
 
 using namespace std;
 
@@ -121,16 +122,12 @@ void BaseStation::processMessage(char* buf, int32_t length){
                 memcpy(mac_,item->valuestring,strlen(item->valuestring)+1);
 				LOG(INFO) << "mac : " << mac_;
                 IDReady_ = true;
-				glory::signal_json* json = clear_json();
-		        json->bsId_ = baseStationID_;
 				//pManager_->getTrainMac(json->trainMacAddr_); // 20190309 continue change train mac get method
-		        sendSignal(glory::ID_RECEIVED,json);
+		        send_id_received_signal(this,baseStationID_);
                 pManager_->updateIDInfo(this);
                 pManager_->completeIdCount();
             }else{
-		        glory::signal_json* json = clear_json();
-		        json->bsId_ = baseStationID_;
-		        sendSignal(glory::ID_RECEIVED,json);
+				send_id_received_signal(this,baseStationID_);
 			}
             break;
         }
@@ -139,11 +136,11 @@ void BaseStation::processMessage(char* buf, int32_t length){
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
             if(pManager_->state() == glory::RELOCALIZATION){
-                item = cJSON_GetObjectItem(root, "rssi");
+                item = cJSON_GetObjectItem(root, "quility");
                 receiveRssi_ = item->valuedouble;
                 pManager_->init_num_check(this);
             }else if(pManager_->state() == glory::RUNNING){
-                item = cJSON_GetObjectItem(root, "rssi");
+                item = cJSON_GetObjectItem(root, "quility");
                 receiveRssi_ = item->valuedouble;
                 pManager_->notifyHandover(this);
             }
@@ -208,45 +205,21 @@ double BaseStation::receiverssi(){
     return receiveRssi_;
 }
 
-void BaseStation::mac(char* buf){
-    memcpy(buf,mac_,32);
+char* BaseStation::getBsmac(){
+	char* cstr = mac_;
+	return cstr;
 }
 // --------------------------------------- send meassage ------------------- 
-glory::signal_json* clear_json(){
-    glory::signal_json* input = (glory::signal_json*)malloc(sizeof(glory::signal_json));
-    input->bsId_ = -1;
-    input->rssi_ = -99.9;
-    memset(input->bsMacAddr_,0x00,32);
-	input->bsMacAddr_[31] = '\0';
-    memset(input->trainMacAddr_,0x00,32);
-	input->trainMacAddr_[31] = '\0';
-    return input;
-}
 
-void BaseStation::sendSignal(glory::signalType type, glory::signal_json* json){
+void BaseStation::sendSignal(glory::signalType type, char* json){
     glory::messageInfo* message = new glory::messageInfo();
-    message->length = 0;
     message->signal = type;
-    cJSON* root = cJSON_CreateObject();
-    if(type == glory::ID_RECEIVED)
-		cJSON_AddStringToObject(root, "signal", "id_received_signal");
-    else if(type == glory::INIT_LOCATION)
-        cJSON_AddStringToObject(root, "signal", "init_location_signal");
-    else if(type == glory::INIT_LINK)
-        cJSON_AddStringToObject(root, "signal", "init_link_signal");
-    else if(type == glory::START_HANDOVER)
-        cJSON_AddStringToObject(root, "signal", "start_handover_signal");
-	cJSON_AddNumberToObject(root, "bs_id", json->bsId_);
-	cJSON_AddNumberToObject(root, "rssi", json->rssi_);
-    cJSON_AddStringToObject(root, "bs_mac_addr", json->bsMacAddr_);
-    cJSON_AddStringToObject(root, "train_mac_addr", json->trainMacAddr_);
-    message->buf = cJSON_Print(root);
+    message->buf = json;
+	message->length = strlen(message->buf) + 1;
 	LOG(INFO) << endl << " server send : cjson = " << message->buf;
     codec(message);
-    free(message->buf);
+	free(json);
     delete message;
-    free(json);
-    cJSON_Delete(root);
 }
 
 void BaseStation::codec(glory::messageInfo* message){
@@ -257,7 +230,7 @@ void BaseStation::codec(glory::messageInfo* message){
     result_temp.append(reinterpret_cast<char*>(&be32), sizeof(be32));
     if (message->buf)
     {
-        result_temp.append(message->buf,strlen(message->buf));        
+        result_temp.append(message->buf,strlen(message->buf) + 1);        
         int32_t messageLength = ::htonl(result_temp.size() - MinHeaderLen_);
         std::copy(reinterpret_cast<char*>(&messageLength),
                   reinterpret_cast<char*>(&messageLength) + sizeof(messageLength),

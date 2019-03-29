@@ -25,7 +25,6 @@
 using namespace std;
 
 
-glory::signal_json* clear_json();
 
 class Manager; // forward declaration --- class baseStation call method in class Manager 
 
@@ -47,11 +46,11 @@ public:
     glory::messageInfo*    parseMessage(char* buf, int32_t length);
     
     // send meassage
-    void                   sendSignal(glory::signalType type, glory::signal_json* json);
+    void                   sendSignal(glory::signalType type, char* json);
     void                   codec(glory::messageInfo* message);
     
     double                 receiverssi();
-    void                   mac(char* buf);
+	char*                  getBsmac();
         
 private:
     Manager*               pManager_;
