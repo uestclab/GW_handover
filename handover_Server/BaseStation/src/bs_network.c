@@ -78,7 +78,7 @@ void receive(g_network_para* g_network){
 		return;
     }
     size = n;
-    zlog_info(g_network->log_handler,"-------------------- size = %d", size);
+    //zlog_info(g_network->log_handler,"-------------------- size = %d", size);
 
     pStart = temp_receBuffer - g_network->gMoreData_;
     totalByte = size + g_network->gMoreData_;

@@ -179,12 +179,16 @@ int main() // main thread
 		case MSG_START_MONITOR:
 		{
 			zlog_info(zlog_handler,"MSG_START_MONITOR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-			startMonitor(g_monitor);
+			startMonitor(g_monitor,1);
 			break;
 		}
 		case MSG_INIT_SELECTED:
 		{
 			zlog_info(zlog_handler,"MSG_INIT_SELECTED: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
+			/*
+				1. open dac
+				2. air_interface send Association request (Next_dest_mac_addr set itself)
+			*/
 			startProcessAir(g_air);
 			break;
 		}
@@ -192,7 +196,10 @@ int main() // main thread
 		{
 			zlog_info(zlog_handler,"MSG_INIT_LINK_ESTABLISHED: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
 			send_initcompleted_signal(g_network->node->my_id, g_network);
-			zlog_info(zlog_handler,"bs state STARTUP -> WORKING");
+			zlog_info(zlog_handler,"SYSTEM STATE CHANGE : bs state STARTUP -> WORKING");
+			
+			startMonitor(g_monitor,2);
+				
 			break;
 		}
         default:

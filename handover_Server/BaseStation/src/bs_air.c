@@ -19,7 +19,7 @@ void process_air(g_air_para* g_air){
 				postMsgQueue(&data,g_air->g_msg_queue);
 				data.msg_number = data.msg_number + 1;
 				counter = counter - 1;
-				if(counter == 70){
+				if(counter == 70){ // simulate air receive : Association response
 					struct msg_st data;
 					data.msg_type = MSG_INIT_LINK_ESTABLISHED;
 					data.msg_number = MSG_INIT_LINK_ESTABLISHED;

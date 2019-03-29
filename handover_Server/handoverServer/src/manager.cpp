@@ -73,7 +73,7 @@ void Manager::notifyHandover(BaseStation* bs){
 	send_start_handover_signal(linkBs_, bs->getBaseStationID(), bs->getBsmac()); // notify linkBs , air send signal to vehicle
     // change tunnel to next link bs
     //...
-	LOG(INFO) << "notifyHandover :: START_HANDOVER ";
+	LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel change to target bs and buffer in";
 }
 
 int Manager::incChangeLink(BaseStation* bs, int open){
