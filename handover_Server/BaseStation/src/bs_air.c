@@ -1,6 +1,8 @@
+#include <pthread.h>
 #include "bs_air.h"
+#include "cJSON.h"
 
-
+// gw_sleep();
 
 void process_air(g_air_para* g_air){
 	zlog_info(g_air->log_handler,"Enter process_air()");
@@ -12,11 +14,18 @@ void process_air(g_air_para* g_air){
 			data.json[1] = '\0';
 			data.msg_number = 0;
 	
-			int counter = 1000;
+			int counter = 100;
 			while(counter > 0){
-				enqueue(&data,g_air->g_msg_queue);
+				postMsgQueue(&data,g_air->g_msg_queue);
 				data.msg_number = data.msg_number + 1;
 				counter = counter - 1;
+				if(counter == 70){
+					struct msg_st data;
+					data.msg_type = MSG_INIT_LINK_ESTABLISHED;
+					data.msg_number = MSG_INIT_LINK_ESTABLISHED;
+					postMsgQueue(&data,g_air->g_msg_queue);
+				}
+					
 			}
 			g_air->running = 0;
 	}
@@ -51,7 +60,7 @@ int initProcessAirThread(struct ConfigureNode* Node, g_air_para** g_air, g_msg_q
 	(*g_air)->running = 0;
 	(*g_air)->g_msg_queue = g_msg_queue;
 
-	zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_air)->g_msg_queue->msgid);
+	//zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_air)->g_msg_queue->msgid);
 	int ret = pthread_create((*g_air)->para_t->thread_pid, NULL, process_air_thread, (void*)(*g_air));
     if(ret != 0){
         zlog_error(handler,"create monitor_thread error ! error_code = %d", ret);

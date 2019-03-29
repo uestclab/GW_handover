@@ -100,7 +100,6 @@ int main() // main thread
 		return 0;
 	}
 	
-	// test 0328
 	/* msg_queue */
 	g_msg_queue_para* g_msg_queue = createMsgQueue(configureNode_, zlog_handler);
 	if(g_msg_queue == NULL){
@@ -113,9 +112,8 @@ int main() // main thread
 	g_network_para* g_network = NULL;
 	int state = initNetworkThread(configureNode_, &g_network, g_msg_queue, zlog_handler);
 	if(state == 1 || state == 2){
-		//return 0;
+		return 0;
 	}
-	zlog_info(zlog_handler,"g_network = %d \n",g_network);
 
 	/* air process thread */
 	g_air_para* g_air = NULL;
@@ -124,16 +122,12 @@ int main() // main thread
 
 	/* monitor thread */
 	g_monitor_para* g_monitor = NULL;
-	int stat = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, zlog_handler);
-	user_wait();
-	zlog_info(zlog_handler,"startMonitor() , g_monitor = %d \n",g_monitor);
-	startMonitor(g_monitor);
+	int stat = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, zlog_handler);
 
-	startProcessAir(g_air);
-
+	gw_sleep(); // need count down wait 3 thread all in startup !!!! -- 20190329
 
 // -----------------------
-
+/*
 	user_wait();
 	send_id_pair_signal(configureNode_->my_id, configureNode_->my_mac, g_network);
 
@@ -150,7 +144,7 @@ int main() // main thread
 	user_wait();
 
 	return 0;
-
+*/
 
 
 
@@ -158,28 +152,49 @@ int main() // main thread
 
 	/* msg loop */ /* state machine */
 	while(1){
-		zlog_info(zlog_handler,"wait getdata ----- \n");
+		//zlog_info(zlog_handler,"wait getdata ----- \n");
 		struct msg_st* getData = getMsgQueue(g_msg_queue);
 		if(getData == NULL)
 			continue;
 			//zlog_info(zlog_handler,"getData.msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
 
 		switch(getData->msg_type){
+		/* test msg type */
         case MSG_NETWORK:
         {
-			zlog_info(zlog_handler,"MSG_NETWORK: msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+			//zlog_info(zlog_handler,"MSG_NETWORK: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
             break;
         }
         case MSG_AIR:
         {
-			zlog_info(zlog_handler,"MSG_AIR: msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+			//zlog_info(zlog_handler,"MSG_AIR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
             break;
         }
         case MSG_MONITOR:
         {
-			zlog_info(zlog_handler,"MSG_MONITOR: msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
+			//zlog_info(zlog_handler,"MSG_MONITOR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
             break;
         }
+		/* real msg event */
+		case MSG_START_MONITOR:
+		{
+			zlog_info(zlog_handler,"MSG_START_MONITOR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
+			startMonitor(g_monitor);
+			break;
+		}
+		case MSG_INIT_SELECTED:
+		{
+			zlog_info(zlog_handler,"MSG_INIT_SELECTED: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
+			startProcessAir(g_air);
+			break;
+		}
+		case MSG_INIT_LINK_ESTABLISHED:
+		{
+			zlog_info(zlog_handler,"MSG_INIT_LINK_ESTABLISHED: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
+			send_initcompleted_signal(g_network->node->my_id, g_network);
+			zlog_info(zlog_handler,"bs state STARTUP -> WORKING");
+			break;
+		}
         default:
         {
             break;
@@ -194,6 +209,7 @@ int main() // main thread
 	
 	pthread_join(*(g_monitor->para_t->thread_pid),NULL);
 	pthread_join(*(g_network->para_t->thread_pid),NULL);
+	pthread_join(*(g_air->para_t->thread_pid),NULL);
 
     return 0;
 }

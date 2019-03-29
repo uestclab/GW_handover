@@ -44,7 +44,7 @@ include_directories("${PROJECT_SOURCE_DIR}/../dependence/include")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
 target_link_libraries(${PROJECT_NAME} cjson)
-target_link_libraries(${PROJECT_NAME} gwutility)
+target_link_libraries(${PROJECT_NAME} gw_utility)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
 

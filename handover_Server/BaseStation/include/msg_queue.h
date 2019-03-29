@@ -16,9 +16,17 @@
 #include "gw_utility.h" 
 
 #define MAX_TEXT 200
+
+// test msg type
 #define MSG_NETWORK 1
 #define MSG_AIR     2
 #define MSG_MONITOR 3
+
+
+// real msg event
+#define MSG_START_MONITOR       4
+#define MSG_INIT_SELECTED       5
+#define MSG_INIT_LINK_ESTABLISHED  6
  
 struct msg_st  
 {  
@@ -38,7 +46,7 @@ typedef struct g_msg_queue_para{
 g_msg_queue_para* createMsgQueue(struct ConfigureNode* Node, zlog_category_t* handler);
 int delMsgQueue(g_msg_queue_para* g_msg_queue);
 
-void enqueue(struct msg_st* data, g_msg_queue_para* g_msg_queue);
+void postMsgQueue(struct msg_st* data, g_msg_queue_para* g_msg_queue);
 struct msg_st* getMsgQueue(g_msg_queue_para* g_msg_queue);
 
 

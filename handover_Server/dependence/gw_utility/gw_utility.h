@@ -34,10 +34,8 @@ void change_mac_buf(char* in_addr, char* out_addr);
 
 // -- temp 
 void user_wait();
+void gw_sleep();
 
-typedef void (*timer_Callback_type)();
-void init_sigaction(timer_Callback_type callback); // init timer configuration
-void start_timer(int usec);
 
 #ifdef __cplusplus
 }

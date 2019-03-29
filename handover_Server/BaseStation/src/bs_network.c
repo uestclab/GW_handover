@@ -9,9 +9,11 @@
 #include <fcntl.h>
 #include <sys/shm.h>
 #include <pthread.h>
+
 #include "bs_network.h"
+#include "bs_network_json.h"
+
 #include "cJSON.h"
-#include "gw_utility.h"
 
 
 void test(g_network_para* g_network){
@@ -26,7 +28,7 @@ void test(g_network_para* g_network){
 	
 			int counter = 1000;
 			while(counter > 0){
-				enqueue(&data,g_network->g_msg_queue);
+				postMsgQueue(&data,g_network->g_msg_queue);
 				data.msg_number = data.msg_number + 1;
 				counter = counter - 1;
 			}
@@ -47,6 +49,13 @@ void* receive_thread(void* args){
 			pthread_cond_wait(g_network->para_t->cond_, g_network->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_network->para_t->mutex_);
+
+		if(g_network->startup == 0){
+			zlog_info(g_network->log_handler,"send_id_pair_signal");
+			send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac, g_network);
+			g_network->startup = 1;
+		}
+
     	receive(g_network);//receive(g_network);
 		if(g_network->connected == 0)
 			break;
@@ -116,7 +125,7 @@ void receive(g_network_para* g_network){
 }
 
 int initNetworkThread(struct ConfigureNode* Node, g_network_para** g_network, g_msg_queue_para* g_msg_queue, zlog_category_t* handler){
-	zlog_info(handler,"initThread()");
+	zlog_info(handler,"initNetworkThread()");
 
 	*g_network = (g_network_para*)malloc(sizeof(struct g_network_para));
 
@@ -128,6 +137,8 @@ int initNetworkThread(struct ConfigureNode* Node, g_network_para** g_network, g_
 	(*g_network)->gMoreData_ = 0;
     (*g_network)->sock_cli = socket(AF_INET,SOCK_STREAM, 0);
 	(*g_network)->g_msg_queue = g_msg_queue;
+	(*g_network)->node = Node;
+	(*g_network)->startup = 0;
 
 	zlog_info(handler,"Configure: server_ip = %s, server_port = %d",
 		Node->server_ip,Node->server_port);
@@ -169,6 +180,7 @@ int freeNetworkThread(g_network_para* g_network)
 	}
 	g_network->gMoreData_ = 0;
 	g_network->connected  = 0;
+	g_network->startup = 0;
 	zlog_info(g_network->log_handler,"freeThread()");
 	free(g_network);
 	return 0;
@@ -200,6 +212,12 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         case INIT_LOCATION:
         {
 			printcjson(message->buf,g_network);
+
+			struct msg_st data;
+			data.msg_type = MSG_START_MONITOR;
+			data.msg_number = MSG_START_MONITOR;
+			postMsgQueue(&data,g_network->g_msg_queue);
+
             break;
         }
         case INIT_LINK:
@@ -207,6 +225,12 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			// communicate with air interface immediatatly 
 			// send current bs mac to train , and send INIT_COMPLETED signal to server
 			printcjson(message->buf,g_network);
+			
+			struct msg_st data;
+			data.msg_type = MSG_INIT_SELECTED;
+			data.msg_number = MSG_INIT_SELECTED;
+			postMsgQueue(&data,g_network->g_msg_queue);
+
             break;
         }
         case START_HANDOVER:
@@ -230,7 +254,7 @@ void sendSignal(signalType type, char* json, g_network_para* g_network){
     message->length = 0;
     message->signal = type;
     message->buf = json;
-	printf("bs send : %s \n" , message->buf);
+	zlog_info(g_network->log_handler,"bs send : %s \n" , message->buf);
 	// ---- sendMessage send ---- 
 	*((int32_t*)(g_network->sendMessage+sizeof(int32_t))) = htonl((int32_t)(message->signal)); 
 	int32_t buf_length = strlen(message->buf) + 1;

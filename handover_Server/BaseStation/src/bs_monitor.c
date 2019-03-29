@@ -1,6 +1,7 @@
+#include <pthread.h>
 #include "bs_monitor.h"
-#include "gw_utility.h"
-
+#include "bs_network_json.h"
+#include "cJSON.h"
 
 void monitor(g_monitor_para* g_monitor){
 	zlog_info(g_monitor->log_handler,"Enter monitor()");
@@ -12,11 +13,13 @@ void monitor(g_monitor_para* g_monitor){
 			data.json[1] = '\0';
 			data.msg_number = 0;
 	
-			int counter = 1000;
+			int counter = 100;
 			while(counter > 0){
-				enqueue(&data,g_monitor->g_msg_queue);
+				postMsgQueue(&data,g_monitor->g_msg_queue);
 				data.msg_number = data.msg_number + 1;
 				counter = counter - 1;
+				if(counter == 50)
+					send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac, 10, g_monitor->g_network);
 			}
 			g_monitor->running = 0;
 	}
@@ -48,7 +51,8 @@ void startMonitor(g_monitor_para* g_monitor){
 	pthread_cond_signal(g_monitor->para_t->cond_);
 }
 
-int initMonitorThread(struct ConfigureNode* Node, g_monitor_para** g_monitor, g_msg_queue_para* g_msg_queue, zlog_category_t* handler)
+int initMonitorThread(struct ConfigureNode* Node, g_monitor_para** g_monitor, 
+		g_msg_queue_para* g_msg_queue, g_network_para* g_network, zlog_category_t* handler)
 {
 	zlog_info(handler,"initMonitorThread()");
 	*g_monitor = (g_monitor_para*)malloc(sizeof(struct g_monitor_para));
@@ -56,8 +60,10 @@ int initMonitorThread(struct ConfigureNode* Node, g_monitor_para** g_monitor, g_
 	(*g_monitor)->para_t = newThreadPara();
 	(*g_monitor)->running = 0;
 	(*g_monitor)->g_msg_queue = g_msg_queue;
+	(*g_monitor)->g_network = g_network;
+	(*g_monitor)->node = Node;
 
-	zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_monitor)->g_msg_queue->msgid);
+	//zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_monitor)->g_msg_queue->msgid);
 	int ret = pthread_create((*g_monitor)->para_t->thread_pid, NULL, monitor_thread, (void*)(*g_monitor));
     if(ret != 0){
         zlog_error(handler,"create monitor_thread error ! error_code = %d", ret);

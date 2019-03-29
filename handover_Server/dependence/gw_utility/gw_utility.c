@@ -92,26 +92,26 @@ void hexdump(const void* p, size_t size, zlog_category_t *zlog_handler) {
 	const uint8_t *c = p;
 	assert(p);
 
-	zlog_info(zlog_handler,"Dumping %u bytes from %p:\n", (unsigned int)size, p);
+	printf("Dumping %u bytes from %p:\n", (unsigned int)size, p);
 
 	while (size > 0) {
 		unsigned i;
 
 		for (i = 0; i < 16; i++) {
 			if (i < size)
-				zlog_info(zlog_handler,"%02x ", c[i]);
+				printf("%02x ", c[i]);
 			else
-				zlog_info(zlog_handler,"  ");
+				printf("  ");
 		}
 
 		for (i = 0; i < 16; i++) {
 			if (i < size)
-				zlog_info(zlog_handler,"%c", c[i] >= 32 && c[i] < 127 ? c[i] : '.');
+				printf("%c", c[i] >= 32 && c[i] < 127 ? c[i] : '.');
 			else
-				zlog_info(zlog_handler," ");
+				printf(" ");
 		}
 
-		zlog_info(zlog_handler,"\n");
+		printf("\n");
 
 		c += 16;
 
@@ -177,28 +177,7 @@ void change_mac_buf(char* in_addr, char* out_addr){
 /* 
 	---------------------- timer -------------------------------------
 */
-void init_sigaction(timer_Callback_type callback)
-{
-    struct sigaction act;
-          
-    act.sa_handler = callback;//
-    act.sa_flags  = 0;
 
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGPROF, &act, NULL);//send SIGROF signal when timer is arrived
-}
-
-void start_timer(int usec)
-{
-    struct itimerval val;
-         
-    val.it_value.tv_sec = 0;
-    val.it_value.tv_usec = usec;
-
-    val.it_interval = val.it_value;
-
-    setitimer(ITIMER_PROF, &val, NULL);
-}
 
 
 
@@ -207,12 +186,16 @@ void start_timer(int usec)
 void user_wait()
 {
 	int c;
-	printf("user_wait... ");
+	printf("user_wait... \n");
 	do
 	{
 		c = getchar();
 		if(c == 'g') break;
 	} while(c != '\n');
+}
+
+void gw_sleep(){
+	sleep(1);
 }
 
 

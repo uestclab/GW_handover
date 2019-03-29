@@ -1,12 +1,7 @@
 #ifndef BS_NETWORK_JSON_H
 #define BS_NETWORK_JSON_H
 
-#include "cJSON.h"
-#include "zlog.h"
-#include "define_common.h"
-
 #include "bs_network.h"
-#include "gw_utility.h"
 
 void send_id_pair_signal(int bs_id, char* bs_mac, g_network_para* g_network);
 void send_ready_handover_signal(int bs_id, char* bs_mac, int quility, g_network_para* g_network);

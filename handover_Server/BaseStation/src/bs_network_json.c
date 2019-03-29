@@ -1,23 +1,5 @@
 #include "bs_network_json.h"
-
-/*
-    cJSON* root = cJSON_CreateObject();
-    if(type == ID_PAIR)
-		cJSON_AddStringToObject(root, "signal", "id_pair_signal");
-    else if(type == READY_HANDOVER)
-        cJSON_AddStringToObject(root, "signal", "ready_handover_signal");
-    else if(type == INIT_COMPLETED)
-        cJSON_AddStringToObject(root, "signal", "initcompleted_signal");
-    else if(type == LINK_CLOSED)
-        cJSON_AddStringToObject(root, "signal", "link_closed_signal");
-    else if(type == LINK_OPEN)
-        cJSON_AddStringToObject(root, "signal", "link_open_signal");
-    cJSON_AddNumberToObject(root, "bs_id", json->bsId_);
-    cJSON_AddNumberToObject(root, "rssi", json->rssi_);
-    cJSON_AddStringToObject(root, "bs_mac_addr", json->bsMacAddr_);
-    cJSON_AddStringToObject(root, "train_mac_addr", json->trainMacAddr_);
-*/
-
+#include "cJSON.h"
 
 void send_id_pair_signal(int bs_id, char* bs_mac, g_network_para* g_network){
 	cJSON* root = cJSON_CreateObject();

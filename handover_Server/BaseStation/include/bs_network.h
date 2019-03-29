@@ -1,23 +1,23 @@
 #ifndef BS_NETWORK_H
 #define BS_NETWORK_H
-#include <pthread.h>
-#include "cJSON.h"
+
 #include "zlog.h"
 #include "define_common.h"
-
-#include "gw_utility.h"
 #include "msg_queue.h"
+#include "gw_utility.h"
 
 #define BUFFER_SIZE 1024 * 40
 
 typedef struct g_network_para{
 	g_msg_queue_para*  g_msg_queue;
+	ConfigureNode*     node;
 	para_thread*       para_t;
 	int                sock_cli;
 	int                connected;
 	int                gMoreData_;
 	char*              sendMessage;
 	char*              recvbuf;
+	int                startup; // first signal(id_pair) to server !
 	zlog_category_t*   log_handler;
 }g_network_para;
 

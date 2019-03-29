@@ -1,10 +1,7 @@
 #ifndef BS_AIR_H
 #define BS_AIR_H
-#include <pthread.h>
-#include "cJSON.h"
-#include "zlog.h"
-#include "define_common.h"
 
+#include "zlog.h"
 #include "gw_utility.h"
 #include "msg_queue.h"
 

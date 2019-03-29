@@ -1,5 +1,4 @@
 #include "msg_queue.h"
-#include "gw_utility.h"
 
 g_msg_queue_para* createMsgQueue(struct ConfigureNode* Node, zlog_category_t* handler){
 	zlog_info(handler,"Enter createMsgQueue\n");
@@ -18,10 +17,10 @@ g_msg_queue_para* createMsgQueue(struct ConfigureNode* Node, zlog_category_t* ha
 	return g_msg_queue; 
 }
 
-void enqueue(struct msg_st* data, g_msg_queue_para* g_msg_queue){
+void postMsgQueue(struct msg_st* data, g_msg_queue_para* g_msg_queue){
 	pthread_mutex_lock(g_msg_queue->para_t->mutex_);
 	if(msgsnd(g_msg_queue->msgid, (void*)data, MAX_TEXT, 0) == -1){  
-		zlog_info(g_msg_queue->log_handler,"enqueue : msgsnd failed\n"); 
+		zlog_info(g_msg_queue->log_handler,"postMsgQueue : msgsnd failed\n"); 
 	}
 	pthread_mutex_unlock(g_msg_queue->para_t->mutex_);
 }
