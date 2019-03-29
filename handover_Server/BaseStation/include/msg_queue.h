@@ -24,21 +24,30 @@
 
 
 // real msg event
-#define MSG_START_MONITOR       4
-#define MSG_INIT_SELECTED       5
-#define MSG_INIT_LINK_ESTABLISHED  6
+/*
+	startup state
+*/
+#define MSG_START_MONITOR              4
+#define MSG_INIT_SELECTED              5
+#define MSG_INIT_LINK_ESTABLISHED      6
+
+/*
+	running state	
+*/
+#define MSG_START_HANDOVER             7
  
 struct msg_st  
 {  
     long int msg_type;
 	int      msg_number;  
-    char     json[MAX_TEXT];  
+    char     msg_json[MAX_TEXT];  
 };
 
 
 typedef struct g_msg_queue_para{
 	int                msgid;
 	para_thread*       para_t;
+	int                seq_id;
 	zlog_category_t*   log_handler;
 }g_msg_queue_para;
 

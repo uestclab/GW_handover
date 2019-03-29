@@ -22,8 +22,8 @@ void test(g_network_para* g_network){
 	{
 			struct msg_st data;
 			data.msg_type = MSG_NETWORK;
-			data.json[0] = 'a';
-			data.json[1] = '\0';
+			data.msg_json[0] = 'a';
+			data.msg_json[1] = '\0';
 			data.msg_number = 0;
 	
 			int counter = 1000;
@@ -236,6 +236,13 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         case START_HANDOVER:
         {
 			printcjson(message->buf,g_network);
+
+			struct msg_st data;
+			data.msg_type = MSG_START_HANDOVER;
+			data.msg_number = MSG_START_HANDOVER;
+			memcpy(data.msg_json,message->buf,strlen(message->buf)+1);
+			postMsgQueue(&data,g_network->g_msg_queue);
+
             break;
         }
         default:

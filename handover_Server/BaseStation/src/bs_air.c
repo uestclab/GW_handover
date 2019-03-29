@@ -8,26 +8,15 @@ void process_air(g_air_para* g_air){
 	zlog_info(g_air->log_handler,"Enter process_air()");
 	
 	{
+		if(g_air->running == 1){ // simulate air receive : Association response
 			struct msg_st data;
-			data.msg_type = MSG_AIR;
-			data.json[0] = 'A';
-			data.json[1] = '\0';
-			data.msg_number = 0;
-	
-			int counter = 100;
-			while(counter > 0){
-				postMsgQueue(&data,g_air->g_msg_queue);
-				data.msg_number = data.msg_number + 1;
-				counter = counter - 1;
-				if(counter == 70){ // simulate air receive : Association response
-					struct msg_st data;
-					data.msg_type = MSG_INIT_LINK_ESTABLISHED;
-					data.msg_number = MSG_INIT_LINK_ESTABLISHED;
-					postMsgQueue(&data,g_air->g_msg_queue);
-				}
-					
-			}
-			g_air->running = 0;
+			data.msg_type = MSG_INIT_LINK_ESTABLISHED;
+			data.msg_number = MSG_INIT_LINK_ESTABLISHED;
+			postMsgQueue(&data,g_air->g_msg_queue);
+		}else if(g_air->running == 2){
+
+		}
+		g_air->running = 0;
 	}
 	
 	zlog_info(g_air->log_handler,"exit process_air()");
@@ -45,8 +34,8 @@ void* process_air_thread(void* args){
 		}
 		pthread_mutex_unlock(g_air->para_t->mutex_);
     	process_air(g_air);
-		if(g_air->running == 0)
-			break;
+		//if(g_air->running == 0)
+		//	break;
     }
     zlog_info(g_air->log_handler,"Exit process_air_thread()");
 
@@ -74,7 +63,7 @@ int  freeProcessAirThread(g_air_para* g_air){
 	free(g_air);
 }
 
-void startProcessAir(g_air_para* g_air){
-	g_air->running = 1;
+void startProcessAir(g_air_para* g_air, int running_step){
+	g_air->running = running_step;
 	pthread_cond_signal(g_air->para_t->cond_);
 }

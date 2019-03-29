@@ -5,6 +5,7 @@ g_msg_queue_para* createMsgQueue(struct ConfigureNode* Node, zlog_category_t* ha
 	g_msg_queue_para* g_msg_queue = (g_msg_queue_para*)malloc(sizeof(struct g_msg_queue_para));
 	g_msg_queue->log_handler = handler;
 	g_msg_queue->msgid = -1;
+	g_msg_queue->seq_id = 1;
 
   	g_msg_queue->msgid = msgget((key_t)4321, 0666 | IPC_CREAT);  
 	if(g_msg_queue->msgid == -1){
@@ -18,6 +19,10 @@ g_msg_queue_para* createMsgQueue(struct ConfigureNode* Node, zlog_category_t* ha
 }
 
 void postMsgQueue(struct msg_st* data, g_msg_queue_para* g_msg_queue){
+
+	data->msg_number = g_msg_queue->seq_id;
+	g_msg_queue->seq_id = g_msg_queue->seq_id + 1;
+
 	pthread_mutex_lock(g_msg_queue->para_t->mutex_);
 	if(msgsnd(g_msg_queue->msgid, (void*)data, MAX_TEXT, 0) == -1){  
 		zlog_info(g_msg_queue->log_handler,"postMsgQueue : msgsnd failed\n"); 
