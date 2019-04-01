@@ -44,9 +44,9 @@
 
 // system state 
 
-#define STATE_STARTUP        0
-#define STATE_WAIT_INIT      1
-#define STATE_WORKING        2
+#define STATE_STARTUP           0
+#define STATE_WAIT_MONITOR      1
+#define STATE_WORKING           2
  
 struct msg_st  
 {  

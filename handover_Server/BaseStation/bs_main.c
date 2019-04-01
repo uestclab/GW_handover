@@ -53,7 +53,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	memcpy(clientConfigure->server_ip, configure_ip, strlen(configure_ip)+1);
 	clientConfigure->server_port = 44445;
 	clientConfigure->my_id = 0;
-	clientConfigure->my_mac = (char*)malloc(32);
+	clientConfigure->my_mac_str = (char*)malloc(32);
 	clientConfigure->my_Ethernet = (char*)malloc(32);
 
 //  init system global variable
@@ -61,6 +61,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->system_info->bs_state = STATE_STARTUP;
 	clientConfigure->system_info->have_ve_mac = 0;
 	memset(clientConfigure->system_info->ve_mac,0,6);
+	memset(clientConfigure->system_info->bs_mac,0,6);
+	clientConfigure->system_info->received_start_handover_response = 0;
 
 // 
 	const char* configure_path = "../configuration_files/client_configure.json";
@@ -88,10 +90,11 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
     }
 
 	//get mac addr
-	int	nRtn = get_mac(clientConfigure->my_mac, 32, clientConfigure->my_Ethernet);
+	int	nRtn = get_mac(clientConfigure->my_mac_str, 32, clientConfigure->my_Ethernet);
     if(nRtn > 0) // nRtn = 12
     {	
-        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac);
+        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac_str);
+		change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac);
     }else{
 		printf("get mac address failed!\n");
 	}

@@ -52,7 +52,7 @@ void* receive_thread(void* args){
 
 		if(g_network->startup == 0){ // start event link 
 			zlog_info(g_network->log_handler,"send_id_pair_signal");
-			send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac, g_network);
+			send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac_str, g_network);
 			g_network->startup = 1;
 		}
 
@@ -202,6 +202,9 @@ void printcjson(char* json, g_network_para* g_network){
 
 void processMessage(char* buf, int32_t length, g_network_para* g_network){
     messageInfo* message = parseMessage(buf,length);
+	cJSON * root = NULL;
+    cJSON * item = NULL;
+    root = cJSON_Parse(message->buf);
     switch(message->signal){
         case ID_RECEIVED:
         {
@@ -237,10 +240,14 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         {
 			printcjson(message->buf,g_network);
 
+			item = cJSON_GetObjectItem(root, "target_bs_mac");
+			char target_mac_buf[6];
+			change_mac_buf(item->valuestring,target_mac_buf);
+
 			struct msg_st data;
 			data.msg_type = MSG_START_HANDOVER;
 			data.msg_number = MSG_START_HANDOVER;
-			memcpy(data.msg_json,message->buf,strlen(message->buf)+1);
+			memcpy(data.msg_json,target_mac_buf,6);
 			postMsgQueue(&data,g_network->g_msg_queue);
 
             break;

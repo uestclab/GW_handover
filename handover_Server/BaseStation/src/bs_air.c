@@ -14,6 +14,8 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			data.msg_type = MSG_RECEIVED_BEACON;
 			data.msg_number = MSG_RECEIVED_BEACON;
 			memcpy(data.msg_json,Info->source_mac_addr,6);
+			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
+			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -21,6 +23,9 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 		{
 			data.msg_type = MSG_RECEIVED_ASSOCIATION_RESPONSE;
 			data.msg_number = MSG_RECEIVED_ASSOCIATION_RESPONSE;
+			memcpy(data.msg_json,Info->source_mac_addr,6);
+			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
+			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -28,6 +33,9 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 		{
 			data.msg_type = MSG_RECEIVED_HANDOVER_START_RESPONSE;
 			data.msg_number = MSG_RECEIVED_HANDOVER_START_RESPONSE;
+			memcpy(data.msg_json,Info->source_mac_addr,6);
+			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
+			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -36,6 +44,8 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			data.msg_type = MSG_RECEIVED_REASSOCIATION;
 			data.msg_number = MSG_RECEIVED_REASSOCIATION;
 			memcpy(data.msg_json,Info->source_mac_addr,6);
+			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
+			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -69,12 +79,12 @@ void process_air(g_air_para* g_air){ // simulate
 	char mac_buf[6];
 	char mac_buf_dest[6];
 	char mac_buf_next[6];	
-	char* mac_1 = "00aa00bb00cc";
-	char* mac_2 = "dd00000000ee";
+	char* ve_mac = "00aa00bb00cc";
+	char* bs_mac = "000c29d46f68";
 
-	change_mac_buf(mac_1,mac_buf);	
-	change_mac_buf(mac_1,mac_buf_dest);
-	change_mac_buf(mac_2,mac_buf_next);
+	change_mac_buf(ve_mac,mac_buf);	
+	change_mac_buf(bs_mac,mac_buf_dest);
+	change_mac_buf(bs_mac,mac_buf_next);
 	{
 		management_frame_Info* temp_Info = new_air_frame(g_air->running,0,mac_buf,mac_buf_dest,mac_buf_next);
 		process_recived_signal(temp_Info, g_air);
@@ -92,7 +102,7 @@ void* process_air_thread(void* args){
     while(1){
 		while (g_air->running == -1 ) // for beacon test --- 20190401
 		{
-			zlog_info(g_air->log_handler,"process_air_thread() : wait for condition\n");
+			//zlog_info(g_air->log_handler,"process_air_thread() : wait for condition\n");
 			pthread_cond_wait(g_air->para_t->cond_, g_air->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_air->para_t->mutex_);

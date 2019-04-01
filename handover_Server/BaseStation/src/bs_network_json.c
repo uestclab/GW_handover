@@ -31,4 +31,26 @@ void send_initcompleted_signal(int bs_id, g_network_para* g_network){
 	cJSON_Delete(root);
 }
 
+//LINK_CLOSED
+void send_linkclosed_signal(int bs_id, g_network_para* g_network){
+	cJSON* root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "signal", "link_closed_signal");
+    cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	char* json_buf = cJSON_Print(root);
+	sendSignal(LINK_CLOSED, json_buf, g_network);
+	cJSON_Delete(root);
+}
+//LINK_OPEN
+void send_linkopen_signal(int bs_id, g_network_para* g_network){
+	cJSON* root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "signal", "link_open_signal");
+    cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	char* json_buf = cJSON_Print(root);
+	sendSignal(LINK_OPEN, json_buf, g_network);
+	cJSON_Delete(root);
+}
+
+
+
+
 
