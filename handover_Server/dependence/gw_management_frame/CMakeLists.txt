@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-option(PUBLIC "This is a default option for PUBLIC" ON)
+option(PUBLIC "This is a default option for PUBLIC" OFF)
 message(STATUS "build public platform switch: "${PUBLIC})
 project(Mylibrary)
 
@@ -25,6 +25,7 @@ if(${PUBLIC} STREQUAL "ON")
 	include_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/include/")
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
+	link_directories("${PROJECT_SOURCE_DIR}/../lib")
 endif(${PUBLIC} STREQUAL "ON")
 
 SET(CMAKE_BUILD_TYPE "Debug")  

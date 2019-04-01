@@ -28,7 +28,7 @@ int filelength(FILE *fp);
 char* readfile(const char *path);
 int64_t now();
 
-void hexdump(const void* p, size_t size, zlog_category_t *zlog_handler);
+void hexdump(const void* p, size_t size);
 int get_mac(char * mac, int len_limit, char *arg);
 void change_mac_buf(char* in_addr, char* out_addr);
 

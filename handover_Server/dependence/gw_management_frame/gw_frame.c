@@ -109,15 +109,9 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	
 	// 2 byte seq_id
 	memset(buf + 24, 0, 2);
-
-	// payload
-	if(frame_Info->length > 26){
-		memcpy(buf + 26,frame_Info->payload,frame_Info->length - 26);
-	}
 }
 
 void parse_buffer(management_frame_Info* frame_Info , char* buf){
-	int32_t pre_length = frame_Info->length;
 	
 	// parse Frame_control
 	char tmp_buf[4];
@@ -135,15 +129,6 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	memcpy(frame_Info->Next_dest_mac_addr,buf + 18,6);
 	
 	printf("subtype = %d ,length = %d \n",frame_Info->subtype,frame_Info->length);
-
-	if(frame_Info->length > 26){
-		if(pre_length < frame_Info->length){
-			printf("resize and remalloc new payload buffer \n");
-			free(frame_Info->payload);
-			frame_Info->payload = malloc(frame_Info->length - 26);
-		}
-		memcpy(frame_Info->payload,buf + 26,frame_Info->length - 26);
-	}
 }
 
 int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler){
@@ -157,8 +142,6 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 	// debug	
 	zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
 				rc , g_paramter->fd , fill_len);
-	hexdump(g_paramter->buf,frame_Info->length,zlog_handler);
-	// ------ 
 	if(rc < 0)
 		return rc;
 
@@ -217,11 +200,6 @@ management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, char*
 	if(mac_buf_next != NULL)
 		memcpy(temp_Info->Next_dest_mac_addr,mac_buf_next,6);
 
-
-	temp_Info->payload = NULL;
-	if(temp_Info->length > 26){
-		temp_Info->payload = malloc(payload_len);
-	}
 	return temp_Info;
 }
 

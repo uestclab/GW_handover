@@ -10,10 +10,12 @@
 #include <fcntl.h>
 #include <sys/shm.h>
 
+#include "bs_event_process.h"
 #include "bs_network.h"
 #include "bs_monitor.h"
 #include "bs_air.h"
 #include "msg_queue.h"
+#include "timer.h"
 #include "define_common.h"
 #include "zlog.h"
 
@@ -54,6 +56,13 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->my_mac = (char*)malloc(32);
 	clientConfigure->my_Ethernet = (char*)malloc(32);
 
+//  init system global variable
+	clientConfigure->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
+	clientConfigure->system_info->bs_state = STATE_STARTUP;
+	clientConfigure->system_info->have_ve_mac = 0;
+	memset(clientConfigure->system_info->ve_mac,0,6);
+
+// 
 	const char* configure_path = "../configuration_files/client_configure.json";
 	char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
@@ -107,118 +116,36 @@ int main() // main thread
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
+
+	/* timer thread */
+	g_timer_para* g_timer = NULL;
+	int state = InitTimerThread(&g_timer, g_msg_queue, zlog_handler);
+	if(state == -1){
+		return 0;
+	}
 	
 	/* network thread */
 	g_network_para* g_network = NULL;
-	int state = initNetworkThread(configureNode_, &g_network, g_msg_queue, zlog_handler);
+	state = initNetworkThread(configureNode_, &g_network, g_msg_queue, zlog_handler);
 	if(state == 1 || state == 2){
 		return 0;
 	}
 
 	/* air process thread */
 	g_air_para* g_air = NULL;
-	int stat_1 = initProcessAirThread(configureNode_, &g_air, g_msg_queue, zlog_handler);
+	state = initProcessAirThread(configureNode_, &g_air, g_msg_queue, g_timer, zlog_handler);
 
 
 	/* monitor thread */
 	g_monitor_para* g_monitor = NULL;
-	int stat = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, zlog_handler);
+	state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, zlog_handler);
 
 	gw_sleep(); // need count down wait 3 thread all in startup !!!! -- 20190329
-
-// -----------------------
-/*
-	user_wait();
-	send_id_pair_signal(configureNode_->my_id, configureNode_->my_mac, g_network);
-
-
-	user_wait();
-	send_ready_handover_signal(configureNode_->my_id, configureNode_->my_mac, 10, g_network);
-
-	user_wait(); 
-	send_initcompleted_signal(configureNode_->my_id, g_network);
-
-	user_wait(); 
-	send_ready_handover_signal(configureNode_->my_id, configureNode_->my_mac, 20, g_network);
-
-	user_wait();
-
-	return 0;
-*/
-
-
 
 // ------------------------
 
 	/* msg loop */ /* state machine */
-	while(1){
-		//zlog_info(zlog_handler,"wait getdata ----- \n");
-		struct msg_st* getData = getMsgQueue(g_msg_queue);
-		if(getData == NULL)
-			continue;
-			//zlog_info(zlog_handler,"getData.msg_type = %d , msg_number = %d\n", getData->msg_type , getData->msg_number);
-
-		switch(getData->msg_type){
-		/* test msg type */
-        case MSG_NETWORK:
-        {
-			//zlog_info(zlog_handler,"MSG_NETWORK: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-            break;
-        }
-        case MSG_AIR:
-        {
-			//zlog_info(zlog_handler,"MSG_AIR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-            break;
-        }
-        case MSG_MONITOR:
-        {
-			//zlog_info(zlog_handler,"MSG_MONITOR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-            break;
-        }
-		/* real msg event */
-		case MSG_START_MONITOR:
-		{
-			zlog_info(zlog_handler,"EVENT : MSG_START_MONITOR: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-			startMonitor(g_monitor,1);
-			break;
-		}
-		case MSG_INIT_SELECTED:
-		{
-			zlog_info(zlog_handler,"EVENT : MSG_INIT_SELECTED: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-			/*
-				1. open dac
-				2. air_interface send Association request (Next_dest_mac_addr set itself)
-			*/
-			startProcessAir(g_air,1);
-			break;
-		}
-		case MSG_INIT_LINK_ESTABLISHED:
-		{
-			zlog_info(zlog_handler,"EVENT : MSG_INIT_LINK_ESTABLISHED: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-			send_initcompleted_signal(g_network->node->my_id, g_network);
-			zlog_info(zlog_handler,"SYSTEM STATE CHANGE : bs state STARTUP -> WORKING");
-			
-			startMonitor(g_monitor,2);
-				
-			break;
-		}
-		case MSG_START_HANDOVER:
-		{
-			/*
-				1. air_interface send Handover start request (Next_dest_mac_addr set target)
-			*/
-			zlog_info(zlog_handler,"EVENT : MSG_START_HANDOVER: msg_type = %d , msg_number = %d", getData->msg_type , getData->msg_number);
-			zlog_info(zlog_handler,"EVENT : MSG_START_HANDOVER: msg_json = %s", getData->msg_json);	
-			break;
-
-		}
-        default:
-        {
-            break;
-        }
-    }
-			
-	}
+	eventLoop(g_network, g_monitor, g_air, g_msg_queue, zlog_handler);
 
 
 	freeNetworkThread(g_network);

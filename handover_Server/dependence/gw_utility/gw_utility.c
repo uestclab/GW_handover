@@ -88,7 +88,7 @@ int64_t now()
 }
 
 
-void hexdump(const void* p, size_t size, zlog_category_t *zlog_handler) {
+void hexdump(const void* p, size_t size) {
 	const uint8_t *c = p;
 	assert(p);
 

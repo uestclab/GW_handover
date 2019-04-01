@@ -27,7 +27,6 @@ typedef struct management_frame_Info{
     char source_mac_addr[6];    // 6
     char dest_mac_addr[6];      // 6
 	char Next_dest_mac_addr[6]; // 6
-    char* payload;               //  payload cjson defined
 }management_frame_Info;
 
 

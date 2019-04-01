@@ -50,7 +50,7 @@ void* receive_thread(void* args){
 		}
 		pthread_mutex_unlock(g_network->para_t->mutex_);
 
-		if(g_network->startup == 0){
+		if(g_network->startup == 0){ // start event link 
 			zlog_info(g_network->log_handler,"send_id_pair_signal");
 			send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac, g_network);
 			g_network->startup = 1;

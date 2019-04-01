@@ -4,7 +4,7 @@
 #include "cJSON.h"
 
 void monitor(g_monitor_para* g_monitor){
-	zlog_info(g_monitor->log_handler,"Enter monitor()");
+	//zlog_info(g_monitor->log_handler,"Enter monitor()");
 	
 	{
 		if(g_monitor->running == 1){ // simulate RELOCALIZATION STATE
@@ -18,7 +18,7 @@ void monitor(g_monitor_para* g_monitor){
 		g_monitor->running = 0;
 	}
 	
-	zlog_info(g_monitor->log_handler,"exit monitor()");
+	//zlog_info(g_monitor->log_handler,"exit monitor()");
 }
 
 void* monitor_thread(void* args){
