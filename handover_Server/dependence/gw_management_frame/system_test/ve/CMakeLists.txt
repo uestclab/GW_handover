@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-option(PUBLIC "This is a default option for PUBLIC" OFF)
+option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch:"${PUBLIC})
 project(ve_test)
 
@@ -43,7 +43,7 @@ add_executable(${PROJECT_NAME} ${ALL_EXECUTABLES} ${SOURCE_FILES})
 include_directories("${PROJECT_SOURCE_DIR}/../../../include")
 
 target_link_libraries(${PROJECT_NAME} cjson)
-target_link_libraries(${PROJECT_NAME} gwutility)
+target_link_libraries(${PROJECT_NAME} gw_utility)
 target_link_libraries(${PROJECT_NAME} gw_frame)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)

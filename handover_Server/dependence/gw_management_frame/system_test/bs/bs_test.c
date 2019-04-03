@@ -11,6 +11,8 @@
 #include "gw_frame.h"
 #include "gw_utility.h"
 
+#include "zlog.h"
+
 
 /*
 #define BEACON                  0
@@ -21,122 +23,114 @@
 #define HANDOVER_START_REQUEST  5
 #define HANDOVER_START_RESPONSE 6
 */
+void user_wait()
+{
+	int c;
+	printf("user_wait... \n");
+	do
+	{
+		c = getchar();
+		if(c == 'g') break;
+	} while(c != '\n');
+}
+
 
 char mac_buf[6];
 char mac_buf_dest[6];
 char mac_buf_next[6];
 
 
-void testCase_beacon(){
-	printf("\n------------- start test beacon process ------------------------\n");
-	/* 
-		check if receive beacon frame (if yes)
-		1. get source_mac_addr
-		2. send ASSOCIATION_REQUEST frame
-		3. 
-	*/
-	
-	int receive_beacon = 0;
-	char ve_mac_buf[6];	
-	
-	management_frame_Info* temp_Info = new_air_frame(-1, 0);
-	int time_cnt = 10 * 200;
+// bs
 
-	while(receive_beacon == 0){
-		int stat = gw_monitor_poll(temp_Info, time_cnt);
+void testCase(zlog_category_t *zlog_handler){
+	
+	char ve_mac_buf[6];
+	uint16_t tx_seq_id = 0;
+	uint16_t expect_seq_id = 0;	
+	
+	int time_cnt = 1000;
+	int status;
+	while(1){ // wait for beacon
+		management_frame_Info* temp_Info = new_air_frame(-1,0,NULL,NULL,NULL,0);
+		int stat = gw_monitor_poll(temp_Info, time_cnt,zlog_handler); // receive 1000 * 5ms
 
-		if(stat == 0){
-			printf("receive new air frame \n");
+		if(stat == 26){
+			//zlog_info(zlog_handler,"receive new air frame \n");
 			if(temp_Info->subtype == BEACON){
-				receive_beacon = 1;
+				zlog_info(zlog_handler,"receive: BEACON id = %d \n" , temp_Info->seq_id);
 				memcpy(ve_mac_buf,temp_Info->source_mac_addr,6);
-				if(temp_Info->payload != NULL){
-					free(temp_Info->payload);
-					free(temp_Info);
+
+				if(expect_seq_id != temp_Info->seq_id){
+					printf("received id != expect id : %d , %d --------\n",temp_Info->seq_id,expect_seq_id);					
+					user_wait();				
 				}
-				break;
+				expect_seq_id = expect_seq_id + 1;
+				management_frame_Info* send_Info = new_air_frame(ASSOCIATION_REQUEST,0,mac_buf,ve_mac_buf,mac_buf_next,tx_seq_id);
+				status = handle_air_tx(send_Info, zlog_handler);
+				if(status == 0){
+					zlog_info(zlog_handler,"send ASSOCIATION_REQUEST success: tx_seq_id = %d \n",tx_seq_id);
+				}else{
+					zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
+				}
+				tx_seq_id = tx_seq_id + 1;
+				free(send_Info);
+			}else{
+				zlog_info(zlog_handler,"!!!!!!!! received other type : %d \n",temp_Info->subtype);
 			}
-		}else if(stat == 3){
-			printf("timeout\n");
+		}else if(stat <= 0){
+			zlog_info(zlog_handler,"poll timeout , stat = %d !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n" , stat);
 		}
+		free(temp_Info);
 	}
-	
-	// after receive beacon frame
 
-	
-	management_frame_Info* send_Info = new_air_frame(ASSOCIATION_REQUEST, 0); // ASSOCIATION_REQUEST
-	memcpy(send_Info->source_mac_addr,mac_buf,6);
-	memcpy(send_Info->dest_mac_addr,ve_mac_buf,6);
-	memcpy(send_Info->Next_dest_mac_addr,mac_buf_next,6);
-
-	printf("--- send : type = %d , subtype = %d ,length = %d \n" , send_Info->type, send_Info->subtype, send_Info->length);
-	
-	int status = 3;
-	time_cnt = 3;
-	while(1){
-		status = handle_monitor_tx_with_response(send_Info, time_cnt);
-		printf("---------------status = %d \n", status);
-		if(status == 0){
-			printf("receive response frame \n");
-			if(send_Info->subtype == ASSOCIATION_RESPONSE){
-				printf("receive ASSOCIATION_RESPONSE frame\n");
-				break;
-			}
-		}
-	}
-	
-	free(send_Info);
-
-	printf("\n------------- completed test beacon process ------------------------\n");
+	zlog_info(zlog_handler,"\n------------- completed test beacon process ------------------------\n");
 }
 
 
+zlog_category_t * serverLog(const char* path){
+	int rc;
+	zlog_category_t *zlog_handler = NULL;
+
+	rc = zlog_init(path);
+
+	if (rc) {
+		printf("init serverLog failed\n");
+		return NULL;
+	}
+
+	zlog_handler = zlog_get_category("bs_test_log");
+
+	if (!zlog_handler) {
+		printf("get cat fail\n");
+
+		zlog_fini();
+		return NULL;
+	}
+
+	return zlog_handler;
+}
+
+void closeServerLog(){
+	zlog_fini();
+}
 
 int main(int argc, char *argv[])
 {
-	printf("\n###############  baseStation start test air signaling  ###############\n");
+	zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf");
 
-	/* 
-		test case  (no state variable control) (re_transmit control by self)
-	*/
-	// get mac by self
+	zlog_info(zlog_handler,"\n###############  baseStation start test ###############\n");
 
+	char* mac_1 = "000000000000";
+	char* mac_2 = "000000000000";
 
-// ------------- vehicle info init ------------------------
-	printf("argc = %d \n",argc);
-	if(argc!=2)
-	{
-		printf("Usage : ethname\n");
-		return 1;
-	}
-
-	char* mac_1 = "10ec2bd46c58";
-	char* mac_2 = "ffffffffddd0";
-
-    char    szMac[18];
-    int     nRtn = get_mac(szMac, sizeof(szMac),argv[1]);
-    if(nRtn > 0) // nRtn = 12
-    {	
-        printf("argv[1] = %s , nRtn = %d , MAC ADDR : %s\n", argv[1],nRtn,szMac);
-		printf("mac_1 : %s \n",mac_1);
-		printf("mac_2 : %s \n",mac_2);
-    }else{
-		return 0;
-	}
-	
-	change_mac_buf(szMac,mac_buf);
-	hexdump(mac_buf,6);
-	
+	change_mac_buf(mac_1,mac_buf);	
 	change_mac_buf(mac_1,mac_buf_dest);
-	hexdump(mac_buf_dest,6);
-
 	change_mac_buf(mac_2,mac_buf_next);
-	hexdump(mac_buf_next,6);
 
-	ManagementFrame_create_monitor_interface();
-	
-	// receive beacon frame , then send ASSOCIATION_REQUEST frame
-	testCase_beacon();
+	int fd = ManagementFrame_create_monitor_interface();
+	zlog_info(zlog_handler,"ManagementFrame_create_monitor_interface : fd = %d \n" , fd);
+	// test
+	testCase(zlog_handler);
 	
 
     return 0;

@@ -205,7 +205,96 @@ void change_mac_buf(char* in_addr, char* out_addr){
 	}
 }
 
+char numberToChar(int num){
+	if(num>= 0 && num <=9){
+		return '0' + num;
+	}else{
+		return 'a' + num - 10;
+	}
+}
 
+//"000c29d46f68" low_32_str(8) high_16_str mac[6] -- 48bit
+char* getLow32Str(char* mac){
+	char* low32str = malloc(32);
+	low32str[0] = '0'; low32str[1] = 'x';
+	// mac[2] , mac[3] , mac[4], mac[5]
+	//printf("mac[2] = %d , mac[3] = %d , mac[4] = %d, mac[5] = %d \n",mac[2],mac[3],mac[4],mac[5]);
+	int temp[4];
+	temp[0] = (mac[2]+256)%256;
+	temp[1] = (mac[3]+256)%256;
+	temp[2] = (mac[4]+256)%256;
+	temp[3] = (mac[5]+256)%256;
+	//printf("temp[0] = %d , temp[1] = %d, temp[2] = %d , temp[3] = %d \n",temp[0],temp[1],temp[2],temp[3]);
+	int number[8];
+	int index = 2;
+	number[0] = temp[0] / 16;
+	number[1] = temp[0] % 16;
+	number[2] = temp[1] / 16;
+	number[3] = temp[1] % 16;
+	number[4] = temp[2] / 16;
+	number[5] = temp[2] % 16;
+	number[6] = temp[3] / 16;
+	number[7] = temp[3] % 16;
+	int i;
+	int flag = 0;
+	for(i=0;i<8;i++){
+		if(flag == 0){
+			if(number[i] == 0)
+				continue;
+			low32str[index] = numberToChar(number[i]);
+			index = index + 1;
+			flag = 1;
+		}else{
+			low32str[index] = numberToChar(number[i]);
+			index = index + 1;
+		}
+		//printf("number[%d] = %d\n",i,number[i]);
+	}
+	if(flag == 0){
+		low32str[index] = '0';
+		index = index + 1;
+	}
+	low32str[index] = '\0';
+	return low32str; 
+}
+
+char* getHigh16Str(char* mac){
+	char* high16str = malloc(32);
+	high16str[0] = '0'; high16str[1] = 'x';
+	// mac[0] , mac[1]
+	//printf("mac[0] = %d , mac[1] = %d \n",mac[0],mac[1]);
+	int temp[2];
+	temp[0] = (mac[0]+256)%256;
+	temp[1] = (mac[1]+256)%256;
+	//printf("temp[0] = %d , temp[1] = %d \n",temp[0],temp[1]);
+	int number[4];
+	int index = 2;
+	number[0] = temp[0] / 16;
+	number[1] = temp[0] % 16;
+	number[2] = temp[1] / 16;
+	number[3] = temp[1] % 16;
+	int i;
+	int flag = 0;
+	for(i=0;i<4;i++){
+		if(flag == 0){
+			if(number[i] == 0)
+				continue;
+			high16str[index] = numberToChar(number[i]);
+			index = index + 1;
+			flag = 1;
+		}else{
+			high16str[index] = numberToChar(number[i]);
+			index = index + 1;
+		}
+		//printf("number[%d] = %d\n",i,number[i]);
+	}
+	if(flag == 0){
+		high16str[index] = '0';
+		index = index + 1;
+	}
+	high16str[index] = '\0';
+	return high16str;
+}
 
 
 /* 

@@ -6,13 +6,13 @@
 #include "gw_control.h"
 
 
-#ifdef USE_STUB
+#ifdef PC_STUB
 	
 #endif
 
-#ifndef USE_STUB
+#ifndef PC_STUB
+	#include "mosquitto.h"
 	#include "broker.h"
-
 #endif
 
 
@@ -26,7 +26,7 @@ int lowlevel_transfer(char *buf, int buf_len){
     root = cJSON_Parse(buf);
     item = cJSON_GetObjectItem(root,"dst"); // different device is a dst
 	printf("dst = %s , \n",item->valuestring);
-#ifndef USE_STUB
+#ifndef PC_STUB
 	ret = dev_transfer(buf, buf_len, &stat_buf, &stat_buf_len, item->valuestring, -1);
 #endif
 	if(ret == 0 && stat_buf_len > 0){
@@ -61,67 +61,55 @@ char *get_prog_name(char *argv)
 	return argv + i;
 }
 
-
-#ifndef USE_STUB
-int process_exception(char* buf, int buf_len, char *from, void* arg)
-{
-	int ret = 0;
-	if(strcmp(from,"mon/all/pub/system_stat") == 0){
-		printf("system_stat is %s \n" , buf);
-	}
-	return ret;
-}
-#endif
-
-int initBroker(char *argv){
-#ifndef USE_STUB
+int initBroker(char *argv, recv_cb exception_cb){
+#ifndef PC_STUB
 	int ret = init_broker(get_prog_name(argv), NULL, -1, NULL, NULL);
 	printf("get_prog_name(argv) = %s , ret = %d \n",get_prog_name(argv),ret);
 	if( ret != 0)
 		return -2;
 
-	ret = register_callback("all", process_exception, "#");
+	ret = register_callback("all", exception_cb, "#");
 	if(ret != 0){
 		printf("register_callback error in initBroker\n");
 		return -1;
 	}
 #endif
 
-#ifdef USE_STUB
+#ifdef PC_STUB
 	int ret = 0;
 	printf("get_prog_name(argv) = %s , ret = %d \n",get_prog_name(argv),ret);
 #endif
 	return 0;
 }
 
-void disable_dac(){
+int disable_dac(){
 	printf("disable_dac\n");
 	char* dacGpio_path = "../choose_json/dac_gpio_disable.json";
 	char *dac_json = readfile(dacGpio_path);
 	
 	printf("json : %s \n", dac_json);
 
-	lowlevel_transfer(dac_json,strlen(dac_json)+1);
+	int ret = lowlevel_transfer(dac_json,strlen(dac_json)+1);
 	free(dac_json);
 	printf("end disable_dac\n");
+	return ret;
 }
 
-void enable_dac(){
+int enable_dac(){
 	char* dacGpio_path = "../choose_json/dac_gpio_enable.json";
 	char *dac_json = readfile(dacGpio_path);
 
 	printf("json : %s \n", dac_json);
 
-	lowlevel_transfer(dac_json,strlen(dac_json)+1);
+	int ret = lowlevel_transfer(dac_json,strlen(dac_json)+1);
 	free(dac_json);
 	printf("enable_dac\n");
+	return ret;
 }
 
 // src_mac 48bit
-void set_src_mac(char* src_mac){
-	//char* low_32_bit = 
-	//char* high_16_bit
-
+int set_src_mac(char* low_32_str, char* high_16_str){
+	int ret = 0;
 	cJSON *root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "base", "0x43c20000");
 	cJSON_AddStringToObject(root, "map_size", "0x1000");
@@ -136,7 +124,7 @@ void set_src_mac(char* src_mac){
 	cJSON_AddStringToObject(arrayobj, "id","0x0");
 	cJSON_AddStringToObject(arrayobj, "offset","0x830");
 	cJSON_AddStringToObject(arrayobj, "cmd","1");
-	cJSON_AddStringToObject(arrayobj, "val","0x0a");
+	cJSON_AddStringToObject(arrayobj, "val",low_32_str);
 	cJSON_AddStringToObject(arrayobj, "waite_time","0");
 
 	cJSON *arrayobj_1=cJSON_CreateObject();
@@ -145,19 +133,22 @@ void set_src_mac(char* src_mac){
 	cJSON_AddStringToObject(arrayobj_1, "id","0x0");
 	cJSON_AddStringToObject(arrayobj_1, "offset","0x834");
 	cJSON_AddStringToObject(arrayobj_1, "cmd","1");
-	cJSON_AddStringToObject(arrayobj_1, "val","0x0");
+	cJSON_AddStringToObject(arrayobj_1, "val",high_16_str);
 	cJSON_AddStringToObject(arrayobj_1, "waite_time","0");
 
 	char* srcMac_jsonfile = cJSON_Print(root);
-
-	lowlevel_transfer(srcMac_jsonfile,strlen(srcMac_jsonfile)+1);
-	
+	printf("srcMac_jsonfile = %s\n",srcMac_jsonfile);
+#ifndef PC_STUB
+	ret = lowlevel_transfer(srcMac_jsonfile,strlen(srcMac_jsonfile)+1);
+#endif	
 	cJSON_Delete(root);
 	free(srcMac_jsonfile);
+	return ret;
 }
 
 // dst_mac 48bit 
-void set_dst_mac(char* dst_mac){
+int set_dst_mac(char* low_32_str, char* high_16_str){
+	int ret = 0;
 	cJSON *root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "base", "0x43c20000");
 	cJSON_AddStringToObject(root, "map_size", "0x1000");
@@ -172,7 +163,7 @@ void set_dst_mac(char* dst_mac){
 	cJSON_AddStringToObject(arrayobj, "id","0x0");
 	cJSON_AddStringToObject(arrayobj, "offset","0x838");
 	cJSON_AddStringToObject(arrayobj, "cmd","1");
-	cJSON_AddStringToObject(arrayobj, "val","0x0a");
+	cJSON_AddStringToObject(arrayobj, "val",low_32_str);
 	cJSON_AddStringToObject(arrayobj, "waite_time","0");
 
 	cJSON *arrayobj_1=cJSON_CreateObject();
@@ -181,15 +172,17 @@ void set_dst_mac(char* dst_mac){
 	cJSON_AddStringToObject(arrayobj_1, "id","0x0");
 	cJSON_AddStringToObject(arrayobj_1, "offset","0x83C");
 	cJSON_AddStringToObject(arrayobj_1, "cmd","1");
-	cJSON_AddStringToObject(arrayobj_1, "val","0x0");
+	cJSON_AddStringToObject(arrayobj_1, "val",high_16_str);
 	cJSON_AddStringToObject(arrayobj_1, "waite_time","0");
 
 	char* dstMac_jsonfile = cJSON_Print(root);
-
-	lowlevel_transfer(dstMac_jsonfile,strlen(dstMac_jsonfile)+1);
-	
+	printf("dstMac_jsonfile = %s\n",dstMac_jsonfile);
+#ifndef PC_STUB
+	ret = lowlevel_transfer(dstMac_jsonfile,strlen(dstMac_jsonfile)+1);
+#endif	
 	cJSON_Delete(root);
 	free(dstMac_jsonfile);
+	return ret;
 }
 
 

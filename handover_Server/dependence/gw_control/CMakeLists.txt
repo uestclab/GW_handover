@@ -20,11 +20,13 @@ if(${PUBLIC} STREQUAL "ON")
 	SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-gnueabihf-g++)
 	# cross complie
 	link_directories("${PROJECT_SOURCE_DIR}/../lib_arm")
-
+	# zlog
+	link_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/lib/")
+	include_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/include/")
 
 elseif(${PUBLIC} STREQUAL "OFF") # stub test on pc
     message(STATUS "start to build PC platform.")
-	add_definitions("-D USE_STUB")
+	add_definitions("-D PC_STUB")
 	link_directories("${PROJECT_SOURCE_DIR}/../lib")
 endif(${PUBLIC} STREQUAL "ON")
 
@@ -46,7 +48,7 @@ include_directories("${PROJECT_SOURCE_DIR}/../include")
 add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
 
 target_link_libraries(${LIB_NAME} cjson)
-target_link_libraries(${LIB_NAME} gwutility)
+target_link_libraries(${LIB_NAME} gw_utility)
 target_link_libraries(${LIB_NAME} gw_frame)
 if(${PUBLIC} STREQUAL "ON") # arm
 	target_link_libraries(${LIB_NAME} broker)

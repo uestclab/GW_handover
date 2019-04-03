@@ -108,7 +108,7 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	memcpy(buf + 18,frame_Info->Next_dest_mac_addr,6);
 	
 	// 2 byte seq_id
-	memset(buf + 24, 0, 2);
+	memcpy(buf + 24, (char*)(&frame_Info->seq_id), 2);
 }
 
 void parse_buffer(management_frame_Info* frame_Info , char* buf){
@@ -119,7 +119,7 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	memcpy(tmp_buf,buf + 2,4);
 	reverseBuf(tmp_buf,control_buf,4); // note that !!!!!!
 	unsigned int frame_control = *((unsigned int*)(control_buf));
-	printf("parse_buffer : frame_control = 0x%x.\n", frame_control);
+	//printf("parse_buffer : frame_control = 0x%x.\n", frame_control);
 
 	frame_Info->subtype = bits_get_subtype(frame_control);
 	frame_Info->length  = bits_get_length(frame_control);
@@ -127,8 +127,9 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	memcpy(frame_Info->source_mac_addr,buf + 6,6);
 	memcpy(frame_Info->dest_mac_addr,buf + 12,6);
 	memcpy(frame_Info->Next_dest_mac_addr,buf + 18,6);
+	memcpy((char*)(&frame_Info->seq_id),buf+24,2);
 	
-	printf("subtype = %d ,length = %d \n",frame_Info->subtype,frame_Info->length);
+	//printf("subtype = %d ,length = %d \n",frame_Info->subtype,frame_Info->length);
 }
 
 int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler){
@@ -149,10 +150,10 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 }
 
 // thread safe ?
-int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt){
+int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_category_t *zlog_handler){
 	int loop = 0;
 	int rc = 0;
-	int ret = 3;
+	int ret = -1;
 	for(loop = 0; loop <time_cnt; loop++){
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
@@ -161,21 +162,22 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt){
 				if(rc){
 					// get management frame
 					parse_buffer(frame_Info,g_paramter->buf);
+					//hexdump_zlog(g_paramter->buf,28,zlog_handler);
 					break;
 				}else{
-					ret = 4;
+					ret = -2;
 				}
 			}else{
-				ret = 5;
+				ret = -3;
 			}
 		}else{
-				ret = 6;
+				ret = -4;
 		}
 	}
 	if(loop == time_cnt)
 		return ret;
 	else
-		return 0;
+		return rc;
 }
 
 void close_monitor_interface(){
@@ -184,11 +186,13 @@ void close_monitor_interface(){
 	free(g_paramter);
 }
 
-management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, char* mac_buf, char* mac_buf_dest, char* mac_buf_next){
+management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, char* mac_buf, char* mac_buf_dest, char* mac_buf_next,
+									uint16_t seq_id){
 	management_frame_Info* temp_Info = (management_frame_Info*)malloc(sizeof(management_frame_Info));
 	temp_Info->type = 0;
 	temp_Info->subtype = subtype; ///---------subtype
 	temp_Info->length  = 26 + payload_len;
+	temp_Info->seq_id = seq_id;
 	memset(temp_Info->source_mac_addr,0,6);
 	memset(temp_Info->dest_mac_addr,0,6);
 	memset(temp_Info->Next_dest_mac_addr,0,6);

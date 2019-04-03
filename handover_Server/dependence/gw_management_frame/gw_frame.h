@@ -27,6 +27,7 @@ typedef struct management_frame_Info{
     char source_mac_addr[6];    // 6
     char dest_mac_addr[6];      // 6
 	char Next_dest_mac_addr[6]; // 6
+	uint16_t seq_id;
 }management_frame_Info;
 
 
@@ -45,13 +46,12 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 	input :
 		time_cnt : poll cnt --> block time = cnt * 5ms
 	return :
-		3: timeout
-		0: success
+		>0: success
 */
-int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt);
+int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_category_t *zlog_handler);
 
 management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, 
-								char* mac_buf, char* mac_buf_dest, char* mac_buf_next);
+								char* mac_buf, char* mac_buf_dest, char* mac_buf_next,uint16_t seq_id);
 
 void close_monitor_interface();
 
