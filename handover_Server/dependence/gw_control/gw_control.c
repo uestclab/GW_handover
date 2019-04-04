@@ -4,15 +4,10 @@
 #include "cJSON.h"
 #include "gw_utility.h"
 #include "gw_control.h"
-
+#include "broker.h"
 
 #ifdef PC_STUB
 	
-#endif
-
-#ifndef PC_STUB
-	#include "mosquitto.h"
-	#include "broker.h"
 #endif
 
 

@@ -113,7 +113,8 @@ int main() // main thread
 	}
 	
 	/* msg_queue */
-	g_msg_queue_para* g_msg_queue = createMsgQueue(configureNode_, zlog_handler);
+	const char* pro_path = "../bs_main.c";
+	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;

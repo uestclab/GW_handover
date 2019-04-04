@@ -42,4 +42,56 @@ typedef struct messageInfo{
 }messageInfo;
 
 
+// test msg type
+#define MSG_NETWORK 1
+#define MSG_AIR     2
+#define MSG_MONITOR 3
+
+
+// event
+/*
+	receive air signal , air event
+*/
+#define MSG_RECEIVED_BEACON                         4
+#define MSG_RECEIVED_ASSOCIATION_RESPONSE           5
+#define MSG_RECEIVED_HANDOVER_START_RESPONSE        6
+#define MSG_RECEIVED_REASSOCIATION                  7
+
+/*
+	receive network signal , network event
+*/
+#define MSG_START_MONITOR              10
+#define MSG_INIT_SELECTED              11
+#define MSG_START_HANDOVER             12
+
+
+#define MSG_TIMEOUT                    20
+
+// system state 
+
+#define STATE_STARTUP           0
+#define STATE_WAIT_MONITOR      1
+#define STATE_WORKING           2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif//DEFINE_COMMON_H

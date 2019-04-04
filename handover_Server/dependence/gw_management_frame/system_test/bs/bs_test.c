@@ -67,10 +67,12 @@ void testCase(zlog_category_t *zlog_handler){
 				expect_seq_id = expect_seq_id + 1;
 				management_frame_Info* send_Info = new_air_frame(ASSOCIATION_REQUEST,0,mac_buf,ve_mac_buf,mac_buf_next,tx_seq_id);
 				status = handle_air_tx(send_Info, zlog_handler);
-				if(status == 0){
+				if(status == 26){
 					zlog_info(zlog_handler,"send ASSOCIATION_REQUEST success: tx_seq_id = %d \n",tx_seq_id);
 				}else{
 					zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
+					printf("air_tx,status = %d \n" , status);
+					user_wait();
 				}
 				tx_seq_id = tx_seq_id + 1;
 				free(send_Info);

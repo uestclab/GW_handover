@@ -108,7 +108,11 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	memcpy(buf + 18,frame_Info->Next_dest_mac_addr,6);
 	
 	// 2 byte seq_id
-	memcpy(buf + 24, (char*)(&frame_Info->seq_id), 2);
+	char seq_id_buf[2];
+	char reverse_seq_id[2];
+	memcpy(seq_id_buf,(char*)(&frame_Info->seq_id),2);
+	reverseBuf(seq_id_buf,reverse_seq_id,2); /// note that !!!!!!!!!!!!!
+	memcpy(buf + 24, reverse_seq_id, 2);
 }
 
 void parse_buffer(management_frame_Info* frame_Info , char* buf){
@@ -127,9 +131,13 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	memcpy(frame_Info->source_mac_addr,buf + 6,6);
 	memcpy(frame_Info->dest_mac_addr,buf + 12,6);
 	memcpy(frame_Info->Next_dest_mac_addr,buf + 18,6);
-	memcpy((char*)(&frame_Info->seq_id),buf+24,2);
+
+	char reveses_seq_buf[2];
+	char seq_buf[2];
+	memcpy(reveses_seq_buf,buf + 24,2);
+	reverseBuf(reveses_seq_buf,seq_buf,2);
 	
-	//printf("subtype = %d ,length = %d \n",frame_Info->subtype,frame_Info->length);
+	memcpy((char*)(&frame_Info->seq_id),seq_buf,2);
 }
 
 int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler){
@@ -146,7 +154,7 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 	if(rc < 0)
 		return rc;
 
-	return 0; // tx _ success
+	return rc; // tx _ success
 }
 
 // thread safe ?
@@ -158,7 +166,7 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_catego
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
 			if(POLLIN == g_paramter->poll_fd.revents){
-				rc = read(g_paramter->fd, g_paramter->buf, ARRAY_SIZE(g_paramter->buf));
+				rc = read(g_paramter->fd, g_paramter->buf, 1500);
 				if(rc){
 					// get management frame
 					parse_buffer(frame_Info,g_paramter->buf);

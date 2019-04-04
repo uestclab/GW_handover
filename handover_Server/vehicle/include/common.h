@@ -21,6 +21,25 @@ typedef struct ConfigureNode{
 	char* my_Ethernet;
 }ConfigureNode;
 
+// test msg type
+#define MSG_NETWORK 1
+#define MSG_AIR     2
+#define MSG_MONITOR 3
+
+
+// system state 
+
+#define STATE_STARTUP           0
+#define STATE_SYSTEM_READY      1
+#define STATE_WORKING           2
+#define STATE_HANDOVER          3
+
+
+#define MSG_RECEIVED_ASSOCIATION_REQUEST      10
+#define MSG_RECEIVED_DEASSOCIATION            11
+#define MSG_RECEIVED_HANDOVER_START_REQUEST   12
+ 
+#define MSG_STARTUP             20
 
 
 #endif//VEHICLE_COMMON_H

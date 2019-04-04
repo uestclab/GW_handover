@@ -60,9 +60,9 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 
 void gw_poll_receive(g_air_para* g_air){
 	int status;
-	management_frame_Info* temp_Info = new_air_frame(-1,0,NULL,NULL,NULL);
+	management_frame_Info* temp_Info = new_air_frame(-1,0,NULL,NULL,NULL,0);
 	while(1){ // wait for air_signal
-		int stat = gw_monitor_poll(temp_Info, 2); // receive 2 * 5ms
+		int stat = gw_monitor_poll(temp_Info, 2, g_air->log_handler); // receive 2 * 5ms
 		if(stat == 0){
 			zlog_info(g_air->log_handler,"receive new air frame \n");
 			process_recived_signal(temp_Info, g_air);
@@ -86,7 +86,7 @@ void process_air(g_air_para* g_air){ // simulate
 	change_mac_buf(bs_mac,mac_buf_dest);
 	change_mac_buf(bs_mac,mac_buf_next);
 	{
-		management_frame_Info* temp_Info = new_air_frame(g_air->running,0,mac_buf,mac_buf_dest,mac_buf_next);
+		management_frame_Info* temp_Info = new_air_frame(g_air->running,0,mac_buf,mac_buf_dest,mac_buf_next,0);
 		process_recived_signal(temp_Info, g_air);
 		free(temp_Info);
 		g_air->running = -1;
@@ -154,7 +154,7 @@ int send_airSignal(int32_t subtype, char* mac_buf, char* mac_buf_dest, char* mac
 	return 0; // simulate
 	pthread_mutex_lock(g_air->send_para_t->mutex_);
 	int status;
-	management_frame_Info* frame_Info = new_air_frame(subtype, 0,mac_buf,mac_buf_dest,mac_buf_next);
+	management_frame_Info* frame_Info = new_air_frame(subtype, 0,mac_buf,mac_buf_dest,mac_buf_next,0);
 	status = handle_air_tx(frame_Info,g_air->log_handler);
 	free(frame_Info);
 	pthread_mutex_unlock(g_air->send_para_t->mutex_);

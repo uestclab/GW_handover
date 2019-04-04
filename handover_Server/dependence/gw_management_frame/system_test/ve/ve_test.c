@@ -8,6 +8,10 @@
 #include <netinet/in.h>
 #include <net/if.h>        //for struct ifreq
 
+#include <signal.h>
+#include <unistd.h>
+#include <sys/time.h>
+
 #include "gw_frame.h"
 #include "gw_utility.h"
 #include "gw_control.h"
@@ -23,6 +27,17 @@ void user_wait()
 		c = getchar();
 		if(c == 'g') break;
 	} while(c != '\n');
+}
+
+void block_timer()
+{
+    struct timeval temp;
+
+    temp.tv_sec = 0;
+    temp.tv_usec = 100000;
+
+    select(0, NULL, NULL, NULL, &temp);
+    return ;
 }
 
 char mac_buf[6];
@@ -42,7 +57,7 @@ void testCase(zlog_category_t *zlog_handler){
 	while(1){
 		management_frame_Info* beacon_Info = new_air_frame(BEACON, 0,mac_buf,mac_buf_dest,mac_buf_next,tx_seq_id); // BEACON
 		status = handle_air_tx(beacon_Info,zlog_handler);
-		if(status == 0){
+		if(status == 26){
 			zlog_info(zlog_handler,"send BEACON success : tx_seq_id = %d\n",tx_seq_id);
 			time_cnt = 3;
 			int stat = gw_monitor_poll(beacon_Info, time_cnt, zlog_handler); // 3 * 5ms
@@ -53,6 +68,7 @@ void testCase(zlog_category_t *zlog_handler){
 					if(expect_seq_id != beacon_Info->seq_id){
 						zlog_info(zlog_handler,"received id != expect id : %d , %d --------------\n", beacon_Info->seq_id,expect_seq_id);
 						printf("received id != expect id : %d , %d --------------\n", beacon_Info->seq_id,expect_seq_id);
+						expect_seq_id = beacon_Info->seq_id;
 						user_wait();
 					}
 					expect_seq_id = expect_seq_id + 1;
@@ -62,11 +78,14 @@ void testCase(zlog_category_t *zlog_handler){
 			}else{
 				zlog_info(zlog_handler,"poll timeout,status = %d \n" , stat);			
 			}
-		}else if(status < 0){
+		}else{
 			zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
+			printf("air_tx,status = %d \n" , status);
+			user_wait();
 		}
 		tx_seq_id = tx_seq_id + 1;
 		free(beacon_Info);
+		//block_timer()
 	}
 
 	zlog_info(zlog_handler,"\n------------- test case completed ------------------------\n");

@@ -36,7 +36,7 @@ int ManagementFrame_create_monitor_interface();
 // new interface
 
 /*
-	air_tx : return : 0 success, -1 input parameter error, < 0 tx fail
+	air_tx : return : byte_size success, -1 input parameter error, < 0 tx fail
 */
 int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler);
 //
