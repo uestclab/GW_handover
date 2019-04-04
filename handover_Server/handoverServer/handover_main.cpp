@@ -173,7 +173,7 @@ run(void){
     node_options->water_max_read = 204800;
     node_options->water_low_read = 0;
     node_options->init_num_baseStation = 2;
-    const char* configure_path = "../configuration_files/server_configure.json";
+    const char* configure_path = "../conf/server_conf.json";
     char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
 		LOG(ERROR) << "open file " << configure_path << " error.";

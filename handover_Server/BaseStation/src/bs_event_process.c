@@ -202,6 +202,8 @@ void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para*
 			process_network_event(getData, g_network, g_monitor, g_air, zlog_handler);
 		else if(getData->msg_type >= MSG_TIMEOUT)
 			process_self_event(getData, g_network, g_monitor, g_air, zlog_handler);
+
+		free(getData);
 	}
 }
 

@@ -65,7 +65,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->system_info->received_start_handover_response = 0;
 
 // 
-	const char* configure_path = "../configuration_files/client_configure.json";
+	const char* configure_path = "../conf/bs_conf.json";
 	char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
 		zlog_error(log_handler,"open file %s error.\n",configure_path);
@@ -104,7 +104,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
 int main() // main thread
 {
-	zlog_category_t *zlog_handler = serverLog("../zlog.conf");
+	zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
+	//zlog_category_t *zlog_handler = serverLog("../zlog.conf");
 
 	struct ConfigureNode* configureNode_ = configure(zlog_handler);
 	if(configureNode_ == NULL){

@@ -51,6 +51,11 @@ target_link_libraries(${PROJECT_NAME} gw_frame)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
 
+if(${PUBLIC} STREQUAL "ON")
+	target_link_libraries(${PROJECT_NAME} broker)
+	target_link_libraries(${PROJECT_NAME} mosquitto)
+endif(${PUBLIC} STREQUAL "ON")
+
 
 
 

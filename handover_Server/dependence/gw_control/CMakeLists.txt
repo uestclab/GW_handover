@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-option(PUBLIC "This is a default option for PUBLIC" OFF) # OFF : PC , ON : Arm
+option(PUBLIC "This is a default option for PUBLIC" ON) # OFF : PC , ON : Arm
 message(STATUS "build public platform switch: "${PUBLIC})
 project(Mylibrary)
 

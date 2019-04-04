@@ -74,7 +74,7 @@ void gw_poll_receive(g_air_para* g_air){
 }
 
 void process_air(g_air_para* g_air){ // simulate
-	//zlog_info(g_air->log_handler,"Enter process_air()");
+	zlog_info(g_air->log_handler,"Enter process_air()");
 
 	char mac_buf[6];
 	char mac_buf_dest[6];
@@ -92,7 +92,7 @@ void process_air(g_air_para* g_air){ // simulate
 		g_air->running = -1;
 	}
 	
-	//zlog_info(g_air->log_handler,"exit process_air()");
+	zlog_info(g_air->log_handler,"exit process_air()");
 }
 
 void* process_air_thread(void* args){
@@ -102,7 +102,7 @@ void* process_air_thread(void* args){
     while(1){
 		while (g_air->running == -1 ) // for beacon test --- 20190401
 		{
-			//zlog_info(g_air->log_handler,"process_air_thread() : wait for condition\n");
+			zlog_info(g_air->log_handler,"process_air_thread() : wait for condition\n");
 			pthread_cond_wait(g_air->para_t->cond_, g_air->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_air->para_t->mutex_);
@@ -145,6 +145,10 @@ int  freeProcessAirThread(g_air_para* g_air){
 }
 
 void startProcessAir(g_air_para* g_air, int running_step){
+	gw_sleep();
+	gw_sleep();
+	gw_sleep();
+	zlog_info(g_air->log_handler,"startProcessAir : running_step = %d \n" , running_step);
 	g_air->running = running_step;
 	pthread_cond_signal(g_air->para_t->cond_);
 }
