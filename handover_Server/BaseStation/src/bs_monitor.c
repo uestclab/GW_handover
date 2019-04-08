@@ -12,7 +12,6 @@ void monitor(g_monitor_para* g_monitor){
 			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, 10, g_monitor->g_network);
 		}else if(g_monitor->running == 2){ // simulate RUNNING STATE
 			zlog_info(g_monitor->log_handler,"simulate ready_handover in RUNNING STATE\n");
-			gw_sleep();
 			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, 20, g_monitor->g_network);
 		}
 		g_monitor->running = 0;

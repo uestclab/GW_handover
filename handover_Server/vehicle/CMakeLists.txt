@@ -46,9 +46,15 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(${PROJECT_NAME} cjson)
 target_link_libraries(${PROJECT_NAME} gw_msgQueue)
 target_link_libraries(${PROJECT_NAME} gw_utility)
+target_link_libraries(${PROJECT_NAME} gw_control)
 target_link_libraries(${PROJECT_NAME} gw_frame)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
+
+if(${PUBLIC} STREQUAL "ON") # arm
+	target_link_libraries(${PROJECT_NAME} broker)
+	target_link_libraries(${PROJECT_NAME} mosquitto)
+endif(${PUBLIC} STREQUAL "ON")
 
 
 

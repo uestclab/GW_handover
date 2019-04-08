@@ -3,24 +3,41 @@
 #include "ve_periodic.h"
 #include "gw_frame.h"
 
+int getRunningState(g_periodic_para* g_periodic, int value){
+	pthread_mutex_lock(g_periodic->para_check_t->mutex_);
+	if(value == 1){
+		zlog_info(g_periodic->log_handler,"g_periodic->running = -1");
+		g_periodic->running = -1;
+		pthread_mutex_unlock(g_periodic->para_check_t->mutex_); // note that: pthread_mutex_unlock before return !!!!! 
+		return 0;
+	}
+	int ret = g_periodic->running;
+	//zlog_info(g_periodic->log_handler,"getRunningState ret = %d\n",ret);
+	pthread_mutex_unlock(g_periodic->para_check_t->mutex_);
+	return ret;
+}
+
 void send_air_frame(g_periodic_para* g_periodic){
 	{
 		system_info_para* g_system_info = g_periodic->node->system_info;
 		if(g_periodic->running == BEACON){ // send BEACON
 			zlog_info(g_periodic->log_handler,"send BEACON periodic \n");
-			for(int i =0;i<10;i++){
-				send_airSignal(BEACON, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
+			int i = 0;
+			for(;;){
+				send_airSignal(BEACON, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);	
 				gw_sleep();
-				if(i == 5)
-					startProcessAir(g_periodic->g_air,ASSOCIATION_REQUEST);
+				int ret = getRunningState(g_periodic, 0);
+				if(ret == -1)
+					break;
 			}
 		}else if(g_periodic->running == REASSOCIATION){ // send REASSOCIATION
 			zlog_info(g_periodic->log_handler,"send REASSOCIATION periodic\n");
-			for(int i=0;i<10;i++){
+			for(;;){
 				send_airSignal(REASSOCIATION, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 				gw_sleep();
-				if(i == 5)
-					startProcessAir(g_periodic->g_air,ASSOCIATION_REQUEST);
+				int ret = getRunningState(g_periodic, 0);
+				if(ret == -1)
+					break;
 			}
 		}
 		g_periodic->running = -1;
@@ -50,6 +67,7 @@ void startPeriodic(g_periodic_para* g_periodic, int running_step){
 }
 
 void stopPeriodic(g_periodic_para* g_periodic){
+	int ret = getRunningState(g_periodic, 1);
 	zlog_info(g_periodic->log_handler,"stopPeriodic()");
 }
 
@@ -60,6 +78,7 @@ int initPeriodicThread(struct ConfigureNode* Node, g_periodic_para** g_periodic,
 	*g_periodic = (g_periodic_para*)malloc(sizeof(struct g_periodic_para));
 	(*g_periodic)->log_handler = handler;
 	(*g_periodic)->para_t = newThreadPara();
+	(*g_periodic)->para_check_t = newThreadPara();
 	(*g_periodic)->running = -1;
 	(*g_periodic)->g_msg_queue = g_msg_queue;
 	(*g_periodic)->node = Node;

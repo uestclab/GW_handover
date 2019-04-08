@@ -14,6 +14,7 @@ typedef struct g_periodic_para{
 	g_air_para*    	   g_air;
 	int                running;
 	para_thread*       para_t;
+	para_thread*       para_check_t;
 	zlog_category_t*   log_handler;
 }g_periodic_para;
 
@@ -23,5 +24,6 @@ int  freePeriodicThread(g_periodic_para* g_periodic);
 
 void startPeriodic(g_periodic_para* g_periodic, int running_step);
 void stopPeriodic(g_periodic_para* g_periodic);
+
 
 #endif//VE_PERIODIC_H

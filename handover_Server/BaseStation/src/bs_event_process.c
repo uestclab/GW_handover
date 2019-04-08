@@ -3,8 +3,10 @@
 #include "cJSON.h"
 #include "bs_network_json.h"
 #include "gw_frame.h"
+#include "gw_control.h"
+
 #include "timer.h"
-//char        ve_mac[6];
+
 int is_my_air_frame(char* src, char* dest){
 	int i = 0;
 	for(i=0;i<6;i++){
@@ -26,6 +28,17 @@ char* msgJsonNextDstMac(char* msg_json){
 	return msg_json + 12;
 }
 
+void configureDstMacToBB(char* link_ve_mac, zlog_category_t* zlog_handler){
+	char* high16str = getHigh16Str(link_ve_mac);
+	zlog_info(zlog_handler,"high16str = %s\n",high16str);
+	char* low32str = getLow32Str(link_ve_mac);
+	zlog_info(zlog_handler,"low32str = %s\n",low32str);
+	int ret = set_dst_mac(low32str, high16str);
+	zlog_info(zlog_handler,"set_dst_mac : ret = %d \n", ret);
+	free(high16str);
+	free(low32str);
+}
+
 void process_network_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
 				g_air_para* g_air, zlog_category_t* zlog_handler)
 {
@@ -37,7 +50,9 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			g_system_info->bs_state = STATE_WAIT_MONITOR;
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_WAIT_MONITOR");
 
-			startProcessAir(g_air,BEACON); // simulate receive beacon
+			startProcessAir(g_air,1);			
+
+			//startProcessAir(g_air,BEACON); // simulate receive beacon
 
 			break;
 		}
@@ -48,7 +63,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			//enable_dac();
 			/* air_interface send Association request (Next_dest_mac_addr set itself) */
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			startProcessAir(g_air,ASSOCIATION_RESPONSE);
+			//startProcessAir(g_air,ASSOCIATION_RESPONSE);
 			break;
 		}
 		case MSG_START_HANDOVER: // !!!!!!!!!!!!!!!!!!!!!!!! source bs start to disconnect ve
@@ -75,31 +90,39 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 	switch(getData->msg_type){
 		case MSG_RECEIVED_BEACON:
 		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_BEACON: msg_number = %d",getData->msg_number);
 			if(g_system_info->have_ve_mac == 0){
 				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
 				g_system_info->have_ve_mac = 1;
+				configureDstMacToBB(g_system_info->ve_mac,zlog_handler);
 				zlog_info(zlog_handler," BEACON receive ve_mac = : ");
 				hexdump(g_system_info->ve_mac, 6);
 			}
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_BEACON: msg_number = %d",getData->msg_number);
-			startMonitor(g_monitor,1);
+
+			if(g_system_info->bs_state != STATE_WAIT_MONITOR){
+				zlog_info(zlog_handler," ----- Not in state of STATE_WAIT_MONITOR ------ ");
+				break;
+			}
+
+			startMonitor(g_monitor,1); // simulate 
 			break;
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
 		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_RESPONSE: msg_number = %d",getData->msg_number);
+
 			/* check dest mac */
 			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
+				zlog_info(zlog_handler," check dest MAC fail , not to my air frame");
 				break;
 			}
-
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_RESPONSE: msg_number = %d",getData->msg_number);
 
 			// need check system state
 			if(g_system_info->bs_state == STATE_WAIT_MONITOR){
 				send_initcompleted_signal(g_network->node->my_id, g_network);
-				g_system_info->bs_state == STATE_WORKING;
+				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_WORKING");
-				startMonitor(g_monitor,2);
+				//startMonitor(g_monitor,2);
 			}else if(g_system_info->bs_state == STATE_WORKING){
 				
 			}
@@ -107,13 +130,12 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 		}
 		case MSG_RECEIVED_HANDOVER_START_RESPONSE:
 		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_RESPONSE: msg_number = %d",getData->msg_number);
 
 			/* check dest mac */
 			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
 				break;
 			}
-
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_RESPONSE: msg_number = %d",getData->msg_number);
 	
 			if(g_system_info->received_start_handover_response == 0){
 				g_system_info->received_start_handover_response = 1;
@@ -124,9 +146,12 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 		case MSG_RECEIVED_REASSOCIATION:// !!!!!!!!!!!!!!!!!!!!!!!! ve start to connect target bs
 		{
 
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_REASSOCIATION: msg_number = %d",getData->msg_number);
+
 			if(g_system_info->have_ve_mac == 0){
 				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
 				g_system_info->have_ve_mac = 1;
+				configureDstMacToBB(g_system_info->ve_mac,zlog_handler);
 				zlog_info(zlog_handler," REASSOCIATION receive ve_mac = : ");
 				hexdump(g_system_info->ve_mac, 6);
 			}
@@ -150,10 +175,6 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				g_system_info->bs_state == STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 			}
-
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_REASSOCIATION: msg_number = %d",getData->msg_number);
-	
-
 
 			break;
 		}

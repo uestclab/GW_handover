@@ -21,6 +21,7 @@
 
 #include "cJSON.h"
 #include "gw_utility.h"
+#include "gw_control.h"
 
 
 zlog_category_t * serverLog(const char* path){
@@ -94,7 +95,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
     if(nRtn > 0) // nRtn = 12
     {	
         printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac_str);
-		change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac);
+		//change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac); // 0408 ---- bug
     }else{
 		printf("get mac address failed!\n");
 	}
@@ -102,7 +103,17 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	return clientConfigure;
 }
 
-int main() // main thread
+// broker callback interface
+int process_exception(char* buf, int buf_len, char *from, void* arg)
+{
+	int ret = 0;
+	if(strcmp(from,"mon/all/pub/system_stat") == 0){
+		printf("system_stat is %s \n" , buf);
+	}
+	return ret;
+}
+
+int main(int argc, char *argv[]) // main thread
 {
 	zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
 	//zlog_category_t *zlog_handler = serverLog("../zlog.conf");
@@ -112,6 +123,12 @@ int main() // main thread
 		printf("configureNode_ == NULL \n");
 		return 0;
 	}
+
+	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start baseStation ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+
+	/* broker gw_control */
+	int ret = initBroker(argv[0],process_exception);
+	zlog_info(zlog_handler,"initBroker : ret = %d \n", ret);
 	
 	/* msg_queue */
 	const char* pro_path = "../bs_main.c";
@@ -146,6 +163,19 @@ int main() // main thread
 	state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, zlog_handler);
 
 	gw_sleep(); // need count down wait 3 thread all in startup !!!! -- 20190329
+
+
+	/* init src_mac */
+	char* high16str = getHigh16Str(configureNode_->system_info->bs_mac);
+	zlog_info(zlog_handler,"high16str = %s\n",high16str);
+	char* low32str = getLow32Str(configureNode_->system_info->bs_mac);
+	zlog_info(zlog_handler,"low32str = %s\n",low32str);
+	ret = set_src_mac(low32str, high16str);
+	zlog_info(zlog_handler,"set_src_mac : ret = %d \n", ret);
+
+	free(high16str);
+	free(low32str);
+	zlog_info(zlog_handler,"completed set_src_mac ---------- \n");
 
 // ------------------------
 

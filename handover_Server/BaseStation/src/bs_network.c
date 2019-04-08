@@ -16,29 +16,6 @@
 #include "cJSON.h"
 
 
-void test(g_network_para* g_network){
-	zlog_info(g_network->log_handler,"Enter test()");
-	
-	{
-			struct msg_st data;
-			data.msg_type = MSG_NETWORK;
-			data.msg_json[0] = 'a';
-			data.msg_json[1] = '\0';
-			data.msg_number = 0;
-	
-			int counter = 1000;
-			while(counter > 0){
-				postMsgQueue(&data,g_network->g_msg_queue);
-				data.msg_number = data.msg_number + 1;
-				counter = counter - 1;
-			}
-			g_network->connected = 0;
-	}
-	
-	zlog_info(g_network->log_handler,"exit test()");
-}
-
-
 void* receive_thread(void* args){
 	g_network_para* g_network = (g_network_para*)args;
 	zlog_info(g_network->log_handler,"Enter receive_thread()");
@@ -51,7 +28,7 @@ void* receive_thread(void* args){
 		pthread_mutex_unlock(g_network->para_t->mutex_);
 
 		if(g_network->startup == 0){ // start event link ---------------------------------------------------- bs init action !!!!
-			zlog_info(g_network->log_handler,"send_id_pair_signal");
+			zlog_info(g_network->log_handler,"send_id_pair_signal -------- first action to handover server");
 			send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac_str, g_network);
 			g_network->startup = 1;
 		}
@@ -208,7 +185,6 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
     switch(message->signal){
         case ID_RECEIVED:
         {
-			// reserver train mac address 
 			printcjson(message->buf,g_network);
             break;
         }

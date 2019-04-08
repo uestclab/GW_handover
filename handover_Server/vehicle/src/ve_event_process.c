@@ -2,6 +2,7 @@
 #include "zlog.h"
 #include "cJSON.h"
 #include "gw_frame.h"
+#include "gw_control.h"
 
 int is_my_air_frame(char* src, char* dest){
 	int i = 0;
@@ -24,6 +25,17 @@ char* msgJsonNextDstMac(char* msg_json){
 	return msg_json + 12;
 }
 
+void configureDstMacToBB(char* link_bs_mac, zlog_category_t* zlog_handler){
+	char* high16str = getHigh16Str(link_bs_mac);
+	zlog_info(zlog_handler,"high16str = %s\n",high16str);
+	char* low32str = getLow32Str(link_bs_mac);
+	zlog_info(zlog_handler,"low32str = %s\n",low32str);
+	int ret = set_dst_mac(low32str, high16str);
+	zlog_info(zlog_handler,"set_dst_mac : ret = %d \n", ret);
+	free(high16str);
+	free(low32str);
+}
+
 
 void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_para* g_periodic, zlog_category_t* zlog_handler)
 {
@@ -31,21 +43,21 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 	switch(getData->msg_type){
 		case MSG_RECEIVED_ASSOCIATION_REQUEST:
 		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_REQUEST: msg_number = %d",getData->msg_number);
 			if(g_system_info->isLinked == 1)
 				break;
-			stopPeriodic(g_periodic);
+			stopPeriodic(g_periodic); // both BEACON and REASSOCIATION
 			memcpy(g_system_info->link_bs_mac,msgJsonSourceMac(getData->msg_json), 6);
 			send_airSignal(ASSOCIATION_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 
-			/* configure ve_mac link_bs_mac to BB */
-			// configureMacToBB();
+			/* configure link_bs_mac to BB */
+			configureDstMacToBB(g_system_info->link_bs_mac,zlog_handler);
 			g_system_info->isLinked = 1;
 			g_system_info->ve_state = STATE_WORKING;
 
 			zlog_info(zlog_handler," MSG_RECEIVED_ASSOCIATION_REQUEST receive link_bs_mac = : ");
 			hexdump(g_system_info->ve_mac, 6);
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_REQUEST: msg_number = %d",getData->msg_number);
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_SYSTEM_READY -> STATE_WORKING");
+			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
 
 			gw_sleep();
 			startProcessAir(g_periodic->g_air,HANDOVER_START_REQUEST);
@@ -69,7 +81,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			
 			zlog_info(zlog_handler," MSG_RECEIVED_HANDOVER_START_REQUEST receive next_bs_mac = : ");
 			hexdump(g_system_info->next_bs_mac, 6);
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_HANDOVER");
+			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
 			break;
 		}
 		default:
@@ -99,6 +111,8 @@ void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para*
 			process_air_event(getData, g_air, g_periodic, zlog_handler);
 		else if(getData->msg_type >= MSG_STARTUP)
 			process_self_event(getData, g_air, g_periodic, zlog_handler);
+
+		free(getData);
 	}
 }
 
