@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) // main thread
 	zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");
 
 	startProcessAir(g_air, 1); 
-	startPeriodic(g_periodic,BEACON); // --------------------------------------- first action
+	startPeriodic(g_periodic,BEACON); // --------------------------------------- first periodic action
 	
 
 	/* msg loop */ /* state machine */

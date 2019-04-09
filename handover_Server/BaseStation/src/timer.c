@@ -26,7 +26,7 @@ void setTimer(int seconds, int mseconds)
 void process_once(g_timer_para* g_timer){
 	g_timer->running = 0;
 	setTimer(g_timer->seconds,g_timer->mseconds);
-	g_timer->timer_cb(g_timer->in_data, g_timer->g_msg_queue);
+	g_timer->timer_cb(g_timer->in_data,g_timer->g_msg_queue);
 }
 
 void* timer_thread(void* args){

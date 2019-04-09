@@ -136,9 +136,25 @@ void startProcessAir(g_air_para* g_air, int running_step){
 	pthread_cond_signal(g_air->para_t->cond_);
 }
 
+void print_subtype(int32_t subtype, g_air_para* g_air){
+	if(subtype == 0)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = BEACON , send successful \n");
+	else if(subtype == 1)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = ASSOCIATION_REQUEST , send successful \n");
+	else if(subtype == 2)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = ASSOCIATION_RESPONSE , send successful \n");
+	else if(subtype == 3)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = REASSOCIATION , send successful \n");
+	else if(subtype == 4)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = DEASSOCIATION , send successful \n");
+	else if(subtype == 5)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = HANDOVER_START_REQUEST , send successful \n");
+	else if(subtype == 6)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = HANDOVER_START_RESPONSE , send successful \n");
+}
+
 int send_airSignal(int32_t subtype, char* mac_buf, char* mac_buf_dest, char* mac_buf_next, g_air_para* g_air){
 	zlog_info(g_air->log_handler,"send_airSignal : subtype = %d \n" , subtype);
-	//return 0; // simulate
 	pthread_mutex_lock(g_air->send_para_t->mutex_);
 	int status;
 	management_frame_Info* frame_Info = new_air_frame(subtype, 0,mac_buf,mac_buf_dest,mac_buf_next,0);
@@ -147,7 +163,8 @@ int send_airSignal(int32_t subtype, char* mac_buf, char* mac_buf_dest, char* mac
 	pthread_mutex_unlock(g_air->send_para_t->mutex_);
 
 	if(status == 26){ // send success
-		zlog_info(g_air->log_handler,"send_airSignal :  subtype = %d , send successful\n" , subtype);
+		//zlog_info(g_air->log_handler,"send_airSignal :  subtype = %d , send successful\n" , subtype);
+		print_subtype(subtype,g_air);
 	}else if(status < 26){
 		zlog_info(g_air->log_handler,"air_tx,status = %d \n" , status);
 	}

@@ -9,7 +9,7 @@ typedef struct system_info_para{
 	int32_t     ve_state; // indicate system state while time flow
 	char        link_bs_mac[6];
 	char        ve_mac[6];
-	char        next_bs_mac[6];
+	char        next_bs_mac[6]; // send REASSOCIATION as dst
 	int         isLinked;    
 }system_info_para;
 

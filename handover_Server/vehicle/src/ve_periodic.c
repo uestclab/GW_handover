@@ -6,7 +6,7 @@
 int getRunningState(g_periodic_para* g_periodic, int value){
 	pthread_mutex_lock(g_periodic->para_check_t->mutex_);
 	if(value == 1){
-		zlog_info(g_periodic->log_handler,"g_periodic->running = -1");
+		//zlog_info(g_periodic->log_handler,"g_periodic->running = -1");
 		g_periodic->running = -1;
 		pthread_mutex_unlock(g_periodic->para_check_t->mutex_); // note that: pthread_mutex_unlock before return !!!!! 
 		return 0;
@@ -22,7 +22,6 @@ void send_air_frame(g_periodic_para* g_periodic){
 		system_info_para* g_system_info = g_periodic->node->system_info;
 		if(g_periodic->running == BEACON){ // send BEACON
 			zlog_info(g_periodic->log_handler,"send BEACON periodic \n");
-			int i = 0;
 			for(;;){
 				send_airSignal(BEACON, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);	
 				gw_sleep();
@@ -32,8 +31,8 @@ void send_air_frame(g_periodic_para* g_periodic){
 			}
 		}else if(g_periodic->running == REASSOCIATION){ // send REASSOCIATION
 			zlog_info(g_periodic->log_handler,"send REASSOCIATION periodic\n");
-			for(;;){
-				send_airSignal(REASSOCIATION, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
+			for(;;){ // next_bs_mac
+				send_airSignal(REASSOCIATION, g_system_info->ve_mac, g_system_info->next_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 				gw_sleep();
 				int ret = getRunningState(g_periodic, 0);
 				if(ret == -1)

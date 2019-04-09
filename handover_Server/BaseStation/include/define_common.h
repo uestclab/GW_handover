@@ -76,22 +76,4 @@ typedef struct messageInfo{
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif//DEFINE_COMMON_H

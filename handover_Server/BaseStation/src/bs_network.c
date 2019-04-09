@@ -201,8 +201,6 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         }
         case INIT_LINK:
         {
-			// communicate with air interface immediatatly 
-			// send current bs mac to train , and send INIT_COMPLETED signal to server
 			printcjson(message->buf,g_network);
 			
 			struct msg_st data;

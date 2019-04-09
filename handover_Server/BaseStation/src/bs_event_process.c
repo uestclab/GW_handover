@@ -7,6 +7,15 @@
 
 #include "timer.h"
 
+void timer_cb(void* in_data, g_msg_queue_para* g_msg_queue){
+	struct msg_st data;
+	data.msg_type = MSG_TIMEOUT;
+	data.msg_number = MSG_TIMEOUT;
+	data.msg_len = 0;
+	postMsgQueue(&data,g_msg_queue);
+}
+
+
 int is_my_air_frame(char* src, char* dest){
 	int i = 0;
 	for(i=0;i<6;i++){
@@ -50,9 +59,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			g_system_info->bs_state = STATE_WAIT_MONITOR;
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_WAIT_MONITOR");
 
-			startProcessAir(g_air,1);			
-
-			//startProcessAir(g_air,BEACON); // simulate receive beacon
+			startProcessAir(g_air,1);
 
 			break;
 		}
@@ -60,22 +67,23 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_INIT_SELECTED: msg_number = %d",getData->msg_number);
 			/* open dac */
-			//enable_dac();
+			//enable_dac(); and check is enable successful --- continue
 			/* air_interface send Association request (Next_dest_mac_addr set itself) */
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			//startProcessAir(g_air,ASSOCIATION_RESPONSE);
 			break;
 		}
 		case MSG_START_HANDOVER: // !!!!!!!!!!!!!!!!!!!!!!!! source bs start to disconnect ve
 		{
+			zlog_info(zlog_handler," ---------------------- A1 Events start --------------------------");
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_START_HANDOVER: msg_number = %d",getData->msg_number);
-			
+			printf("target bs mac : \n");
 			hexdump(msgJsonSourceMac(getData->msg_json),6);
+
 			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
 			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
-			// start_timer();
-			startProcessAir(g_air,HANDOVER_START_RESPONSE);						
+			StartTimer(timer_cb, NULL, 0, 5, g_air->g_timer);
+				
 			break;
 		}
 		default:
@@ -95,7 +103,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
 				g_system_info->have_ve_mac = 1;
 				configureDstMacToBB(g_system_info->ve_mac,zlog_handler);
-				zlog_info(zlog_handler," BEACON receive ve_mac = : ");
+				printf(" BEACON receive ve_mac = : \n");
 				hexdump(g_system_info->ve_mac, 6);
 			}
 
@@ -104,7 +112,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				break;
 			}
 
-			startMonitor(g_monitor,1); // simulate 
+			startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code
 			break;
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
@@ -122,7 +130,11 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				send_initcompleted_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_WORKING");
-				//startMonitor(g_monitor,2);
+				zlog_info(zlog_handler," ---------------------- B1 Events completed --------------------------");
+				for(int i = 0; i< 10;i++){
+					gw_sleep();
+				}
+				startMonitor(g_monitor,2); // ------- notify bs handover : simulate code
 			}else if(g_system_info->bs_state == STATE_WORKING){
 				
 			}
@@ -161,18 +173,16 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0)// waiting bs
 					break;
 				/* open dac */
-				//enable_dac();
+				// enable_dac();
 				send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 				/* air_mac_id synchronous */
-				// ----------- continue 0401
+				// enable_macId_sync();
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
 				/* close dac */
 				//disable_dac();
 				send_linkclosed_signal(g_network->node->my_id, g_network);
-				/* close ddr_interface */
-				//close_ddr_interface();
-				g_system_info->bs_state == STATE_WAIT_MONITOR;
+				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 			}
 
@@ -190,11 +200,13 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 	switch(getData->msg_type){
 		case MSG_TIMEOUT:
 		{
+
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_TIMEOUT: msg_number = %d",getData->msg_number);
 			/* 1. close ddr interface , downlink service is close */
 			// close_ddr_interface();
 			/* 2. check if received air_response */
 			if(g_system_info->received_start_handover_response == 0){
-				
+				zlog_info(zlog_handler," ---- Not receive start handover response in expect time !!!! ");
 			}else{
 				
 			}
