@@ -9,6 +9,7 @@ typedef struct system_info_para{
 	int32_t     bs_state; // indicate system state while time flow
 	char        bs_mac[6];
 	char        ve_mac[6];
+// --------  indicate systme state variable step by step
 	int         have_ve_mac;
 	int         received_start_handover_response;    
 }system_info_para;
@@ -71,7 +72,9 @@ typedef struct messageInfo{
 
 #define STATE_STARTUP           0
 #define STATE_WAIT_MONITOR      1
-#define STATE_WORKING           2
+#define STATE_INIT_SELECTED     2
+#define STATE_WORKING           3
+#define STATE_TARGET_SELECTED   4
 
 
 

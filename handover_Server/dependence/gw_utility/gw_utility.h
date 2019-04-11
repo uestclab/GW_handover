@@ -9,6 +9,7 @@ extern "C" {
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include "zlog.h"
@@ -35,6 +36,11 @@ void change_mac_buf(char* in_addr, char* out_addr);
 
 char* getHigh16Str(char* mac);
 char* getLow32Str(char* mac);
+
+uint32_t getLow32(char* dst);
+uint32_t getHigh16(char* dst);
+
+void reverseBuf(char* in_buf, char* out_buf, int number);
 
 // -- temp 
 void user_wait();

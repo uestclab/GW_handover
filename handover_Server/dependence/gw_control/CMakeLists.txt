@@ -53,6 +53,7 @@ target_link_libraries(${LIB_NAME} gw_frame)
 if(${PUBLIC} STREQUAL "ON") # arm
 	target_link_libraries(${LIB_NAME} broker)
 	target_link_libraries(${LIB_NAME} mosquitto)
+	target_link_libraries(${LIB_NAME} gw_regdev)
 endif(${PUBLIC} STREQUAL "ON")
 
 

@@ -55,8 +55,6 @@ management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len,
 
 void close_monitor_interface();
 
-void reverseBuf(char* in_buf, char* out_buf, int number);
-
 
 #ifdef __cplusplus
 }

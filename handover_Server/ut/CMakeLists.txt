@@ -52,12 +52,12 @@ target_link_libraries(${PROJECT_NAME} -lzlog)
 if(${PUBLIC} STREQUAL "ON") # arm
 	target_link_libraries(${PROJECT_NAME} broker)
 	target_link_libraries(${PROJECT_NAME} mosquitto)
+	target_link_libraries(${PROJECT_NAME} gw_regdev)
 endif(${PUBLIC} STREQUAL "ON")
 
 if(${PUBLIC} STREQUAL "OFF") # PC
 	target_link_libraries(${PROJECT_NAME} gw_tunnel)
 endif(${PUBLIC} STREQUAL "OFF")
-
 
 
 

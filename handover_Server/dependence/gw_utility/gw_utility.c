@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <stdint.h>
 #include <assert.h>
 
 #include <signal.h>
@@ -294,6 +293,32 @@ char* getHigh16Str(char* mac){
 	}
 	high16str[index] = '\0';
 	return high16str;
+}
+
+uint32_t getLow32(char* dst){//"000A | 35000123" -- 0 1 2 3 4 5 
+	uint32_t low32 = 0;
+	char temp[4];
+	memset(temp,0,4);
+	memcpy(temp,&(dst[2]), 4);
+	reverseBuf(temp,(char*)(&low32),4);
+	return low32;
+}
+
+uint32_t getHigh16(char* dst){
+	uint32_t high16 = 0;
+	char temp[4];
+	memset(temp,0,4);
+	memcpy(temp + 2,&(dst[0]),2);
+	reverseBuf(temp,((char*)(&high16)),4);
+	return high16;
+}
+
+void reverseBuf(char* in_buf, char* out_buf, int number){
+	int i,j;
+	for(i=0,j=number-1;i<number;i++){
+		out_buf[i] = in_buf[j];
+		j=j-1;
+	}
 }
 
 

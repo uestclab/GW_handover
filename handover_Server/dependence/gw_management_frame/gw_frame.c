@@ -216,14 +216,6 @@ management_frame_Info* new_air_frame(int32_t subtype, int32_t payload_len, char*
 }
 
 
-void reverseBuf(char* in_buf, char* out_buf, int number){
-	int i,j;
-	for(i=0,j=number-1;i<number;i++){
-		out_buf[i] = in_buf[j];
-		j=j-1;
-	}
-}
-
 
 // 0 == memcmp(buf, buf2, rc)
 

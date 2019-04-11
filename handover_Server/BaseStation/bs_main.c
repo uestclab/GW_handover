@@ -95,7 +95,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
     if(nRtn > 0) // nRtn = 12
     {	
         printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac_str);
-		//change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac); // 0408 ---- bug
+		change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac); // 0408 ---- bug
     }else{
 		printf("get mac address failed!\n");
 	}
@@ -115,8 +115,8 @@ int process_exception(char* buf, int buf_len, char *from, void* arg)
 
 int main(int argc, char *argv[]) // main thread
 {
-	zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
-	//zlog_category_t *zlog_handler = serverLog("../zlog.conf");
+	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
+	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
 	struct ConfigureNode* configureNode_ = configure(zlog_handler);
 	if(configureNode_ == NULL){
@@ -125,6 +125,14 @@ int main(int argc, char *argv[]) // main thread
 	}
 
 	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start baseStation ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+
+	/* reg dev */
+	g_RegDev_para* g_RegDev = NULL;
+	int state = initRegdev(&g_RegDev, zlog_handler);
+	if(state != 0 ){
+		zlog_info(zlog_handler,"initRegdev create failed !");
+		return 0;
+	}
 
 	/* broker gw_control */
 	int ret = initBroker(argv[0],process_exception);
@@ -141,7 +149,7 @@ int main(int argc, char *argv[]) // main thread
 
 	/* timer thread */
 	g_timer_para* g_timer = NULL;
-	int state = InitTimerThread(&g_timer, g_msg_queue, zlog_handler);
+	state = InitTimerThread(&g_timer, g_msg_queue, zlog_handler);
 	if(state == -1){
 		return 0;
 	}
@@ -166,21 +174,17 @@ int main(int argc, char *argv[]) // main thread
 
 
 	/* init src_mac */
-	char* high16str = getHigh16Str(configureNode_->system_info->bs_mac);
-	zlog_info(zlog_handler,"high16str = %s\n",high16str);
-	char* low32str = getLow32Str(configureNode_->system_info->bs_mac);
-	zlog_info(zlog_handler,"low32str = %s\n",low32str);
-	ret = set_src_mac(low32str, high16str);
-	zlog_info(zlog_handler,"set_src_mac : ret = %d \n", ret);
 
-	free(high16str);
-	free(low32str);
-	zlog_info(zlog_handler,"completed set_src_mac ---------- \n");
+	zlog_info(zlog_handler," start set_src_mac_fast \n");
+	ret = set_src_mac_fast(g_RegDev, configureNode_->system_info->bs_mac);
+	zlog_info(zlog_handler,"end set_src_mac_fast : ret = %d \n", ret);
+
+	zlog_info(zlog_handler,"completed set_src_mac_fast ---------- \n");
 
 // ------------------------
 
 	/* msg loop */ /* state machine */
-	eventLoop(g_network, g_monitor, g_air, g_msg_queue, zlog_handler);
+	eventLoop(g_network, g_monitor, g_air, g_msg_queue, g_RegDev, zlog_handler);
 
 
 	freeNetworkThread(g_network);

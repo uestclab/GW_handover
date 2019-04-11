@@ -2,6 +2,35 @@
 #include <stdlib.h>
 #include "gw_utility.h"
 #include "gw_control.h"
+#include "zlog.h"
+#include "regdev_common.h"
+
+#define	REG_PHY_ADDR	0x43C20000
+#define	REG_MAP_SIZE	0X10000
+
+zlog_category_t * serverLog(const char* path){
+	int rc;
+	zlog_category_t *zlog_handler = NULL;
+	rc = zlog_init(path);
+
+	if (rc) {
+		return NULL;
+	}
+
+	zlog_handler = zlog_get_category("baseStation");
+
+	if (!zlog_handler) {
+		zlog_fini();
+		return NULL;
+	}
+
+	return zlog_handler;
+}
+
+void closeServerLog(){
+	zlog_fini();
+}
+
 
 // broker callback interface
 int process_exception(char* buf, int buf_len, char *from, void* arg)
@@ -13,8 +42,13 @@ int process_exception(char* buf, int buf_len, char *from, void* arg)
 	return ret;
 }
 
-
 int main(int argc, char *argv[]){
+
+	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
+
+
+	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start reg time compare ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+
 	printf("argc = %d \n",argc);
 	if(argc!=2)
 	{
@@ -29,41 +63,44 @@ int main(int argc, char *argv[]){
     }else{
 		return 0;
 	}
-	//char* tmp = "000129d46f68";
-	//char* tmp = "100f000046f0";
-	//printf("str = %s\n",tmp);
 
-	int ret = initBroker(argv[0],process_exception);
-	printf("initBroker : ret = %d \n", ret);
+	g_RegDev_para* g_RegDev = NULL;
+	int stat = initRegdev(&g_RegDev, zlog_handler);
+	if(stat != 0 ){
+		zlog_info(zlog_handler,"initRegdev create failed !");
+		return 0;
+	}
+	
+	char source[6];
+	change_mac_buf(szMac,source);
+	zlog_info(zlog_handler," start set_dst_mac_fast \n");
+	stat = set_dst_mac_fast(g_RegDev, source);
+	//stat = set_src_mac_fast(g_RegDev, source);
+	zlog_info(zlog_handler," end set_dst_mac_fast \n");
 
-	char* dst = "000A35000123";
-	char* source = "000A35000122"; // source
-
-	char source_aaa[6]; // source
-	change_mac_buf(source,source_aaa);
-	hexdump(source_aaa,6);
-	char* high16str = getHigh16Str(source_aaa);
-	printf("high16str = %s\n",high16str);
-	char* low32str = getLow32Str(source_aaa);
-	printf("low32str = %s\n",low32str);
-
-	ret = set_dst_mac(low32str, high16str);
-	printf("set_dst_mac : ret = %d \n", ret);
+	initBroker(argv[0], process_exception);
+	
+	char* high16str = getHigh16Str(source);
+	zlog_info(zlog_handler,"high16str = %s\n",high16str);
+	char* low32str = getLow32Str(source);
+	zlog_info(zlog_handler,"low32str = %s\n",low32str);
+	int ret = set_src_mac(low32str, high16str);
+	zlog_info(zlog_handler,"set_dst_mac : ret = %d \n", ret);
 	free(high16str);
 	free(low32str);
-
-	char dst_aaa[6]; // dst
-	change_mac_buf(dst,dst_aaa);
-	hexdump(dst_aaa,6);
-	high16str = getHigh16Str(dst_aaa);
-	printf("high16str = %s\n",high16str);
-	low32str = getLow32Str(dst_aaa);
-	printf("low32str = %s\n",low32str);
-
-
-	ret = set_src_mac(low32str, high16str);
-	printf("set_src_mac : ret = %d \n", ret);
-
-	free(high16str);
-	free(low32str);
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

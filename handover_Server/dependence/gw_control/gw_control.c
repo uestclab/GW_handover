@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "cJSON.h"
 #include "gw_utility.h"
 #include "gw_control.h"
 #include "broker.h"
+#include "regdev_common.h"
 
 #ifdef PC_STUB
 	
@@ -75,31 +77,6 @@ int initBroker(char *argv, recv_cb exception_cb){
 	printf("get_prog_name(argv) = %s , ret = %d \n",get_prog_name(argv),ret);
 #endif
 	return 0;
-}
-
-int disable_dac(){
-	printf("disable_dac\n");
-	char* dacGpio_path = "../choose_json/dac_gpio_disable.json";
-	char *dac_json = readfile(dacGpio_path);
-	
-	printf("json : %s \n", dac_json);
-
-	int ret = lowlevel_transfer(dac_json,strlen(dac_json)+1);
-	free(dac_json);
-	printf("end disable_dac\n");
-	return ret;
-}
-
-int enable_dac(){
-	char* dacGpio_path = "../choose_json/dac_gpio_enable.json";
-	char *dac_json = readfile(dacGpio_path);
-
-	printf("json : %s \n", dac_json);
-
-	int ret = lowlevel_transfer(dac_json,strlen(dac_json)+1);
-	free(dac_json);
-	printf("enable_dac\n");
-	return ret;
 }
 
 // src_mac 48bit
@@ -180,12 +157,97 @@ int set_dst_mac(char* low_32_str, char* high_16_str){
 	return ret;
 }
 
+ /* ----------------------- new interface to read and write register ---------------------------- */
+
+int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
+{
+	zlog_info(handler,"initPhyRegdev()");
+
+	*g_RegDev = (g_RegDev_para*)malloc(sizeof(struct g_RegDev_para));
+
+	(*g_RegDev)->mem_dev_phy = NULL;
+	(*g_RegDev)->mem_dev_dac = NULL;
+	(*g_RegDev)->log_handler = handler;
 
 
+	int rc = 0;
+	
+	regdev_init(&((*g_RegDev)->mem_dev_phy));
+	regdev_set_para((*g_RegDev)->mem_dev_phy, REG_PHY_ADDR, REG_MAP_SIZE);
+	rc = regdev_open((*g_RegDev)->mem_dev_phy);
+	if(rc < 0){
+		zlog_info(handler," phy regdev_open err !!\n");
+		return -1;
+	}
+	/*
+	regdev_init(&((*g_RegDev)->mem_dev_dac));
+	regdev_set_para((*g_RegDev)->mem_dev_dac, REG_PHY_ADDR, REG_MAP_SIZE);
+	rc = regdev_open((*g_RegDev)->mem_dev_dac);
+	if(rc < 0){
+		zlog_info(handler," dac regdev_open err !!\n");
+		return -1
+	}
+*/
+
+	return 0;
+}
 
 
+int disable_dac(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"disable_dac\n");
+	int rc = 0;
+	//gpio
+	return rc;
+}
 
+int enable_dac(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"enable_dac\n");
+	int rc = 0;
+	// gpio 
+	return rc;
+}
 
+int set_dst_mac_fast(g_RegDev_para* g_RegDev, char* dst_mac_buf){ // mac_buf[6]
+	zlog_info(g_RegDev->log_handler,"set_dst_mac_fast\n");
+
+	uint32_t low32 = getLow32(dst_mac_buf);
+	uint32_t high16 = getHigh16(dst_mac_buf);	
+	
+	// dest_mac_0_low_32_bit
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x838, low32);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"dest_mac_0_low_32_bit write failed !!! \n");
+		return rc;
+	}
+	//dest_mac_1_high_16_bit
+	rc = regdev_write(g_RegDev->mem_dev_phy, 0x83c, high16);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"dest_mac_1_high_16_bit write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
+
+int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf){ //src_mac_buf[6]
+	zlog_info(g_RegDev->log_handler,"set_src_mac_fast\n");
+
+	uint32_t low32 = getLow32(src_mac_buf);
+	uint32_t high16 = getHigh16(src_mac_buf);
+
+	// src_mac_0_low_32_bit
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x830, low32);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"src_mac_0_low_32_bit write failed !!! \n");
+		return rc;
+	}
+	//src_mac_1_high_16_bit
+	rc = regdev_write(g_RegDev->mem_dev_phy, 0x834, high16);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"src_mac_1_high_16_bit write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
 
 
 

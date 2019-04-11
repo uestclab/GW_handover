@@ -7,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <net/if.h>        //for struct ifreq
+#include <sys/time.h>
 
 #include "gw_frame.h"
 #include "gw_utility.h"
@@ -33,7 +34,19 @@ void user_wait()
 		if(c == 'g') break;
 	} while(c != '\n');
 }
-
+/*
+	int64_t start = now();
+	.....
+	int64_t end = now();
+	double sec = (end-start)/1000000.0;
+	printf("%f sec %f ms \n", sec, 1000*sec);
+*/
+int64_t now()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000000 + tv.tv_usec;
+}
 
 char mac_buf[6];
 char mac_buf_dest[6];
@@ -52,6 +65,7 @@ void testCase(zlog_category_t *zlog_handler){
 	int status;
 	while(1){ // wait for beacon
 		management_frame_Info* temp_Info = new_air_frame(-1,0,NULL,NULL,NULL,0);
+		int64_t start = now();
 		int stat = gw_monitor_poll(temp_Info, time_cnt,zlog_handler); // receive 1000 * 5ms
 
 		if(stat == 26){
@@ -61,21 +75,25 @@ void testCase(zlog_category_t *zlog_handler){
 				memcpy(ve_mac_buf,temp_Info->source_mac_addr,6);
 
 				if(expect_seq_id != temp_Info->seq_id){
-					printf("received id != expect id : %d , %d --------\n",temp_Info->seq_id,expect_seq_id);					
+					printf("received id != expect id : %d , %d --------\n",temp_Info->seq_id,expect_seq_id);
+					expect_seq_id = temp_Info->seq_id;					
 					user_wait();				
 				}
 				expect_seq_id = expect_seq_id + 1;
-				management_frame_Info* send_Info = new_air_frame(ASSOCIATION_REQUEST,0,mac_buf,ve_mac_buf,mac_buf_next,tx_seq_id);
-				status = handle_air_tx(send_Info, zlog_handler);
-				if(status == 26){
-					zlog_info(zlog_handler,"send ASSOCIATION_REQUEST success: tx_seq_id = %d \n",tx_seq_id);
-				}else{
-					zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
-					printf("air_tx,status = %d \n" , status);
-					user_wait();
-				}
-				tx_seq_id = tx_seq_id + 1;
-				free(send_Info);
+				int64_t end = now();
+				double sec = (end-start)/1000000.0;
+				zlog_info(zlog_handler,"---------- %f sec %f ms \n", sec, 1000*sec);
+				//management_frame_Info* send_Info = new_air_frame(ASSOCIATION_REQUEST,0,mac_buf,ve_mac_buf,mac_buf_next,tx_seq_id);
+				//status = handle_air_tx(send_Info, zlog_handler);
+				//if(status == 26){
+				//	zlog_info(zlog_handler,"send ASSOCIATION_REQUEST success: tx_seq_id = %d \n",tx_seq_id);
+				//}else{
+				//	zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
+				//	printf("air_tx,status = %d \n" , status);
+					//user_wait();
+				//}
+				//tx_seq_id = tx_seq_id + 1;
+				//free(send_Info);
 			}else{
 				zlog_info(zlog_handler,"!!!!!!!! received other type : %d \n",temp_Info->subtype);
 			}

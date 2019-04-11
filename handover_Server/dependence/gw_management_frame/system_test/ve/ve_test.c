@@ -29,6 +29,20 @@ void user_wait()
 	} while(c != '\n');
 }
 
+/*
+	int64_t start = now();
+	.....
+	int64_t end = now();
+	double sec = (end-start)/1000000.0;
+	printf("%f sec %f ms \n", sec, 1000*sec);
+*/
+int64_t now()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
 void block_timer()
 {
     struct timeval temp;
@@ -56,10 +70,13 @@ void testCase(zlog_category_t *zlog_handler){
 	int status;
 	while(1){
 		management_frame_Info* beacon_Info = new_air_frame(BEACON, 0,mac_buf,mac_buf_dest,mac_buf_next,tx_seq_id); // BEACON
+		int64_t start = now();
 		status = handle_air_tx(beacon_Info,zlog_handler);
 		if(status == 26){
-			zlog_info(zlog_handler,"send BEACON success : tx_seq_id = %d\n",tx_seq_id);
-			time_cnt = 3;
+			int64_t end = now();
+			double sec = (end-start)/1000000.0;
+			zlog_info(zlog_handler,"send BEACON success : tx_seq_id = %d ---- %f sec %f ms \n",tx_seq_id, sec, 1000*sec);
+			time_cnt = 1;
 			int stat = gw_monitor_poll(beacon_Info, time_cnt, zlog_handler); // 3 * 5ms
 			if(stat == 26){
 				zlog_info(zlog_handler,"--- receive : subtype = %d, length = %d \n", beacon_Info->subtype , beacon_Info->length);
@@ -81,7 +98,7 @@ void testCase(zlog_category_t *zlog_handler){
 		}else{
 			zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
 			printf("air_tx,status = %d \n" , status);
-			user_wait();
+			//user_wait();
 		}
 		tx_seq_id = tx_seq_id + 1;
 		free(beacon_Info);
