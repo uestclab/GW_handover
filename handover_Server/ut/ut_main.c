@@ -47,7 +47,7 @@ int main(int argc, char *argv[]){
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
 
-	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start reg time compare ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+	printf(" +++++++++++++++++++++++++++++ start reg time compare ++++++++++++++++++++++++++++++++++++++++++++++ \n");
 
 	printf("argc = %d \n",argc);
 	if(argc!=2)
@@ -67,28 +67,46 @@ int main(int argc, char *argv[]){
 	g_RegDev_para* g_RegDev = NULL;
 	int stat = initRegdev(&g_RegDev, zlog_handler);
 	if(stat != 0 ){
-		zlog_info(zlog_handler,"initRegdev create failed !");
+		printf("initRegdev create failed !");
 		return 0;
 	}
+	printf("start disable dac \n");
+	int rc = disable_dac(g_RegDev);
+	if(rc < 0)
+		printf("error ");
+	printf("end disable dac \n");
+	int i;
+	for(i=0;i<10;i++)
+		gw_sleep();
+	printf("start enable dac \n");
+	rc = enable_dac(g_RegDev);
+	printf("end enable dac \n");
 	
-	char source[6];
-	change_mac_buf(szMac,source);
-	zlog_info(zlog_handler," start set_dst_mac_fast \n");
-	stat = set_dst_mac_fast(g_RegDev, source);
-	//stat = set_src_mac_fast(g_RegDev, source);
-	zlog_info(zlog_handler," end set_dst_mac_fast \n");
+	printf("start open_ddr_tx_hold_on \n");
+	stat = open_ddr_tx_hold_on(g_RegDev);
+	for(i=0;i<10;i++)
+		gw_sleep();
 
-	initBroker(argv[0], process_exception);
+	printf("start close_ddr_tx_hold_on \n");
+	stat = close_ddr_tx_hold_on(g_RegDev);
+	for(i=0;i<10;i++)
+		gw_sleep();
+
+	printf("start trigger_mac_id \n");
+	stat = trigger_mac_id(g_RegDev);
+	for(i=0;i<10;i++)
+		gw_sleep();	
+
+/*
+	//uint32_t value = 0x1000200a; // 0x1 | 0 |00200a
+	uint32_t value = 0x00000002;
+	value = value << 24;
+	hexdump(&value,4);
 	
-	char* high16str = getHigh16Str(source);
-	zlog_info(zlog_handler,"high16str = %s\n",high16str);
-	char* low32str = getLow32Str(source);
-	zlog_info(zlog_handler,"low32str = %s\n",low32str);
-	int ret = set_src_mac(low32str, high16str);
-	zlog_info(zlog_handler,"set_dst_mac : ret = %d \n", ret);
-	free(high16str);
-	free(low32str);
-	
+	uint32_t value_1 = 0x00000004;
+	value_1 = value_1 << 24;
+	hexdump(&value_1,4);
+*/
 }
 
 

@@ -8,6 +8,11 @@
 #include "broker.h"
 #include "regdev_common.h"
 
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+
 #ifdef PC_STUB
 	
 #endif
@@ -166,7 +171,7 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 	*g_RegDev = (g_RegDev_para*)malloc(sizeof(struct g_RegDev_para));
 
 	(*g_RegDev)->mem_dev_phy = NULL;
-	(*g_RegDev)->mem_dev_dac = NULL;
+	(*g_RegDev)->dac_fd      = -1;
 	(*g_RegDev)->log_handler = handler;
 
 
@@ -179,15 +184,12 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 		zlog_info(handler," phy regdev_open err !!\n");
 		return -1;
 	}
-	/*
-	regdev_init(&((*g_RegDev)->mem_dev_dac));
-	regdev_set_para((*g_RegDev)->mem_dev_dac, REG_PHY_ADDR, REG_MAP_SIZE);
-	rc = regdev_open((*g_RegDev)->mem_dev_dac);
-	if(rc < 0){
-		zlog_info(handler," dac regdev_open err !!\n");
-		return -1
+
+	(*g_RegDev)->dac_fd=open(SYSFS_GPIO_RST_VAL,O_RDWR);
+	if((*g_RegDev)->dac_fd == -1){
+		zlog_info(handler," dac fd open err !!\n");
+		return -1;
 	}
-*/
 
 	return 0;
 }
@@ -196,14 +198,23 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 int disable_dac(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"disable_dac\n");
 	int rc = 0;
-	//gpio
+	rc = write(g_RegDev->dac_fd, SYSFS_GPIO_RST_VAL_L, sizeof(SYSFS_GPIO_RST_VAL_L));
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"error in disable_dac , rc = %d \n", rc);
+		return rc;
+	}
+
 	return rc;
 }
 
 int enable_dac(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"enable_dac\n");
 	int rc = 0;
-	// gpio 
+	rc = write(g_RegDev->dac_fd, SYSFS_GPIO_RST_VAL_H, sizeof(SYSFS_GPIO_RST_VAL_H));
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"error in enable_dac , rc = %d \n", rc);
+		return rc;
+	}
 	return rc;
 }
 
@@ -249,6 +260,42 @@ int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf){ //src_mac_buf[
 	return 0;
 }
 
+/* ----------------------------- process ddr_tx_hold_on and mac_id sync ---------------------------- */
+
+// bit : 2 , 0 -- open , 1 -- close
+int open_ddr_tx_hold_on(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	//value = value << 24;
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"open_ddr_tx_hold_on write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
+
+int close_ddr_tx_hold_on(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000004;
+	//value = value << 24;
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"close_ddr_tx_hold_on write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
+
+// bit : 1 , 1 -- trigger , fpga set 0 
+int trigger_mac_id(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000002;
+	//value = value << 24;
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"trigger_mac_id write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
 
 
 

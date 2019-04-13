@@ -90,7 +90,8 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 	}
 }
 
-void process_self_event(struct msg_st* getData, g_air_para* g_air, g_periodic_para* g_periodic, zlog_category_t* zlog_handler)
+void process_self_event(struct msg_st* getData, g_air_para* g_air, g_periodic_para* g_periodic, 
+			g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_periodic->node->system_info;
 	switch(getData->msg_type){
@@ -117,7 +118,7 @@ void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para*
 		if(getData->msg_type < MSG_STARTUP)
 			process_air_event(getData, g_air, g_periodic, g_RegDev, zlog_handler);
 		else if(getData->msg_type >= MSG_STARTUP)
-			process_self_event(getData, g_air, g_periodic, zlog_handler);
+			process_self_event(getData, g_air, g_periodic, g_RegDev, zlog_handler);
 
 		free(getData);
 	}

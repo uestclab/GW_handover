@@ -44,7 +44,7 @@ void configureDstMacToBB(char* dst_buf, g_RegDev_para* g_RegDev, zlog_category_t
 }
 
 void process_network_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -200,7 +200,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 }
 
 void process_self_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -238,9 +238,9 @@ void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para*
 		if(getData->msg_type < MSG_START_MONITOR)
 			process_air_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
 		else if(getData->msg_type < MSG_TIMEOUT)
-			process_network_event(getData, g_network, g_monitor, g_air, zlog_handler);
+			process_network_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
 		else if(getData->msg_type >= MSG_TIMEOUT)
-			process_self_event(getData, g_network, g_monitor, g_air, zlog_handler);
+			process_self_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
 
 		free(getData);
 	}
