@@ -149,27 +149,6 @@ int main(int argc, char *argv[]) // main thread
 
 // ------------------------
 
-	// 0408 --------- set ve_mac to src_mac , dst_mac all zeros ----------------------- first action 
-
-	zlog_info(zlog_handler," start set_src_mac_fast \n");
-	ret = set_src_mac_fast(g_RegDev, configureNode_->system_info->ve_mac);
-	zlog_info(zlog_handler,"end set_src_mac_fast : ret = %d \n", ret);
-
-	zlog_info(zlog_handler,"completed set_src_mac_fast ---------- \n");
-
-
-
-
-	/* check system state is ready */
-	// while json check system state
-	/* open dac */	
-	configureNode_->system_info->ve_state = STATE_SYSTEM_READY;
-	zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");
-
-	startProcessAir(g_air, 1); 
-	startPeriodic(g_periodic,BEACON); // --------------------------------------- first periodic action
-	
-
 	/* msg loop */ /* state machine */
 	eventLoop(g_air, g_periodic, g_msg_queue, g_RegDev, zlog_handler);
 

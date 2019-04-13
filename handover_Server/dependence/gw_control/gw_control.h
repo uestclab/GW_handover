@@ -35,8 +35,8 @@ int enable_dac(g_RegDev_para* g_RegDev);
 int set_dst_mac_fast(g_RegDev_para* g_RegDev, char* dst_mac_buf);
 int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf);
 
-int open_ddr_tx_hold_on(g_RegDev_para* g_RegDev);
-int close_ddr_tx_hold_on(g_RegDev_para* g_RegDev);
+int open_ddr(g_RegDev_para* g_RegDev);
+int close_ddr(g_RegDev_para* g_RegDev);
 int trigger_mac_id(g_RegDev_para* g_RegDev);
 
 uint32_t getPowerLatch(g_RegDev_para* g_RegDev);

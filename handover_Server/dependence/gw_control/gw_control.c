@@ -263,23 +263,25 @@ int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf){ //src_mac_buf[
 /* ----------------------------- process ddr_tx_hold_on and mac_id sync ---------------------------- */
 
 // bit : 2 , 0 -- open , 1 -- close
-int open_ddr_tx_hold_on(g_RegDev_para* g_RegDev){
+int open_ddr(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"open_ddr\n");
 	uint32_t value = 0x00000000;
 	//value = value << 24;
 	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
 	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"open_ddr_tx_hold_on write failed !!! \n");
+		zlog_info(g_RegDev->log_handler,"open_ddr write failed !!! \n");
 		return rc;
 	}
 	return 0;
 }
 
-int close_ddr_tx_hold_on(g_RegDev_para* g_RegDev){
+int close_ddr(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"close_ddr\n");
 	uint32_t value = 0x00000004;
 	//value = value << 24;
 	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
 	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"close_ddr_tx_hold_on write failed !!! \n");
+		zlog_info(g_RegDev->log_handler,"close_ddr write failed !!! \n");
 		return rc;
 	}
 	return 0;
@@ -287,6 +289,7 @@ int close_ddr_tx_hold_on(g_RegDev_para* g_RegDev){
 
 // bit : 1 , 1 -- trigger , fpga set 0 
 int trigger_mac_id(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"trigger_mac_id\n");
 	uint32_t value = 0x00000002;
 	//value = value << 24;
 	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
@@ -300,6 +303,7 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 /* ----------------------------- get power , crc correct cnt , crc error cnt ---------------------------- */
 
 uint32_t getPowerLatch(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"getPowerLatch\n");
 	uint32_t power = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x124, &power);
 	if(rc < 0){
@@ -310,6 +314,7 @@ uint32_t getPowerLatch(g_RegDev_para* g_RegDev){
 }
 
 uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"get_crc_correct_cnt\n");
 	uint32_t crc_correct_cnt = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x844, &crc_correct_cnt);
 	if(rc < 0){
@@ -320,6 +325,7 @@ uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev){
 }
 
 uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"get_crc_error_cnt\n");
 	uint32_t crc_error_cnt = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x848, &crc_error_cnt);
 	if(rc < 0){

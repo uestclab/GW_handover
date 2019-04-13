@@ -48,7 +48,7 @@ int main(int argc, char *argv[]){
 
 
 	printf(" +++++++++++++++++++++++++++++ start reg time compare ++++++++++++++++++++++++++++++++++++++++++++++ \n");
-
+/*
 	printf("argc = %d \n",argc);
 	if(argc!=2)
 	{
@@ -63,19 +63,20 @@ int main(int argc, char *argv[]){
     }else{
 		return 0;
 	}
-
+*/
 	g_RegDev_para* g_RegDev = NULL;
 	int stat = initRegdev(&g_RegDev, zlog_handler);
 	if(stat != 0 ){
 		printf("initRegdev create failed !");
 		return 0;
 	}
+/*
 	printf("start disable dac \n");
 	int rc = disable_dac(g_RegDev);
 	if(rc < 0)
 		printf("error ");
 	printf("end disable dac \n");
-/*
+
 	while(1){
 		uint32_t power = getPowerLatch(g_RegDev);
 		uint32_t crc_correct_cnt = get_crc_correct_cnt(g_RegDev);
@@ -83,31 +84,11 @@ int main(int argc, char *argv[]){
 		printf(" power = %u, crc_correct_cnt = %u, crc_error_cnt= %u \n", power,crc_correct_cnt,crc_error_cnt);
 		gw_sleep();
 	}
-	
-
-	int i;
-	for(i=0;i<10;i++)
-		gw_sleep();
-	printf("start enable dac \n");
-	rc = enable_dac(g_RegDev);
-	printf("end enable dac \n");
-	
-	printf("start open_ddr_tx_hold_on \n");
-	stat = open_ddr_tx_hold_on(g_RegDev);
-	for(i=0;i<10;i++)
-		gw_sleep();
-
-	printf("start close_ddr_tx_hold_on \n");
-	stat = close_ddr_tx_hold_on(g_RegDev);
-	for(i=0;i<10;i++)
-		gw_sleep();
 */
-	printf("start trigger_mac_id \n");
-	stat = trigger_mac_id(g_RegDev);
-	for(i=0;i<10;i++)
-		gw_sleep();	
-
+	int rc = enable_dac(g_RegDev);
+	rc = open_ddr(g_RegDev);
 	
+	printf("enable_dac and open_ddr \n");	
 }
 
 

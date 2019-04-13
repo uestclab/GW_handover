@@ -63,8 +63,9 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_INIT_SELECTED: msg_number = %d",getData->msg_number);
 
-			//enable_dac();  // open dac and check is enable successful --- continue
-			// air_interface send Association request (Next_dest_mac_addr set itself)
+			enable_dac(g_RegDev);  // open dac and check is enable successful --- continue
+
+			// air_interface send Association request (Next_dest_mac_addr set itself) -- first air frame sent by bs ---!
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 
 			g_system_info->bs_state = STATE_INIT_SELECTED;
@@ -72,7 +73,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 
 			break;
 		}
-		case MSG_START_HANDOVER: // !!!!!!!!!!!!!!!!!!!!!!!! source bs start to disconnect ve
+		case MSG_START_HANDOVER: // !!!!!!!!!!!!!!!!!!!!!!!! source bs start to disconnect ve  , A1 event --> A2 event
 		{
 			zlog_info(zlog_handler," ---------------------- A1 Events start --------------------------");
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_START_HANDOVER: msg_number = %d",getData->msg_number);
@@ -82,7 +83,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
 			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
-			StartTimer(timer_cb, NULL, 0, 1, g_air->g_timer);
+			StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
 				
 			break;
 		}
@@ -127,15 +128,24 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 			// need check system state
 			if(g_system_info->bs_state == STATE_INIT_SELECTED){
-				send_initcompleted_signal(g_network->node->my_id, g_network); 
+				send_initcompleted_signal(g_network->node->my_id, g_network);
+				open_ddr(g_RegDev); 
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING");
-				zlog_info(zlog_handler," ---------------------- B1 Events completed --------------------------");
+				zlog_info(zlog_handler," ---------------------- B1 Events completed --------------------------\n");
+		
+
+// -------------- test point 1 : end test INIT relocation 0411 ----------------------------------------------------------------------------------
+
+				zlog_info(zlog_handler," ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s -------------\n");
 				for(int i = 0; i< 10;i++){
 					gw_sleep();
 				}
-				// test point : end test INIT relocation ........................................................... 0411
-				//startMonitor(g_monitor,2); // ------- notify bs handover : simulate code
+				
+				startMonitor(g_monitor,2); // ------- notify bs handover : simulate code
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------
 			}else if(g_system_info->bs_state == STATE_TARGET_SELECTED){
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
@@ -148,6 +158,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 			/* check dest mac */
 			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
+				zlog_info(zlog_handler," check dest MAC fail , not to my air frame");
 				break;
 			}
 	
@@ -218,6 +229,12 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			}
 			/* 3. send DEASSOCIATION via air */
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			disable_dac(g_RegDev);
+			close_ddr(g_RegDev);
+
+			zlog_info(zlog_handler," ----------------test point 2: End A2 event \n");
+// -------------- test point 2: End A2 event  ---------------------------------------------------------------------------------
+
 			break;
 		}
 		default:
@@ -225,10 +242,28 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 	}
 }
 
+void init_state(g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler){
+	zlog_info(zlog_handler," init_state() ----- \n");
+	system_info_para* g_system_info = g_network->node->system_info;
+	
+	/* init src_mac */
+	zlog_info(zlog_handler," start set_src_mac_fast \n");
+	int ret = set_src_mac_fast(g_RegDev, g_system_info->bs_mac);
+	zlog_info(zlog_handler,"end set_src_mac_fast : ret = %d \n", ret);
+	zlog_info(zlog_handler,"completed set_src_mac_fast ---------- \n");
+
+	disable_dac(g_RegDev);
+	close_ddr(g_RegDev);
+}
 
 void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para* g_air, 
     g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
+
+	init_state(g_network, g_RegDev,zlog_handler);
+
+	zlog_info(zlog_handler," ------------------------------  start baseStation event loop ----------------------------- \n");
+
 	while(1){
 		//zlog_info(zlog_handler,"wait getdata ----- \n");
 		struct msg_st* getData = getMsgQueue(g_msg_queue);

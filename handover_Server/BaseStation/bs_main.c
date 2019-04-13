@@ -172,15 +172,6 @@ int main(int argc, char *argv[]) // main thread
 
 	gw_sleep(); // need count down wait 3 thread all in startup !!!! -- 20190329
 
-
-	/* init src_mac */
-
-	zlog_info(zlog_handler," start set_src_mac_fast \n");
-	ret = set_src_mac_fast(g_RegDev, configureNode_->system_info->bs_mac);
-	zlog_info(zlog_handler,"end set_src_mac_fast : ret = %d \n", ret);
-
-	zlog_info(zlog_handler,"completed set_src_mac_fast ---------- \n");
-
 // ------------------------
 
 	/* msg loop */ /* state machine */

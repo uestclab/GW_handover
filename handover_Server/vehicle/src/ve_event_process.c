@@ -35,13 +35,14 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 {
 	system_info_para* g_system_info = g_periodic->node->system_info;
 	switch(getData->msg_type){
+		// start event link ---------------------------------------------------- ve first received event !!!!
 		case MSG_RECEIVED_ASSOCIATION_REQUEST: // case in beacon or REASSOCIATION
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_REQUEST: msg_number = %d",getData->msg_number);
 			if(g_system_info->isLinked == 1 && g_system_info->ve_state == STATE_WORKING){
 				break;
 			}
-
+			
 			stopPeriodic(g_periodic); // stop transmit both BEACON and REASSOCIATION
 
 			memcpy(g_system_info->link_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
@@ -54,6 +55,8 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			configureDstMacToBB(g_system_info->link_bs_mac,g_RegDev,zlog_handler);
 			g_system_info->isLinked = 1;
 			g_system_info->ve_state = STATE_WORKING;
+
+			open_ddr(g_RegDev); // first open_ddr 
 
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
 
@@ -69,6 +72,8 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			g_system_info->ve_state = STATE_SYSTEM_READY;			
 			
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_HANDOVER -> STATE_SYSTEM_READY");
+
+// -------------- test point 2: End A2 event  ---------------------------------------------------------------------------------
 				
 			break;
 		}
@@ -79,10 +84,10 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			send_airSignal(HANDOVER_START_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 	
 			/* close ddr */
-			// close_ddr();
+			close_ddr(g_RegDev);
 
 			g_system_info->ve_state = STATE_HANDOVER;
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
+			zlog_info(zlog_handler," ******* start close_ddr() ********** SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
 			break;
 		}
 		default:
@@ -100,6 +105,31 @@ void process_self_event(struct msg_st* getData, g_air_para* g_air, g_periodic_pa
 	}
 }
 
+void init_state(g_air_para* g_air, g_periodic_para* g_periodic, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler){
+	zlog_info(zlog_handler," init_state() ----- \n");
+	system_info_para* g_system_info = g_periodic->node->system_info;
+	
+	/* init src_mac */
+	zlog_info(zlog_handler," start set_src_mac_fast \n");
+	int ret = set_src_mac_fast(g_RegDev, g_system_info->ve_mac);
+	zlog_info(zlog_handler,"end set_src_mac_fast : ret = %d \n", ret);
+	zlog_info(zlog_handler,"completed set_src_mac_fast ---------- \n");
+
+	disable_dac(g_RegDev);
+	close_ddr(g_RegDev);
+
+	/* check system state is ready */
+	// while json check system state
+
+	/* open dac */
+	enable_dac(g_RegDev);
+
+	g_system_info->ve_state = STATE_SYSTEM_READY;
+	zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");
+
+	startProcessAir(g_air, 1); 
+	startPeriodic(g_periodic,BEACON); // --------------------------------------- first periodic action
+}
 
 void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, 
 		zlog_category_t* zlog_handler)
@@ -109,6 +139,11 @@ void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para*
 	change_mac_buf(error_mac,error_bs_mac);	
 	configureDstMacToBB(error_bs_mac,g_RegDev,zlog_handler);
 	zlog_info(zlog_handler," configure error dst mac ............. \n");
+
+	init_state(g_air, g_periodic, g_RegDev, zlog_handler);
+
+	zlog_info(zlog_handler," ------------------------------  start vehicle event loop ----------------------------- \n");
+
 	while(1){
 		//zlog_info(zlog_handler,"wait getdata ----- \n");
 		struct msg_st* getData = getMsgQueue(g_msg_queue);
