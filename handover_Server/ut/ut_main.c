@@ -75,6 +75,16 @@ int main(int argc, char *argv[]){
 	if(rc < 0)
 		printf("error ");
 	printf("end disable dac \n");
+/*
+	while(1){
+		uint32_t power = getPowerLatch(g_RegDev);
+		uint32_t crc_correct_cnt = get_crc_correct_cnt(g_RegDev);
+		uint32_t crc_error_cnt = get_crc_error_cnt(g_RegDev);
+		printf(" power = %u, crc_correct_cnt = %u, crc_error_cnt= %u \n", power,crc_correct_cnt,crc_error_cnt);
+		gw_sleep();
+	}
+	
+
 	int i;
 	for(i=0;i<10;i++)
 		gw_sleep();
@@ -91,22 +101,13 @@ int main(int argc, char *argv[]){
 	stat = close_ddr_tx_hold_on(g_RegDev);
 	for(i=0;i<10;i++)
 		gw_sleep();
-
+*/
 	printf("start trigger_mac_id \n");
 	stat = trigger_mac_id(g_RegDev);
 	for(i=0;i<10;i++)
 		gw_sleep();	
 
-/*
-	//uint32_t value = 0x1000200a; // 0x1 | 0 |00200a
-	uint32_t value = 0x00000002;
-	value = value << 24;
-	hexdump(&value,4);
 	
-	uint32_t value_1 = 0x00000004;
-	value_1 = value_1 << 24;
-	hexdump(&value_1,4);
-*/
 }
 
 

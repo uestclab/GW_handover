@@ -112,7 +112,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				break;
 			}
 
-			startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code
+			startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
 			break;
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
@@ -134,7 +134,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				for(int i = 0; i< 10;i++){
 					gw_sleep();
 				}
-				// end test INIT relocation ........................................................... 0411
+				// test point : end test INIT relocation ........................................................... 0411
 				//startMonitor(g_monitor,2); // ------- notify bs handover : simulate code
 			}else if(g_system_info->bs_state == STATE_TARGET_SELECTED){
 				g_system_info->bs_state = STATE_WORKING;

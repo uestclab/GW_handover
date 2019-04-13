@@ -2,6 +2,7 @@
 #define GW_CONTROL_H
 
 #include "zlog.h"
+#include <stdint.h>
 
 #define	REG_PHY_ADDR	0x43C20000
 #define	REG_MAP_SIZE	0X10000
@@ -37,6 +38,10 @@ int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf);
 int open_ddr_tx_hold_on(g_RegDev_para* g_RegDev);
 int close_ddr_tx_hold_on(g_RegDev_para* g_RegDev);
 int trigger_mac_id(g_RegDev_para* g_RegDev);
+
+uint32_t getPowerLatch(g_RegDev_para* g_RegDev);
+uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev);
 
 
 #endif//GW_CONTROL_H

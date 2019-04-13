@@ -3,6 +3,21 @@
 #include "bs_network_json.h"
 #include "cJSON.h"
 
+void monitor_loop(g_monitor_para* g_monitor){
+	zlog_info(g_monitor->log_handler,"Enter monitor_loop()");
+	
+	{
+		// monitor crc and power latch
+		uint32_t powerLatch = getPowerLatch(g_monitor->g_RegDev);
+		uint32_t crc_correct_cnt = get_crc_correct_cnt(g_monitor->g_RegDev);
+		uint32_t crc_error_cnt = get_crc_error_cnt(g_monitor->g_RegDev);		
+	}
+	
+	zlog_info(g_monitor->log_handler,"exit monitor_loop()");
+}
+
+
+
 void monitor(g_monitor_para* g_monitor){
 	//zlog_info(g_monitor->log_handler,"Enter monitor()");
 	
@@ -45,7 +60,7 @@ void startMonitor(g_monitor_para* g_monitor, int running_step){
 }
 
 int initMonitorThread(struct ConfigureNode* Node, g_monitor_para** g_monitor, 
-		g_msg_queue_para* g_msg_queue, g_network_para* g_network, zlog_category_t* handler)
+		g_msg_queue_para* g_msg_queue, g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_category_t* handler)
 {
 	zlog_info(handler,"initMonitorThread()");
 	*g_monitor = (g_monitor_para*)malloc(sizeof(struct g_monitor_para));
@@ -54,6 +69,7 @@ int initMonitorThread(struct ConfigureNode* Node, g_monitor_para** g_monitor,
 	(*g_monitor)->running = 0;
 	(*g_monitor)->g_msg_queue = g_msg_queue;
 	(*g_monitor)->g_network = g_network;
+	(*g_monitor)->g_RegDev = g_RegDev;
 	(*g_monitor)->node = Node;
 
 	//zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_monitor)->g_msg_queue->msgid);

@@ -297,6 +297,38 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 	return 0;
 }
 
+/* ----------------------------- get power , crc correct cnt , crc error cnt ---------------------------- */
+
+uint32_t getPowerLatch(g_RegDev_para* g_RegDev){
+	uint32_t power = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x124, &power);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"getPowerLatch failed !!! \n");
+		return rc;
+	}
+	return power;
+}
+
+uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev){
+	uint32_t crc_correct_cnt = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x844, &crc_correct_cnt);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_crc_correct_cnt failed !!! \n");
+		return rc;
+	}
+	return crc_correct_cnt;
+}
+
+uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
+	uint32_t crc_error_cnt = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x848, &crc_error_cnt);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_crc_error_cnt failed !!! \n");
+		return rc;
+	}
+	return crc_error_cnt;
+}
+
 
 
 

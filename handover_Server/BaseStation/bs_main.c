@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) // main thread
 
 	/* monitor thread */
 	g_monitor_para* g_monitor = NULL;
-	state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, zlog_handler);
+	state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
 
 	gw_sleep(); // need count down wait 3 thread all in startup !!!! -- 20190329
 
