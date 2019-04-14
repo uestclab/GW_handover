@@ -9,7 +9,7 @@
 
 void simulate_single_trigger_handover(g_network_para* g_network, g_monitor_para* g_monitor){
 
-	for(int i=0; i<10;i++){
+	for(int i=0; i<7;i++){
 		gw_sleep();
 	}
 
@@ -187,9 +187,21 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			/* 3. send DEASSOCIATION via air */
 			close_ddr(g_RegDev);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			
+			//send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			//send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			/* add read regsiter to ensure DEASSOCIATION transmit successful before disable_dac */
-		
+
+			uint32_t data_empty_flag = airdata_buf2_empty_flag(g_RegDev);
+			while(data_empty_flag != 1){
+				data_empty_flag = airdata_buf2_empty_flag(g_RegDev);
+			}	
+			zlog_info(zlog_handler," data_is_empty =================================== \n");
+
+			uint32_t signal_empty_flag = airsignal_buf2_empty_flag(g_RegDev);
+			while(signal_empty_flag != 1){
+				signal_empty_flag = airsignal_buf2_empty_flag(g_RegDev);
+			}		
+			zlog_info(zlog_handler," airsignal_is_empty =================================== \n");
 			disable_dac(g_RegDev); // check ve received DEASSOCIATION ????????????????? --- 0414
 
 			zlog_info(zlog_handler," ----------------test point 2: End A2 event \n");

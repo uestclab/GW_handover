@@ -63,12 +63,15 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			trigger_mac_id(g_RegDev); // for target bs . or init bs needed?  			
 
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
+			printf(" ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
 
 			break;
 		}
 		case MSG_RECEIVED_DEASSOCIATION:
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_DEASSOCIATION: msg_number = %d",getData->msg_number);
+			if(g_system_info->isLinked == 0)
+				break;
 
 			startPeriodic(g_periodic,REASSOCIATION);// --------------------------------------- second periodic action
 
@@ -141,8 +144,8 @@ void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para*
 {
 	char* error_mac = "000000000010";
 	char error_bs_mac[6];
-	change_mac_buf(error_mac,error_bs_mac);	
-	configureDstMacToBB(error_bs_mac,g_RegDev,zlog_handler);
+	change_mac_buf(error_mac,error_bs_mac);
+	//configureDstMacToBB(error_bs_mac,g_RegDev,zlog_handler);
 	zlog_info(zlog_handler," configure error dst mac ............. \n");
 
 	init_state(g_air, g_periodic, g_RegDev, zlog_handler);

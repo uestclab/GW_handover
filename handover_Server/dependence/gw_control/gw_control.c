@@ -300,6 +300,117 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 	return 0;
 }
 
+/* ----------------------------- get ddr_full_flag , airdata_buf2_empty_flag , airsignal_buf2_empty_flag ---------------------------- */
+
+uint32_t reset_ddr_full_flag(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag\n");
+
+	uint32_t flag = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag failed !!! \n");
+		return rc;
+	}
+
+	// set bit3 ~ bit4 : zero
+	flag &= (~(0x3<<3));
+	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, flag);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
+
+uint32_t ddr_full_flag(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"ddr_full_flag\n");
+	uint32_t flag = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"ddr_full_flag failed !!! \n");
+		return rc;
+	}
+
+	// bit3 ~ bit4
+	uint32_t full_flag = flag & (0x3<<3);
+	full_flag = full_flag>>3;
+
+	return full_flag;
+}
+
+uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"airdata_buf2_empty_flag\n");
+	uint32_t fifo_data_cnt_read = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x81c, &fifo_data_cnt_read);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"fifo_data_cnt_read failed !!! \n");
+		return rc;
+	}
+
+	// bit0 ~ bit4
+	uint32_t fifo_data_cnt = fifo_data_cnt_read & (0xf);
+
+	zlog_info(g_RegDev->log_handler,"fifo_data_cnt = %u \n",fifo_data_cnt);
+
+// ------------------------------------------------------------
+
+	uint32_t tx_win_cnt_read = 0x00000000;
+	int	rc_1 = regdev_read(g_RegDev->mem_dev_phy, 0x80c, &tx_win_cnt_read);
+	if(rc_1 < 0){
+		zlog_info(g_RegDev->log_handler,"tx_win_cnt_read failed !!! \n");
+		return rc_1;
+	}
+
+	// bit8 ~ bit10
+	uint32_t tx_win_cnt = tx_win_cnt_read & (0x7<<8);
+	tx_win_cnt = tx_win_cnt>>8;
+
+	zlog_info(g_RegDev->log_handler,"tx_win_cnt = %u \n",tx_win_cnt);
+
+	if(fifo_data_cnt == 0 && tx_win_cnt == 0)
+		return 1;
+	else
+		return 0;
+}
+
+uint32_t airsignal_buf2_empty_flag(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"airsignal_buf2_empty_flag\n");
+	uint32_t sw_fifo_data_cnt_read = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x81c, &sw_fifo_data_cnt_read);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"sw_fifo_data_cnt_read failed !!! \n");
+		return rc;
+	}
+
+	// bit7 ~ bit9
+	uint32_t sw_fifo_data_cnt = sw_fifo_data_cnt_read & (0x7<<7);
+	sw_fifo_data_cnt = sw_fifo_data_cnt>>7;
+
+	zlog_info(g_RegDev->log_handler,"sw_fifo_data_cnt = %u \n",sw_fifo_data_cnt);
+
+// ------------------------------------------------------------
+
+	uint32_t sw_tx_win_cnt_read = 0x00000000;
+	int	rc_1 = regdev_read(g_RegDev->mem_dev_phy, 0x80c, &sw_tx_win_cnt_read);
+	if(rc_1 < 0){
+		zlog_info(g_RegDev->log_handler,"sw_tx_win_cnt_read failed !!! \n");
+		return rc_1;
+	}
+
+	// bit20 ~ bit21
+	uint32_t sw_tx_win_cnt = sw_tx_win_cnt_read & (0x3<<20);
+	sw_tx_win_cnt = sw_tx_win_cnt>>20;
+
+	zlog_info(g_RegDev->log_handler,"sw_tx_win_cnt = %u \n",sw_tx_win_cnt);
+
+	if(sw_fifo_data_cnt == 0 && sw_tx_win_cnt == 0)
+		return 1;
+	else
+		return 0;
+}
+
+
+
 /* ----------------------------- get power , crc correct cnt , crc error cnt ---------------------------- */
 
 uint32_t getPowerLatch(g_RegDev_para* g_RegDev){
