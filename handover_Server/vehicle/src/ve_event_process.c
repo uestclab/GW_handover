@@ -46,8 +46,10 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			stopPeriodic(g_periodic); // stop transmit both BEACON and REASSOCIATION
 
 			memcpy(g_system_info->link_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
-			printf("link_bs_mac = : \n");
-			hexdump(g_system_info->link_bs_mac, 6);
+
+			zlog_info(zlog_handler," printf(link_bs_mac = : \n); ************************ printf \n");
+			//printf("link_bs_mac = : \n");
+			//hexdump(g_system_info->link_bs_mac, 6);
 
 			send_airSignal(ASSOCIATION_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 
@@ -56,7 +58,9 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			g_system_info->isLinked = 1;
 			g_system_info->ve_state = STATE_WORKING;
 
-			open_ddr(g_RegDev); // first open_ddr 
+			open_ddr(g_RegDev); // for init bs or for target bs
+			
+			trigger_mac_id(g_RegDev); // for target bs . or init bs needed?  			
 
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
 
@@ -79,6 +83,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		}
 		case MSG_RECEIVED_HANDOVER_START_REQUEST:
 		{
+			zlog_info(zlog_handler," ************************************************************************************************** \n");
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_REQUEST: msg_number = %d",getData->msg_number);
 			memcpy(g_system_info->next_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
 			send_airSignal(HANDOVER_START_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);

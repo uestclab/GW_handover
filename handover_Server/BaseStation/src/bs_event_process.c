@@ -7,6 +7,21 @@
 
 #include "timer.h"
 
+void simulate_single_trigger_handover(g_network_para* g_network, g_monitor_para* g_monitor){
+
+	for(int i=0; i<10;i++){
+		gw_sleep();
+	}
+
+	system_info_para* g_system_info = g_network->node->system_info;
+
+	startMonitor(g_monitor,2); // ------- notify bs handover : simulate code , to trigger start handover
+	g_system_info->bs_state = STATE_WAIT_MONITOR; // temp change state to simulate source bs and target bs on 1 board currently;
+	
+	zlog_info(g_network->log_handler," ------ simulate source bs turn to target bs >>>>>>>>>>>>>>>>>>>>>>>>> -------------\n");
+}
+
+
 void timer_cb(void* in_data, g_msg_queue_para* g_msg_queue){
 	struct msg_st data;
 	data.msg_type = MSG_TIMEOUT;
@@ -55,7 +70,6 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_WAIT_MONITOR");
 
 			startProcessAir(g_air,1); // open air signal receive
-			// startMonitor(g_monitor,1); // monitor air receive quility
 
 			break;
 		}
@@ -137,18 +151,22 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 // -------------- test point 1 : end test INIT relocation 0411 ----------------------------------------------------------------------------------
 
-				zlog_info(zlog_handler," ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s -------------\n");
-				for(int i = 0; i< 10;i++){
-					gw_sleep();
-				}
+				printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_1---------\n");
 				
-				startMonitor(g_monitor,2); // ------- notify bs handover : simulate code
-
-
+				simulate_single_trigger_handover(g_network, g_monitor); // simulate trigger ready_handover
+				
 // ------------------------------------------------------------------------------------------------------------------------------------------
 			}else if(g_system_info->bs_state == STATE_TARGET_SELECTED){
+
+				open_ddr(g_RegDev);
+				trigger_mac_id(g_RegDev);
+
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
+
+				printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_2---------\n");
+
+				simulate_single_trigger_handover(g_network, g_monitor);
 			}
 			break;
 		}
@@ -164,7 +182,18 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 	
 			if(g_system_info->received_start_handover_response == 0){
 				g_system_info->received_start_handover_response = 1;
-			}		
+			}
+
+			/* 3. send DEASSOCIATION via air */
+			close_ddr(g_RegDev);
+			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			
+			/* add read regsiter to ensure DEASSOCIATION transmit successful before disable_dac */
+		
+			disable_dac(g_RegDev); // check ve received DEASSOCIATION ????????????????? --- 0414
+
+			zlog_info(zlog_handler," ----------------test point 2: End A2 event \n");
+
 
 			break;
 		}
@@ -185,19 +214,16 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			if(g_system_info->bs_state == STATE_WAIT_MONITOR){ // for target bs and other waiting bs
 				if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0)// waiting bs
 					break;
-				/* open dac */
-				// enable_dac();
+
+				// for target bs
+				enable_dac(g_RegDev);
 				send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-				/* air_mac_id synchronous */
-				// enable_macId_sync();
 
 				g_system_info->bs_state = STATE_TARGET_SELECTED;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
 
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
-				/* close dac */
-				//disable_dac();
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
@@ -220,19 +246,13 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_TIMEOUT: msg_number = %d",getData->msg_number);
 			/* 1. close ddr interface , downlink service is close */
-			// close_ddr_interface();
 			/* 2. check if received air_response */
 			if(g_system_info->received_start_handover_response == 0){
 				zlog_info(zlog_handler," ---- Not receive start handover response in expect time !!!! ");
 			}else{
 				
 			}
-			/* 3. send DEASSOCIATION via air */
-			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			disable_dac(g_RegDev);
-			close_ddr(g_RegDev);
 
-			zlog_info(zlog_handler," ----------------test point 2: End A2 event \n");
 // -------------- test point 2: End A2 event  ---------------------------------------------------------------------------------
 
 			break;
