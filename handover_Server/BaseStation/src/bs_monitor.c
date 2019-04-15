@@ -16,6 +16,23 @@ void monitor_loop(g_monitor_para* g_monitor){
 	zlog_info(g_monitor->log_handler,"exit monitor_loop()");
 }
 
+void check_air_tx_data_statistics(g_monitor_para* g_monitor){
+	zlog_info(g_monitor->log_handler,"Enter check_air_tx_data_statistics()");
+	int is_exit = 0;
+	while(is_exit == 0)
+	{
+		usleep(1000);
+		struct msg_st data;
+		data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
+		data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
+		data.msg_len = 0;
+		postMsgQueue(&data,g_monitor->g_msg_queue);
+		is_exit = 1;		
+	}
+	
+	zlog_info(g_monitor->log_handler,"exit check_air_tx_data_statistics()");
+}
+
 
 
 void monitor(g_monitor_para* g_monitor){
@@ -28,6 +45,9 @@ void monitor(g_monitor_para* g_monitor){
 		}else if(g_monitor->running == 2){ // simulate RUNNING STATE
 			zlog_info(g_monitor->log_handler,"simulate ready_handover in RUNNING STATE\n");
 			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, 20, g_monitor->g_network);
+		}else if(g_monitor->running == 3){
+			zlog_info(g_monitor->log_handler,"delay process start to check check_air_tx_data_statistics \n");
+			check_air_tx_data_statistics(g_monitor); 
 		}
 		g_monitor->running = 0;
 	}

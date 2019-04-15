@@ -16,7 +16,7 @@ typedef struct system_info_para{
 
 
 typedef struct ConfigureNode{
-	system_info_para*  system_info;
+	system_info_para*  system_info; // system all info : include state variable
 	char* server_ip;
 	int32_t server_port;
 	int32_t my_id;
@@ -34,6 +34,7 @@ typedef enum signalType{
     START_HANDOVER,
     LINK_CLOSED,
     LINK_OPEN,
+	CHANGE_TUNNEL,
 }signalType;
 
 typedef struct messageInfo{
@@ -67,6 +68,7 @@ typedef struct messageInfo{
 
 
 #define MSG_TIMEOUT                    20
+#define MSG_START_HANDOVER_THROUGH_AIR 21
 
 // system state 
 

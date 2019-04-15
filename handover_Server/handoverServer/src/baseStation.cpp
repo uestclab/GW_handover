@@ -168,6 +168,13 @@ void BaseStation::processMessage(char* buf, int32_t length){
             pManager_->incChangeLink(this,1);
             break;
         }
+		case glory::CHANGE_TUNNEL:
+		{
+			item = cJSON_GetObjectItem(root, "signal");
+            LOG(INFO) << "signal : " << item->valuestring;
+			pManager_->change_tunnel_Link();
+			break;
+		}
         default:
         {
             break;

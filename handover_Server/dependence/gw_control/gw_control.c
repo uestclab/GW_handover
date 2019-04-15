@@ -176,7 +176,7 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 
 
 	int rc = 0;
-	
+
 	regdev_init(&((*g_RegDev)->mem_dev_phy));
 	regdev_set_para((*g_RegDev)->mem_dev_phy, REG_PHY_ADDR, REG_MAP_SIZE);
 	rc = regdev_open((*g_RegDev)->mem_dev_phy);
@@ -445,6 +445,8 @@ uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
 	}
 	return crc_error_cnt;
 }
+
+
 
 
 

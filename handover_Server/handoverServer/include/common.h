@@ -30,6 +30,7 @@ enum signalType {
     START_HANDOVER,
     LINK_CLOSED,
     LINK_OPEN,
+	CHANGE_TUNNEL,
 };
 
 typedef struct messageInfo{

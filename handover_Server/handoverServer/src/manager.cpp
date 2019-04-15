@@ -51,6 +51,12 @@ enum glory::systemState Manager::state(){
     return state_;
 }
 
+void Manager::change_tunnel_Link(){
+	changeTunnel(nextLinkBs_);
+	LOG(INFO) << "state hold : RUNNING ----> RUNNING";
+    LOG(INFO) << "START_HANDOVER --> tunnel change to target bs and buffer in";
+}
+
 void Manager::establishLink(BaseStation* bs){
     linkBs_ = bs;
 
@@ -61,19 +67,19 @@ void Manager::establishLink(BaseStation* bs){
     LOG(INFO) << "uplink and downlink start to work";
 }
 
-void Manager::notifyHandover(BaseStation* bs){ 
-    nextLinkBs_ = bs;
+void Manager::notifyHandover(BaseStation* ready_bs){ 
+    nextLinkBs_ = ready_bs;
     BaseStation* next_bs = NULL;
     if(linkBs_ != NULL){
         next_bs = findNextBaseStation(linkBs_);
-        if(next_bs != bs){
-            LOG(WARNING) << "access bs is not the next neighbour";
+        if(next_bs != ready_bs){
+            LOG(WARNING) << "access ready_bs is not the next neighbour";
         }
     }
-	send_start_handover_signal(linkBs_, bs->getBaseStationID(), bs->getBsmac()); // notify linkBs , air send signal to vehicle
+	send_start_handover_signal(linkBs_, ready_bs->getBaseStationID(), ready_bs->getBsmac()); // notify linkBs , air send signal to vehicle
     // change tunnel to next link bs
-    //...
-	LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel change to target bs and buffer in";
+    //... move to receive change_tunnel signal;
+	LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel wait change_tunnel signal "; // 
 }
 
 int Manager::incChangeLink(BaseStation* bs, int open){
@@ -87,6 +93,7 @@ int Manager::incChangeLink(BaseStation* bs, int open){
     if(changeLink_ == 2){
         changeLink_ = 0;
         linkBs_ = nextLinkBs_;
+		nextLinkBs_ = NULL;
         return 0;
     }
     return -1;

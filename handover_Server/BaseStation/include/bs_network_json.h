@@ -10,6 +10,7 @@ void send_initcompleted_signal(int bs_id, g_network_para* g_network);
 void send_linkclosed_signal(int bs_id, g_network_para* g_network);
 void send_linkopen_signal(int bs_id, g_network_para* g_network);
 
+void send_change_tunnel_signal(int bs_id, g_network_para* g_network);
 
 
 

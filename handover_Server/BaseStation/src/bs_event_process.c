@@ -94,11 +94,14 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			printf("target bs mac : \n");
 			hexdump(msgJsonSourceMac(getData->msg_json),6);
 
+			// need to ensure send status ???????????????? to ensure data sync in 2 different source bs and target bs
+			startMonitor(g_monitor,3);
+{
 			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
-			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
+			//send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
 			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
-			StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
-				
+			//StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
+}				
 			break;
 		}
 		default:
@@ -266,6 +269,19 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			}
 
 // -------------- test point 2: End A2 event  ---------------------------------------------------------------------------------
+
+			break;
+		}
+		case MSG_START_HANDOVER_THROUGH_AIR:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_START_HANDOVER_THROUGH_AIR: msg_number = %d",getData->msg_number);
+			
+			zlog_info(zlog_handler," !!!!!!!!!!!!!!!!!!! start process disconnect ve and source BS !!!!!!!!!!!!!!!!!!!!!! \n");		
+			
+			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
+			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
+			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
+			StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
 
 			break;
 		}

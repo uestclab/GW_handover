@@ -1,5 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#include <assert.h>
+
+#include <unistd.h>
+#include <signal.h>
+#include <sys/time.h>
 #include "gw_utility.h"
 #include "gw_control.h"
 #include "zlog.h"
@@ -7,6 +14,19 @@
 
 #define	REG_PHY_ADDR	0x43C20000
 #define	REG_MAP_SIZE	0X10000
+
+
+void setTimer(int seconds, int useconds)
+{
+    struct timeval temp;
+
+    temp.tv_sec = seconds;
+    temp.tv_usec = useconds;
+
+    select(0, NULL, NULL, NULL, &temp);
+    return ;
+}
+
 
 zlog_category_t * serverLog(const char* path){
 	int rc;
@@ -70,27 +90,12 @@ int main(int argc, char *argv[]){
 		printf("initRegdev create failed !");
 		return 0;
 	}
-/*
-	printf("start disable dac \n");
-	int rc = disable_dac(g_RegDev);
-	if(rc < 0)
-		printf("error ");
-	printf("end disable dac \n");
-
-	while(1){
-		uint32_t power = getPowerLatch(g_RegDev);
-		uint32_t crc_correct_cnt = get_crc_correct_cnt(g_RegDev);
-		uint32_t crc_error_cnt = get_crc_error_cnt(g_RegDev);
-		printf(" power = %u, crc_correct_cnt = %u, crc_error_cnt= %u \n", power,crc_correct_cnt,crc_error_cnt);
-		gw_sleep();
-	}
-*/
+	
 	int rc = enable_dac(g_RegDev);
 	rc = open_ddr(g_RegDev);
+	printf("enable_dac and open_ddr \n");
 	
-	printf("enable_dac and open_ddr \n");	
 }
-
 
 
 

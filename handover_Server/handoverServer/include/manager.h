@@ -40,7 +40,7 @@ public:
     //stateMachine
     enum glory::systemState            state();
     void                               establishLink(BaseStation* bs);
-    void                               notifyHandover(BaseStation* bs);
+    void                               notifyHandover(BaseStation* ready_bs);
     int                                incChangeLink(BaseStation* bs, int open);
     //configuration file
     void                               set_NodeOption(serverConfigureNode* options);
@@ -51,6 +51,7 @@ public:
 
 	//change tunnel
 	int                                changeTunnel(BaseStation* bs);
+	void                               change_tunnel_Link(); // in running state , tunnel change to target bs
 
 private:    
     Manager();
