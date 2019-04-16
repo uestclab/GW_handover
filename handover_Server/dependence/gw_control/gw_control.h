@@ -3,9 +3,14 @@
 
 #include "zlog.h"
 #include <stdint.h>
+#include "regdev_common.h"
 
 #define	REG_PHY_ADDR	0x43C20000
 #define	REG_MAP_SIZE	0X10000
+
+#define	REG_C1_ADDR	    0x43c10000
+
+#define	REG_C0_ADDR	    0x43c00000
 
 #define SYSFS_GPIO_EXPORT           "/sys/class/gpio/export"
 #define SYSFS_GPIO_RST_PIN_VAL      "48"
@@ -23,7 +28,10 @@ int set_dst_mac(char* low_32_str, char* high_16_str);
 int set_src_mac(char* low_32_str, char* high_16_str);
 
 typedef struct g_RegDev_para{
-	void*  			   mem_dev_phy;
+	//void*  			   mem_dev_phy;
+	struct mem_map_s*  mem_dev_phy; // c2
+	struct mem_map_s*  mem_dev_c1;
+	struct mem_map_s*  mem_dev_c0;
 	int                dac_fd;
 	zlog_category_t*   log_handler;
 }g_RegDev_para;
@@ -51,7 +59,10 @@ uint32_t ddr_full_flag(g_RegDev_para* g_RegDev);
 uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev);
 uint32_t airsignal_buf2_empty_flag(g_RegDev_para* g_RegDev);
 
-
+uint32_t read_unfilter_byte_low32(g_RegDev_para* g_RegDev);
+uint32_t read_unfilter_byte_high32(g_RegDev_para* g_RegDev);
+uint32_t rx_byte_filter_ether_low32(g_RegDev_para* g_RegDev);
+uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev);
 
 
 

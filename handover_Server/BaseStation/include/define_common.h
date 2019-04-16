@@ -10,6 +10,7 @@ typedef struct system_info_para{
 	char        bs_mac[6];
 	char        ve_mac[6];
 // --------  indicate systme state variable step by step
+	char        next_bs_mac[6]; // MSG_START_HANDOVER_THROUGH_AIR use
 	int         have_ve_mac;
 	int         received_start_handover_response;    
 }system_info_para;

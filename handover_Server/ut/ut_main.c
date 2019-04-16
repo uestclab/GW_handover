@@ -64,7 +64,7 @@ int process_exception(char* buf, int buf_len, char *from, void* arg)
 
 int main(int argc, char *argv[]){
 
-	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
+	zlog_category_t *handler = serverLog("../conf/zlog_default.conf");
 
 
 	printf(" +++++++++++++++++++++++++++++ start reg time compare ++++++++++++++++++++++++++++++++++++++++++++++ \n");
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
 	}
 */
 	g_RegDev_para* g_RegDev = NULL;
-	int stat = initRegdev(&g_RegDev, zlog_handler);
+	int stat = initRegdev(&g_RegDev, handler);
 	if(stat != 0 ){
 		printf("initRegdev create failed !");
 		return 0;
@@ -94,8 +94,37 @@ int main(int argc, char *argv[]){
 	int rc = enable_dac(g_RegDev);
 	rc = open_ddr(g_RegDev);
 	printf("enable_dac and open_ddr \n");
+
+	uint32_t value = getPowerLatch(g_RegDev);
+	printf("getPowerLatch() = %x \n", value);
+
+	value = get_crc_correct_cnt(g_RegDev);
+	printf("get_crc_correct_cnt() = %x \n", value);
+
+	value = get_crc_error_cnt(g_RegDev);
+	printf("get_crc_error_cnt() = %x \n", value);
+
+	value = reset_ddr_full_flag(g_RegDev);
+	printf("reset_ddr_full_flag() = %x \n", value);
+
+	value = ddr_full_flag(g_RegDev);
+	printf("ddr_full_flag() = %x \n", value);
+	value = airdata_buf2_empty_flag(g_RegDev);
+	printf("airdata_buf2_empty_flag() = %x \n", value);
+	value = airsignal_buf2_empty_flag(g_RegDev);
+	printf("airsignal_buf2_empty_flag() = %x \n", value);
+
+	value = read_unfilter_byte_low32(g_RegDev);
+	printf("read_unfilter_byte_low32() = %x \n", value);
+	value = read_unfilter_byte_high32(g_RegDev);
+	printf("read_unfilter_byte_high32() = %x \n", value);
+	value = rx_byte_filter_ether_low32(g_RegDev);
+	printf("rx_byte_filter_ether_low32() = %x \n", value);
+	value = rx_byte_filter_ether_high32(g_RegDev);
+	printf("rx_byte_filter_ether_high32() = %x \n", value);
 	
 }
+
 
 
 

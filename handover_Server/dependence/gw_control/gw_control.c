@@ -6,7 +6,6 @@
 #include "gw_utility.h"
 #include "gw_control.h"
 #include "broker.h"
-#include "regdev_common.h"
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -171,6 +170,8 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 	*g_RegDev = (g_RegDev_para*)malloc(sizeof(struct g_RegDev_para));
 
 	(*g_RegDev)->mem_dev_phy = NULL;
+	(*g_RegDev)->mem_dev_c1  = NULL;
+	(*g_RegDev)->mem_dev_c0  = NULL;
 	(*g_RegDev)->dac_fd      = -1;
 	(*g_RegDev)->log_handler = handler;
 
@@ -181,7 +182,25 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 	regdev_set_para((*g_RegDev)->mem_dev_phy, REG_PHY_ADDR, REG_MAP_SIZE);
 	rc = regdev_open((*g_RegDev)->mem_dev_phy);
 	if(rc < 0){
-		zlog_info(handler," phy regdev_open err !!\n");
+		zlog_info(handler," mem_dev_phy regdev_open err !!\n");
+		return -1;
+	}
+
+// mem_dev_c1
+	regdev_init(&((*g_RegDev)->mem_dev_c1));
+	regdev_set_para((*g_RegDev)->mem_dev_c1, REG_C1_ADDR, REG_MAP_SIZE);
+	rc = regdev_open((*g_RegDev)->mem_dev_c1);
+	if(rc < 0){
+		zlog_info(handler," mem_dev_c1 regdev_open err !!\n");
+		return -1;
+	}
+
+// mem_dev_c0
+	regdev_init(&((*g_RegDev)->mem_dev_c0));
+	regdev_set_para((*g_RegDev)->mem_dev_c0, REG_C0_ADDR, REG_MAP_SIZE);
+	rc = regdev_open((*g_RegDev)->mem_dev_c0);
+	if(rc < 0){
+		zlog_info(handler," mem_dev_c0 regdev_open err !!\n");
 		return -1;
 	}
 
@@ -447,8 +466,54 @@ uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
 }
 
 
+// ----------------------------------------------------------------------------------------
+
+// read_unfilter_byte : 0x43c00290 0x43c00294 
+uint32_t read_unfilter_byte_low32(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"read_unfilter_byte_low32\n");
+	uint32_t low32 = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_c0, 0x290, &low32);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"read_unfilter_byte_low32 failed !!! \n");
+		return rc;
+	}
+	return low32;
+}
+
+uint32_t read_unfilter_byte_high32(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"read_unfilter_byte_high32\n");
+	uint32_t high32 = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_c0, 0x294, &high32);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"read_unfilter_byte_high32 failed !!! \n");
+		return rc;
+	}
+	return high32;
+}
 
 
+// rx_byte_filter_ether : 0x43c10460  0x43c10464  
+uint32_t rx_byte_filter_ether_low32(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_low32\n");
+	uint32_t low32 = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_c1, 0x460, &low32);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_low32 failed !!! \n");
+		return rc;
+	}
+	return low32;
+}
+
+uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_high32\n");
+	uint32_t high32 = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_c0, 0x464, &high32);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_high32 failed !!! \n");
+		return rc;
+	}
+	return high32;
+}
 
 
 

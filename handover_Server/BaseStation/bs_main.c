@@ -63,6 +63,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->system_info->have_ve_mac = 0;
 	memset(clientConfigure->system_info->ve_mac,0,6);
 	memset(clientConfigure->system_info->bs_mac,0,6);
+	memset(clientConfigure->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR
 	clientConfigure->system_info->received_start_handover_response = 0;
 
 // 

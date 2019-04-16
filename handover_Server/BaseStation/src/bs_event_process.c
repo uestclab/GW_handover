@@ -7,6 +7,51 @@
 
 #include "timer.h"
 
+typedef struct g_test_para{
+	g_RegDev_para* 		g_RegDev;
+	g_msg_queue_para* 	g_msg_queue;
+	para_thread*        para_t;
+	zlog_category_t*    log_handler;
+}g_test_para;
+
+struct g_test_para g_test_all;
+
+void* check_air_tx_data_statistics(void* args){
+	zlog_info(g_test_all.log_handler,"Enter check_air_tx_data_statistics()");
+	int is_exit = 0;
+	while(is_exit == 0)
+	{
+		usleep(1000);
+		struct msg_st data;
+		data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
+		data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
+		data.msg_len = 0;
+		postMsgQueue(&data,g_test_all.g_msg_queue);
+		is_exit = 1;		
+	}
+	
+	zlog_info(g_test_all.log_handler,"exit check_air_tx_data_statistics()");
+}
+
+int initCheckTxBufferThread(g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* handler)
+{
+	zlog_info(handler,"initCheckTxBufferThread()");
+
+	g_test_all.log_handler = handler;
+	g_test_all.para_t = newThreadPara();
+	g_test_all.g_msg_queue = g_msg_queue;
+	g_test_all.g_RegDev = g_RegDev;
+
+	int ret = pthread_create((g_test_all.para_t)->thread_pid, NULL, check_air_tx_data_statistics, NULL);
+    if(ret != 0){
+        zlog_error(handler,"create initCheckTxBufferThread error ! error_code = %d", ret);
+		return -1;
+    }	
+	return 0;
+}
+
+// -----------------------------------------------------------------------------------------------------------
+
 void simulate_single_trigger_handover(g_network_para* g_network, g_monitor_para* g_monitor){
 
 	for(int i=0; i<7;i++){
@@ -94,14 +139,10 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			printf("target bs mac : \n");
 			hexdump(msgJsonSourceMac(getData->msg_json),6);
 
+			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac 
 			// need to ensure send status ???????????????? to ensure data sync in 2 different source bs and target bs
-			startMonitor(g_monitor,3);
-{
-			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
-			//send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
-			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
-			//StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
-}				
+			initCheckTxBufferThread(g_network->g_msg_queue, g_RegDev, zlog_handler);
+			
 			break;
 		}
 		default:
@@ -190,8 +231,8 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			/* 3. send DEASSOCIATION via air */
 			close_ddr(g_RegDev);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			//send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			//send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			/* add read regsiter to ensure DEASSOCIATION transmit successful before disable_dac */
 
 			uint32_t data_empty_flag = airdata_buf2_empty_flag(g_RegDev);
@@ -227,8 +268,14 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 			/* check dest mac and state */
 			if(g_system_info->bs_state == STATE_WAIT_MONITOR){ // for target bs and other waiting bs
-				if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0)// waiting bs
+				if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){// waiting bs
+					zlog_info(zlog_handler," 0415 debug -------- waiting bs ");
+					printf("bs_mac = :");
+					hexdump(g_system_info->bs_mac, 6);
+					printf("msgJsonDestMac(getData->msg_json) = : ");
+					hexdump(msgJsonDestMac(getData->msg_json), 6);
 					break;
+				}
 
 				// for target bs
 				enable_dac(g_RegDev);
@@ -242,7 +289,8 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
-			}
+			}else
+				zlog_info(zlog_handler," 0415 debug -------- g_system_info->bs_state = %d \n", g_system_info->bs_state);
 
 			break;
 		}
@@ -260,8 +308,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 		{
 
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_TIMEOUT: msg_number = %d",getData->msg_number);
-			/* 1. close ddr interface , downlink service is close */
-			/* 2. check if received air_response */
+
 			if(g_system_info->received_start_handover_response == 0){
 				zlog_info(zlog_handler," ---- Not receive start handover response in expect time !!!! ");
 			}else{
@@ -279,10 +326,10 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			zlog_info(zlog_handler," !!!!!!!!!!!!!!!!!!! start process disconnect ve and source BS !!!!!!!!!!!!!!!!!!!!!! \n");		
 			
 			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
-			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, msgJsonSourceMac(getData->msg_json), g_air);
+			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->next_bs_mac, g_air);
 			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
 			StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
-
+			memset(g_system_info->next_bs_mac,0,6);
 			break;
 		}
 		default:

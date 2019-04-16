@@ -1,14 +1,25 @@
 #include "regdev_common.h"
 
-struct mem_map_s g_regdev;
+//struct mem_map_s g_regdev;
 
-
+/*
 void regdev_init(void **dev)
 {
 	*dev = (void*)&g_regdev;
 	memset((void*)&g_regdev, 0, sizeof(struct mem_map_s));
 	g_regdev.fd = -1;
 	g_regdev.map_base = MAP_FAILED;
+
+}
+*/
+
+void regdev_init(struct mem_map_s** g_regdev)
+{
+	*g_regdev = (struct mem_map_s*)malloc(sizeof(struct mem_map_s));
+
+	memset((void*)(*g_regdev), 0, sizeof(struct mem_map_s));
+	(*g_regdev)->fd = -1;
+	(*g_regdev)->map_base = MAP_FAILED;
 
 }
 

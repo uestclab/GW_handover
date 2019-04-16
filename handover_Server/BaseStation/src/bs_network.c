@@ -221,7 +221,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			struct msg_st data;
 			data.msg_type = MSG_START_HANDOVER;
 			data.msg_number = MSG_START_HANDOVER;
-			memcpy(data.msg_json,target_mac_buf,6);
+			memcpy(data.msg_json,target_mac_buf,6); // Note : !!
 			postMsgQueue(&data,g_network->g_msg_queue);
 
             break;

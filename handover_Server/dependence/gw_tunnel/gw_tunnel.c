@@ -130,9 +130,9 @@ static int parse_args(char* daddr, char* saddr, char* dual_daddr, int cmd, struc
 	printf("get_addr32(daddr) = %u \n", p->iph.daddr);
 
 	//strncpy(medium, *argv, IFNAMSIZ - 1); // (strcmp(*argv, "dev") == 0)
-	strncpy(medium, "ethn", IFNAMSIZ - 1);
+	strncpy(medium, "iptun", IFNAMSIZ - 1); // ethn 0415
 	//strncpy(p->name, *argv, IFNAMSIZ - 1);
-	strncpy(p->name, "ethn", IFNAMSIZ - 1);
+	strncpy(p->name, "iptun", IFNAMSIZ - 1); // ethn 0415
 /*
 	if (medium[0]) {
 		p->link = 3;//ll_name_to_index(medium); // ????

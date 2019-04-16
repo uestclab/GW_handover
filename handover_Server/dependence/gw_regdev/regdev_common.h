@@ -41,7 +41,8 @@ struct mem_map_s{
 
 #define	DEV_MEM_PATH	"/dev/mem"
 
-void regdev_init(void **dev);
+//void regdev_init(void **dev);
+void regdev_init(struct mem_map_s** g_regdev);
 int regdev_set_para(void *dev, int phy_addr, int map_size);
 int regdev_open(void *dev);
 void regdev_close(void *dev);
