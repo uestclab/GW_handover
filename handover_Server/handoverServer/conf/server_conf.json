@@ -1,13 +1,12 @@
 {
-	"local_ip": "127.0.0.1",
+	"local_ip": "192.168.0.117",
 	"listen_port": 44444,
-    "num_baseStation": 1,
+    "num_baseStation": 2,
     "max_listen_backlog": 16,
     "timer_duration": 200000,
     "water_max_read": 204800,
     "water_low_read": 0,
     "init_num_baseStation": 1,
-    "train_mac_addr": "44-45-53-54-00-00",
 	"script": "../conf/iptun.sh"
 }
 

@@ -16,19 +16,55 @@ typedef struct g_test_para{
 
 struct g_test_para g_test_all;
 
+void getTempData(){
+	g_RegDev_para*         g_RegDev = g_test_all.g_RegDev;
+	zlog_category_t*    log_handler = g_test_all.log_handler;
+
+	uint32_t value = get_crc_correct_cnt(g_RegDev);
+	zlog_info(log_handler,"get_crc_correct_cnt() = %x \n", value);
+
+	value = get_crc_error_cnt(g_RegDev);
+	zlog_info(log_handler,"get_crc_error_cnt() = %x \n", value);
+
+	value = reset_ddr_full_flag(g_RegDev);
+	zlog_info(log_handler,"reset_ddr_full_flag() = %x \n", value);
+
+	value = ddr_full_flag(g_RegDev);
+	zlog_info(log_handler,"ddr_full_flag() = %x \n", value);
+	value = airdata_buf2_empty_flag(g_RegDev);
+	zlog_info(log_handler,"airdata_buf2_empty_flag() = %x \n", value);
+	value = airsignal_buf2_empty_flag(g_RegDev);
+	zlog_info(log_handler,"airsignal_buf2_empty_flag() = %x \n", value);
+
+	value = read_unfilter_byte_low32(g_RegDev);
+	zlog_info(log_handler,"read_unfilter_byte_low32() = %x \n", value);
+	value = read_unfilter_byte_high32(g_RegDev);
+	zlog_info(log_handler,"read_unfilter_byte_high32() = %x \n", value);
+	value = rx_byte_filter_ether_low32(g_RegDev);
+	zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", value);
+	value = rx_byte_filter_ether_high32(g_RegDev);
+	zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", value);
+}
+
+
 void* check_air_tx_data_statistics(void* args){
 	zlog_info(g_test_all.log_handler,"Enter check_air_tx_data_statistics()");
 	int is_exit = 0;
-	while(is_exit == 0)
+	int cnt = 0;
+	while(1)
 	{
-		usleep(1000);
-		struct msg_st data;
-		data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
-		data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
-		data.msg_len = 0;
-		postMsgQueue(&data,g_test_all.g_msg_queue);
-		is_exit = 1;		
+		getTempData();
+		usleep(500);
+		if(cnt == 8)
+			break;
+		cnt = cnt + 1;		
 	}
+
+	struct msg_st data;
+	data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
+	data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
+	data.msg_len = 0;
+	postMsgQueue(&data,g_test_all.g_msg_queue);
 	
 	zlog_info(g_test_all.log_handler,"exit check_air_tx_data_statistics()");
 }
@@ -54,9 +90,11 @@ int initCheckTxBufferThread(g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegD
 
 void simulate_single_trigger_handover(g_network_para* g_network, g_monitor_para* g_monitor){
 
-	for(int i=0; i<7;i++){
+	for(int i=0; i<1;i++){
 		gw_sleep();
 	}
+
+	printf("start to trigger_handover ......... \n");	
 
 	system_info_para* g_system_info = g_network->node->system_info;
 
@@ -142,6 +180,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac 
 			// need to ensure send status ???????????????? to ensure data sync in 2 different source bs and target bs
 			initCheckTxBufferThread(g_network->g_msg_queue, g_RegDev, zlog_handler);
+			send_change_tunnel_signal(g_network->node->my_id, g_network);
 			
 			break;
 		}
@@ -170,8 +209,13 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				zlog_info(zlog_handler," ----- Not in state of STATE_WAIT_MONITOR ------ ");
 				break;
 			}
+			
+			if(g_network->node->my_id == 22)
+				startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
+			else if(g_network->node->my_id == 33)			
+				StartTimer(timer_cb, NULL, 10, 0, g_air->g_timer); 
 
-			startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
+
 			break;
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
@@ -192,12 +236,14 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING");
 				zlog_info(zlog_handler," ---------------------- B1 Events completed --------------------------\n");
 		
+				printf(" ************************* SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING\n");
+				printf(" ---------------------- B1 Events completed --------------------------\n");
 
 // -------------- test point 1 : end test INIT relocation 0411 ----------------------------------------------------------------------------------
 
-				printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_1---------\n");
+				//printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_1---------\n");
 				
-				simulate_single_trigger_handover(g_network, g_monitor); // simulate trigger ready_handover
+				//simulate_single_trigger_handover(g_network, g_monitor); // simulate trigger ready_handover
 				
 // ------------------------------------------------------------------------------------------------------------------------------------------
 			}else if(g_system_info->bs_state == STATE_TARGET_SELECTED){
@@ -208,9 +254,10 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
 
-				printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_2---------\n");
+				send_linkopen_signal(g_network->node->my_id, g_network);
+				//printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_2---------\n");
 
-				simulate_single_trigger_handover(g_network, g_monitor);
+				//simulate_single_trigger_handover(g_network, g_monitor);
 			}
 			break;
 		}
@@ -233,13 +280,8 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			
 			/* add read regsiter to ensure DEASSOCIATION transmit successful before disable_dac */
-
-			uint32_t data_empty_flag = airdata_buf2_empty_flag(g_RegDev);
-			while(data_empty_flag != 1){
-				data_empty_flag = airdata_buf2_empty_flag(g_RegDev);
-			}	
-			zlog_info(zlog_handler," data_is_empty =================================== \n");
 
 			uint32_t signal_empty_flag = airsignal_buf2_empty_flag(g_RegDev);
 			while(signal_empty_flag != 1){
@@ -289,6 +331,9 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
+				
+				StartTimer(timer_cb, NULL, 10, 0, g_air->g_timer);
+
 			}else
 				zlog_info(zlog_handler," 0415 debug -------- g_system_info->bs_state = %d \n", g_system_info->bs_state);
 
@@ -309,12 +354,18 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_TIMEOUT: msg_number = %d",getData->msg_number);
 
+			printf("manual trriger ready handover ---------------- \n");
+			user_wait();
+
+			simulate_single_trigger_handover(g_network, g_monitor);
+
+/*
 			if(g_system_info->received_start_handover_response == 0){
 				zlog_info(zlog_handler," ---- Not receive start handover response in expect time !!!! ");
 			}else{
 				
 			}
-
+*/
 // -------------- test point 2: End A2 event  ---------------------------------------------------------------------------------
 
 			break;
@@ -327,8 +378,6 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			
 			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->next_bs_mac, g_air);
-			/* 2. start timer (timeout msg event): a. check response ; b. downlink data service is over(close ddr interface) */
-			StartTimer(timer_cb, NULL, 0, 1000, g_air->g_timer);
 			memset(g_system_info->next_bs_mac,0,6);
 			break;
 		}

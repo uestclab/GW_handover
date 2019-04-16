@@ -201,8 +201,6 @@ run(void){
         node_options->water_low_read = item->valueint;
         item = cJSON_GetObjectItem(root, "init_num_baseStation");
         node_options->init_num_baseStation = item->valueint;
-        item = cJSON_GetObjectItem(root, "train_mac_addr");
-        memcpy(node_options->train_mac_addr,item->valuestring,strlen(item->valuestring)+1);
 		item = cJSON_GetObjectItem(root, "local_ip");
         memcpy(node_options->local_ip,item->valuestring,strlen(item->valuestring)+1);
 		item = cJSON_GetObjectItem(root, "script");
@@ -218,7 +216,6 @@ run(void){
     LOG(INFO) << " water_low_read = " << node_options->water_low_read ;
     LOG(INFO) << " num_baseStation = " << node_options->num_baseStation ;
     LOG(INFO) << " init_num_baseStation = " << node_options->init_num_baseStation;
-    LOG(INFO) << " train_mac_addr = " << node_options->train_mac_addr;
 	LOG(INFO) << " script = " << node_options->script;
     
     //Singleton design

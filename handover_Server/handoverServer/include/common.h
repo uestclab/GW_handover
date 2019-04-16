@@ -11,8 +11,8 @@ typedef struct serverConfigureNode{
     int32_t   water_max_read;
     int32_t   water_low_read;
     int32_t   init_num_baseStation;
-    char      train_mac_addr[32];
 	char      local_ip[32];
+	char      my_Ethernet[32];
 	char      script[128];
 }serverConfigureNode;
 

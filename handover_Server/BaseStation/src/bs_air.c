@@ -48,7 +48,7 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 		}
 		default:
 		{
-			zlog_info(g_air->log_handler,"error subtype in process_recived_signal()\n");
+			zlog_info(g_air->log_handler,"error subtype in process_recived_signal(), Info->subtype = %d \n", Info->subtype);
 			break;
 		}
 	}

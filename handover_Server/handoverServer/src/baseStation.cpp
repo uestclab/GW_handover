@@ -122,7 +122,6 @@ void BaseStation::processMessage(char* buf, int32_t length){
                 memcpy(mac_,item->valuestring,strlen(item->valuestring)+1);
 				LOG(INFO) << "mac : " << mac_;
                 IDReady_ = true;
-				//pManager_->getTrainMac(json->trainMacAddr_); // 20190309 continue change train mac get method
 		        send_id_received_signal(this,baseStationID_);
                 pManager_->updateIDInfo(this);
                 pManager_->completeIdCount();
@@ -137,11 +136,10 @@ void BaseStation::processMessage(char* buf, int32_t length){
             LOG(INFO) << "signal : " << item->valuestring;
             if(pManager_->state() == glory::RELOCALIZATION){
                 item = cJSON_GetObjectItem(root, "quility");
-                receiveRssi_ = item->valuedouble;
                 pManager_->init_num_check(this);
             }else if(pManager_->state() == glory::RUNNING){
-                item = cJSON_GetObjectItem(root, "quility");
-                receiveRssi_ = item->valuedouble;
+                item = cJSON_GetObjectItem(root, "bs_id");
+				LOG(INFO) << "bs_id : " << item->valuedouble;
                 pManager_->notifyHandover(this);
             }
             break;

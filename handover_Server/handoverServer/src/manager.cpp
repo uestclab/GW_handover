@@ -54,7 +54,7 @@ enum glory::systemState Manager::state(){
 void Manager::change_tunnel_Link(){
 	changeTunnel(nextLinkBs_);
 	LOG(INFO) << "state hold : RUNNING ----> RUNNING";
-    LOG(INFO) << "START_HANDOVER --> tunnel change to target bs and buffer in";
+    LOG(INFO) << "START_HANDOVER --> tunnel change to target bs and buffer in , nextLinkBs_ = " << nextLinkBs_->getBaseStationID();
 }
 
 void Manager::establishLink(BaseStation* bs){
@@ -64,7 +64,7 @@ void Manager::establishLink(BaseStation* bs){
 
     state_ = glory::RUNNING;
     LOG(INFO) << "state change : RELOCALIZATION ----> RUNNING";
-    LOG(INFO) << "uplink and downlink start to work";
+    LOG(INFO) << "uplink and downlink start to work, link bs id = " << linkBs_->getBaseStationID();
 }
 
 void Manager::notifyHandover(BaseStation* ready_bs){ 
@@ -77,16 +77,15 @@ void Manager::notifyHandover(BaseStation* ready_bs){
         }
     }
 	send_start_handover_signal(linkBs_, ready_bs->getBaseStationID(), ready_bs->getBsmac()); // notify linkBs , air send signal to vehicle
-    // change tunnel to next link bs
-    //... move to receive change_tunnel signal;
+
 	LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel wait change_tunnel signal "; // 
 }
 
 int Manager::incChangeLink(BaseStation* bs, int open){
 	if(bs == linkBs_){
-		LOG(INFO) << "server receive LINK_CLOSED";	
+		LOG(INFO) << "server receive LINK_CLOSED bs id " << bs->getBaseStationID();	
 	}else if(bs == nextLinkBs_){
-		LOG(INFO) << "server receive LINK_OPEN";
+		LOG(INFO) << "server receive LINK_OPEN bs id " << bs->getBaseStationID();
 	}
 
     changeLink_ = changeLink_ + 1;
@@ -110,10 +109,6 @@ int Manager::config_watermaxRead(){
 
 int Manager::config_waterlowRead(){
     return pOptions_->water_low_read;
-}
-
-void Manager::getTrainMac(char* dest){
-	memcpy(dest,pOptions_->train_mac_addr,strlen(pOptions_->train_mac_addr)+1);
 }
 
 char* Manager::getLocalIp(){
@@ -219,17 +214,14 @@ void Manager::init_num_check(BaseStation* bs){
     countId_ = countId_ + 1;
     if(countId_ >= pOptions_->init_num_baseStation && isRelocation == 0){
         CHECK(countId_ == pOptions_->init_num_baseStation)<<"init number error";
-        int index = -1;
-        double max = -99;
-        for(int i=0;i<countId_;i++){
-            if(activeBs_[i]->receiverssi() > max){
-                max = activeBs_[i]->receiverssi();
-                index = i;
-            }
-        }
-		send_init_link_signal(activeBs_[index], activeBs_[index]->getBaseStationID(), activeBs_[index]->getBsmac());
-        isRelocation = 1;
-        LOG(INFO) << "send INIT_LINK signal";
+		int index = 0;
+		if(bs->getBaseStationID() == 22){	
+			send_init_link_signal(activeBs_[index], activeBs_[index]->getBaseStationID(), activeBs_[index]->getBsmac());
+		    isRelocation = 1;
+		    LOG(INFO) << "send INIT_LINK signal";
+		}else{
+			LOG(INFO) << " INIT_LINK ready_handover is not bs_id == 22";
+		}
     }
 }
 

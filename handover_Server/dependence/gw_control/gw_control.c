@@ -322,7 +322,7 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 /* ----------------------------- get ddr_full_flag , airdata_buf2_empty_flag , airsignal_buf2_empty_flag ---------------------------- */
 
 uint32_t reset_ddr_full_flag(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag\n");
+	//zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag\n");
 
 	uint32_t flag = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
@@ -342,7 +342,7 @@ uint32_t reset_ddr_full_flag(g_RegDev_para* g_RegDev){
 }
 
 uint32_t ddr_full_flag(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"ddr_full_flag\n");
+	//zlog_info(g_RegDev->log_handler,"ddr_full_flag\n");
 	uint32_t flag = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
 	if(rc < 0){
@@ -358,7 +358,7 @@ uint32_t ddr_full_flag(g_RegDev_para* g_RegDev){
 }
 
 uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"airdata_buf2_empty_flag\n");
+	//zlog_info(g_RegDev->log_handler,"airdata_buf2_empty_flag\n");
 	uint32_t fifo_data_cnt_read = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x81c, &fifo_data_cnt_read);
 	if(rc < 0){
@@ -393,7 +393,7 @@ uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev){
 }
 
 uint32_t airsignal_buf2_empty_flag(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"airsignal_buf2_empty_flag\n");
+	//zlog_info(g_RegDev->log_handler,"airsignal_buf2_empty_flag\n");
 	uint32_t sw_fifo_data_cnt_read = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x81c, &sw_fifo_data_cnt_read);
 	if(rc < 0){
@@ -433,7 +433,7 @@ uint32_t airsignal_buf2_empty_flag(g_RegDev_para* g_RegDev){
 /* ----------------------------- get power , crc correct cnt , crc error cnt ---------------------------- */
 
 uint32_t getPowerLatch(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"getPowerLatch\n");
+	//zlog_info(g_RegDev->log_handler,"getPowerLatch\n");
 	uint32_t power = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x124, &power);
 	if(rc < 0){
@@ -444,7 +444,7 @@ uint32_t getPowerLatch(g_RegDev_para* g_RegDev){
 }
 
 uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"get_crc_correct_cnt\n");
+	//zlog_info(g_RegDev->log_handler,"get_crc_correct_cnt\n");
 	uint32_t crc_correct_cnt = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x844, &crc_correct_cnt);
 	if(rc < 0){
@@ -455,7 +455,7 @@ uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev){
 }
 
 uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"get_crc_error_cnt\n");
+	//zlog_info(g_RegDev->log_handler,"get_crc_error_cnt\n");
 	uint32_t crc_error_cnt = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x848, &crc_error_cnt);
 	if(rc < 0){
@@ -470,7 +470,7 @@ uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
 
 // read_unfilter_byte : 0x43c00290 0x43c00294 
 uint32_t read_unfilter_byte_low32(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"read_unfilter_byte_low32\n");
+	//zlog_info(g_RegDev->log_handler,"read_unfilter_byte_low32\n");
 	uint32_t low32 = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_c0, 0x290, &low32);
 	if(rc < 0){
@@ -481,7 +481,7 @@ uint32_t read_unfilter_byte_low32(g_RegDev_para* g_RegDev){
 }
 
 uint32_t read_unfilter_byte_high32(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"read_unfilter_byte_high32\n");
+	//zlog_info(g_RegDev->log_handler,"read_unfilter_byte_high32\n");
 	uint32_t high32 = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_c0, 0x294, &high32);
 	if(rc < 0){
@@ -494,7 +494,7 @@ uint32_t read_unfilter_byte_high32(g_RegDev_para* g_RegDev){
 
 // rx_byte_filter_ether : 0x43c10460  0x43c10464  
 uint32_t rx_byte_filter_ether_low32(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_low32\n");
+	//zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_low32\n");
 	uint32_t low32 = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_c1, 0x460, &low32);
 	if(rc < 0){
@@ -505,7 +505,7 @@ uint32_t rx_byte_filter_ether_low32(g_RegDev_para* g_RegDev){
 }
 
 uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_high32\n");
+	//zlog_info(g_RegDev->log_handler,"rx_byte_filter_ether_high32\n");
 	uint32_t high32 = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_c0, 0x464, &high32);
 	if(rc < 0){
