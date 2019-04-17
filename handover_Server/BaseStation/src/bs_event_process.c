@@ -14,71 +14,65 @@ typedef struct g_test_para{
 	zlog_category_t*    log_handler;
 }g_test_para;
 
-struct g_test_para g_test_all;
-
-void getTempData(){
-	g_RegDev_para*         g_RegDev = g_test_all.g_RegDev;
-	zlog_category_t*    log_handler = g_test_all.log_handler;
-
-	uint32_t value = get_crc_correct_cnt(g_RegDev);
-	zlog_info(log_handler,"get_crc_correct_cnt() = %x \n", value);
-
-	value = get_crc_error_cnt(g_RegDev);
-	zlog_info(log_handler,"get_crc_error_cnt() = %x \n", value);
-
-	value = reset_ddr_full_flag(g_RegDev);
-	zlog_info(log_handler,"reset_ddr_full_flag() = %x \n", value);
-
-	value = ddr_full_flag(g_RegDev);
-	zlog_info(log_handler,"ddr_full_flag() = %x \n", value);
-	value = airdata_buf2_empty_flag(g_RegDev);
-	zlog_info(log_handler,"airdata_buf2_empty_flag() = %x \n", value);
-	value = airsignal_buf2_empty_flag(g_RegDev);
-	zlog_info(log_handler,"airsignal_buf2_empty_flag() = %x \n", value);
-
-	value = read_unfilter_byte_low32(g_RegDev);
-	zlog_info(log_handler,"read_unfilter_byte_low32() = %x \n", value);
-	value = read_unfilter_byte_high32(g_RegDev);
-	zlog_info(log_handler,"read_unfilter_byte_high32() = %x \n", value);
-	value = rx_byte_filter_ether_low32(g_RegDev);
-	zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", value);
-	value = rx_byte_filter_ether_high32(g_RegDev);
-	zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", value);
-}
-
+struct g_test_para* g_test_all = NULL;
 
 void* check_air_tx_data_statistics(void* args){
-	zlog_info(g_test_all.log_handler,"Enter check_air_tx_data_statistics()");
-	int is_exit = 0;
-	int cnt = 0;
+
+	g_RegDev_para*         g_RegDev = g_test_all->g_RegDev;
+	zlog_category_t*    log_handler = g_test_all->log_handler;
+	zlog_info(log_handler,"Enter check_air_tx_data_statistics()");
+
+	uint32_t decision_cnt = 0;
+	uint32_t pre_low32 = rx_byte_filter_ether_low32(g_RegDev);
+	uint32_t pre_high32 = rx_byte_filter_ether_high32(g_RegDev);
+	zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", pre_low32);
+	zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", pre_high32);	
+
+	int wait_cnt = 0;
 	while(1)
 	{
-		getTempData();
 		usleep(500);
-		if(cnt == 8)
+		
+		if(rx_byte_filter_ether_low32(g_RegDev) - pre_low32 == 0 && rx_byte_filter_ether_high32(g_RegDev) - pre_high32 == 0){
+			decision_cnt = decision_cnt + 1;
+			if(decision_cnt > 2){
+				zlog_info(log_handler," exit check_air_tx_data_statistics <<<<< no data get in ether, start to air interface handover ! \n");
+				break;
+			}
+		}else{
+			pre_low32 = rx_byte_filter_ether_low32(g_RegDev);
+			pre_high32 = rx_byte_filter_ether_high32(g_RegDev);
+			decision_cnt = 0;
+		}
+			
+
+		if(wait_cnt == 8)
 			break;
-		cnt = cnt + 1;		
+		wait_cnt = wait_cnt + 1;		
 	}
 
 	struct msg_st data;
 	data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
 	data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
 	data.msg_len = 0;
-	postMsgQueue(&data,g_test_all.g_msg_queue);
-	
-	zlog_info(g_test_all.log_handler,"exit check_air_tx_data_statistics()");
+	postMsgQueue(&data,g_test_all->g_msg_queue);
+
+	destoryThreadPara(g_test_all->para_t);
+	free(g_test_all);
+	g_test_all = NULL;
 }
 
 int initCheckTxBufferThread(g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* handler)
 {
 	zlog_info(handler,"initCheckTxBufferThread()");
+	if(g_test_all == NULL)
+		g_test_all = (struct g_test_para* )malloc(sizeof(struct g_test_para));
+	g_test_all->log_handler = handler;
+	g_test_all->para_t = newThreadPara();
+	g_test_all->g_msg_queue = g_msg_queue;
+	g_test_all->g_RegDev = g_RegDev;
 
-	g_test_all.log_handler = handler;
-	g_test_all.para_t = newThreadPara();
-	g_test_all.g_msg_queue = g_msg_queue;
-	g_test_all.g_RegDev = g_RegDev;
-
-	int ret = pthread_create((g_test_all.para_t)->thread_pid, NULL, check_air_tx_data_statistics, NULL);
+	int ret = pthread_create(g_test_all->para_t->thread_pid, NULL, check_air_tx_data_statistics, NULL);
     if(ret != 0){
         zlog_error(handler,"create initCheckTxBufferThread error ! error_code = %d", ret);
 		return -1;
@@ -87,13 +81,10 @@ int initCheckTxBufferThread(g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegD
 }
 
 // -----------------------------------------------------------------------------------------------------------
-
+static int simulate_cnt = 1;
 void simulate_single_trigger_handover(g_network_para* g_network, g_monitor_para* g_monitor){
-
-	for(int i=0; i<1;i++){
-		gw_sleep();
-	}
-
+/*
+{
 	printf("start to trigger_handover ......... \n");	
 
 	system_info_para* g_system_info = g_network->node->system_info;
@@ -102,6 +93,15 @@ void simulate_single_trigger_handover(g_network_para* g_network, g_monitor_para*
 	g_system_info->bs_state = STATE_WAIT_MONITOR; // temp change state to simulate source bs and target bs on 1 board currently;
 	
 	zlog_info(g_network->log_handler," ------ simulate source bs turn to target bs >>>>>>>>>>>>>>>>>>>>>>>>> -------------\n");
+}
+*/
+	{
+		system_info_para* g_system_info = g_network->node->system_info;
+		printf("start to auto monitor receive quilty ......... simulate cnt = %d \n", simulate_cnt);
+		startMonitor(g_monitor,3);
+		simulate_cnt = simulate_cnt + 1;
+	}
+
 }
 
 
@@ -212,9 +212,9 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			
 			if(g_network->node->my_id == 22)
 				startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
-			else if(g_network->node->my_id == 33)			
-				StartTimer(timer_cb, NULL, 10, 0, g_air->g_timer); 
-
+			else if(g_network->node->my_id == 33){			
+				StartTimer(timer_cb, NULL, 20, 0, g_air->g_timer);
+			}
 
 			break;
 		}
@@ -241,11 +241,6 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 // -------------- test point 1 : end test INIT relocation 0411 ----------------------------------------------------------------------------------
 
-				//printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_1---------\n");
-				
-				//simulate_single_trigger_handover(g_network, g_monitor); // simulate trigger ready_handover
-				
-// ------------------------------------------------------------------------------------------------------------------------------------------
 			}else if(g_system_info->bs_state == STATE_TARGET_SELECTED){
 
 				open_ddr(g_RegDev);
@@ -255,9 +250,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
 
 				send_linkopen_signal(g_network->node->my_id, g_network);
-				//printf(" ----!!!!!!! current bs start to trigger ready_handover , wait gw_sleep() 10s ----testpoint_2---------\n");
 
-				//simulate_single_trigger_handover(g_network, g_monitor);
 			}
 			break;
 		}
@@ -332,7 +325,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 				
-				StartTimer(timer_cb, NULL, 10, 0, g_air->g_timer);
+				StartTimer(timer_cb, NULL, 20, 0, g_air->g_timer);
 
 			}else
 				zlog_info(zlog_handler," 0415 debug -------- g_system_info->bs_state = %d \n", g_system_info->bs_state);
@@ -354,8 +347,9 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_TIMEOUT: msg_number = %d",getData->msg_number);
 
-			printf("manual trriger ready handover ---------------- \n");
-			user_wait();
+			//printf("manual trriger ready handover ------------------------------- \n");
+
+			//user_wait();
 
 			simulate_single_trigger_handover(g_network, g_monitor);
 
@@ -366,8 +360,6 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 				
 			}
 */
-// -------------- test point 2: End A2 event  ---------------------------------------------------------------------------------
-
 			break;
 		}
 		case MSG_START_HANDOVER_THROUGH_AIR:

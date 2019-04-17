@@ -4,20 +4,38 @@
 #include "cJSON.h"
 
 void monitor_loop(g_monitor_para* g_monitor){
-	zlog_info(g_monitor->log_handler,"Enter monitor_loop()");
+
+	int quility = 0;
+	int correct_d = 0;
+	int error_d = 0;
+
+	// get init compare value
+
+	uint32_t pre_correct_cnt = get_crc_correct_cnt(g_monitor->g_RegDev);
+	uint32_t pre_error_cnt = get_crc_error_cnt(g_monitor->g_RegDev);
 	
-	{
+	while(1){
+		usleep(1000);
 		// monitor crc and power latch
-		uint32_t powerLatch = getPowerLatch(g_monitor->g_RegDev);
-		uint32_t crc_correct_cnt = get_crc_correct_cnt(g_monitor->g_RegDev);
-		uint32_t crc_error_cnt = get_crc_error_cnt(g_monitor->g_RegDev);		
+		if(getPowerLatch(g_monitor->g_RegDev) < 400000){
+			zlog_info(g_monitor->log_handler,"PowerLatch < 400000 \n");
+			continue;
+		}
+		correct_d = get_crc_correct_cnt(g_monitor->g_RegDev) - pre_correct_cnt;
+		pre_correct_cnt = get_crc_correct_cnt(g_monitor->g_RegDev);
+
+		error_d = get_crc_error_cnt(g_monitor->g_RegDev) - pre_error_cnt;
+		pre_error_cnt = get_crc_error_cnt(g_monitor->g_RegDev);
+		
+		quility = correct_d - error_d + quility;
+		if(quility > 15)
+			break;			
 	}
-	
-	zlog_info(g_monitor->log_handler,"exit monitor_loop()");
+
+	send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, quility, g_monitor->g_network);
 }
 
 void monitor(g_monitor_para* g_monitor){
-	//zlog_info(g_monitor->log_handler,"Enter monitor()");
 	
 	{
 		if(g_monitor->running == 1){ // simulate RELOCALIZATION STATE
@@ -27,13 +45,12 @@ void monitor(g_monitor_para* g_monitor){
 			zlog_info(g_monitor->log_handler,"simulate ready_handover in RUNNING STATE\n");
 			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, 20, g_monitor->g_network);
 		}else if(g_monitor->running == 3){
-			//zlog_info(g_monitor->log_handler,"delay process start to check check_air_tx_data_statistics \n");
-			//check_air_tx_data_statistics(g_monitor); 
+			zlog_info(g_monitor->log_handler,"start monitor process to check if trigger ready_handover \n");
+			monitor_loop(g_monitor); 
 		}
 		g_monitor->running = 0;
 	}
-	
-	//zlog_info(g_monitor->log_handler,"exit monitor()");
+
 }
 
 void* monitor_thread(void* args){

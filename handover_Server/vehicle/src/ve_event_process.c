@@ -63,7 +63,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			trigger_mac_id(g_RegDev); // for target bs . or init bs needed?  			
 
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
-			printf(" ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
+			printf(" ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING \n");
 
 			break;
 		}

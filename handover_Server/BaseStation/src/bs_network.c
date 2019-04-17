@@ -174,7 +174,7 @@ messageInfo* parseMessage(char* buf, int32_t length){
 
 void printcjson(char* json, g_network_para* g_network){
 	zlog_info(g_network->log_handler,"receive : json = %s\n",json);
-	zlog_info(g_network->log_handler,"---------------\n");
+	zlog_info(g_network->log_handler,"--------------------------------------\n");
 }
 
 void processMessage(char* buf, int32_t length, g_network_para* g_network){
@@ -226,6 +226,11 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 
             break;
         }
+		case CHANGE_TUNNEL_ACK:
+		{
+			printcjson(message->buf,g_network);
+			break;
+		}
         default:
         {
             break;

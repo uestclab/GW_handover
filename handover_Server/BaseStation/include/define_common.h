@@ -36,6 +36,7 @@ typedef enum signalType{
     LINK_CLOSED,
     LINK_OPEN,
 	CHANGE_TUNNEL,
+	CHANGE_TUNNEL_ACK,
 }signalType;
 
 typedef struct messageInfo{

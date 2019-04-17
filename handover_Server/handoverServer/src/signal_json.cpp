@@ -39,6 +39,15 @@ void send_start_handover_signal(BaseStation* bs, int bs_id, char* mac){
 	cJSON_Delete(root);
 }
 
+void send_change_tunnel_ack_signal(BaseStation* bs, int bs_id){
+	cJSON* root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "signal", "change_tunnel_ack_signal");
+    cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	char* json_buf = cJSON_Print(root);
+	bs->sendSignal(glory::CHANGE_TUNNEL_ACK,json_buf);
+	cJSON_Delete(root);
+}
+
 
 
 
