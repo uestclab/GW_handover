@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 	zlog_category_t *handler = serverLog("../conf/zlog_default.conf");
 
 
-	printf(" +++++++++++++++++++++++++++++ start reg time compare ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+	printf(" +++++++++++++++++++++++++++++ start ut_main ++++++++++++++++++++++++++++++++++++++++++++++ \n");
 /*
 	printf("argc = %d \n",argc);
 	if(argc!=2)
@@ -94,15 +94,11 @@ int main(int argc, char *argv[]){
 	//int rc = enable_dac(g_RegDev);
 	//rc = open_ddr(g_RegDev);
 	//printf("enable_dac and open_ddr \n");
-	int time_cnt = 0;
+
 	while(1){
-		zlog_info(handler,"ddr_full_flag: %d ",ddr_full_flag(g_RegDev));
-		zlog_info(handler,"airdata_buf2_empty_flag: %d ",airdata_buf2_empty_flag(g_RegDev));
-		zlog_info(handler,"airsignal_buf2_empty_flag: %d ",airsignal_buf2_empty_flag(g_RegDev));
-		time_cnt = time_cnt + 1;
-		if(time_cnt > 100)
-			break;
-		usleep(500);
+		zlog_info(handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+
+		usleep(200);
 	}
 	
 }

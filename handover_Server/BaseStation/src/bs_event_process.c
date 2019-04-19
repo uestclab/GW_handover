@@ -156,8 +156,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		case MSG_START_HANDOVER: // source bs start to disconnect ve ..
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_START_HANDOVER: msg_number = %d",getData->msg_number);
-			//printf("target bs mac : \n");
-			//hexdump(msgJsonSourceMac(getData->msg_json),6);
+
 			printf("receive MSG_START_HANDOVER \n");
 
 			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac 
@@ -225,12 +224,6 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 			}else if(g_system_info->bs_state == STATE_TARGET_SELECTED){
 
-				//check if ddr is full
-				if(ddr_full_flag(g_RegDev) != 0){
-					zlog_info(zlog_handler," target bs ddr is full !!!!!!!!!!!! %u ", ddr_full_flag(g_RegDev));
-					//reset_ddr_full_flag(g_RegDev);
-				}
-
 				trigger_mac_id(g_RegDev);
 				open_ddr(g_RegDev);
 
@@ -262,27 +255,14 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler,"before close_ddr : rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
 			zlog_info(zlog_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
 
+			zlog_info(zlog_handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+			usleep(3000); // to empty ddr
 			close_ddr(g_RegDev);
-
+			zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+			usleep(2000);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			
-			int time_cnt = 0;
-			while(1){
-				zlog_info(zlog_handler,"bs sdram buffer data_flag = %d , signal_flag = %d ",
-					airdata_buf2_empty_flag(g_RegDev),airsignal_buf2_empty_flag(g_RegDev));
-				time_cnt = time_cnt + 1;
-				if(time_cnt > 4)
-					break;
-				usleep(500);
-			}
-		
-			zlog_info(zlog_handler," airsignal_is_empty =================================== \n");
-			zlog_info(zlog_handler," air__data_is_empty =================================== \n");
-			
-			disable_dac(g_RegDev);
-
 
 			break;
 		}
@@ -296,7 +276,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				g_system_info->have_ve_mac = 1;
 				configureDstMacToBB(g_system_info->ve_mac,g_RegDev,zlog_handler);
 				zlog_info(zlog_handler," REASSOCIATION receive ve_mac = : ");
-				hexdump(g_system_info->ve_mac, 6);
+				//hexdump(g_system_info->ve_mac, 6);
 			}
 
 			/* check dest mac and state */
@@ -310,6 +290,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 					break;
 				}
 
+				usleep(1000); // wait source bs disabel
 				// for target bs
 				enable_dac(g_RegDev);
 				send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
@@ -322,6 +303,8 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
+
+				disable_dac(g_RegDev);
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");

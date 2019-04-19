@@ -42,21 +42,15 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			}
 			
 			stopPeriodic(g_periodic); // stop transmit both BEACON and REASSOCIATION
-
-			memcpy(g_system_info->link_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
-
-			send_airSignal(ASSOCIATION_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
-
+			
 			/* configure link_bs_mac to BB */
+			memcpy(g_system_info->link_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
 			configureDstMacToBB(g_system_info->link_bs_mac,g_RegDev,zlog_handler);
 			g_system_info->isLinked = 1;
 			g_system_info->ve_state = STATE_WORKING;
 
-			//check if ddr is full
-			if(ddr_full_flag(g_RegDev) != 0){
-				zlog_info(zlog_handler," ddr is full !!!!!!!!!!!! %u ", ddr_full_flag(g_RegDev));
-				//reset_ddr_full_flag(g_RegDev);
-			}
+			send_airSignal(ASSOCIATION_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
+
 
 			trigger_mac_id(g_RegDev); // for target bs . or init bs needed?  
 			open_ddr(g_RegDev); // for init bs or for target bs					
@@ -86,7 +80,12 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			memcpy(g_system_info->next_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
 			
 			/* close ddr */
+
+			zlog_info(zlog_handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+			usleep(1000); // to empty ddr
 			close_ddr(g_RegDev);
+			zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+
 			// testdata point
 			int time_cnt = 0;
 			while(1){

@@ -321,40 +321,21 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 
 /* ----------------------------- get ddr_full_flag , airdata_buf2_empty_flag , airsignal_buf2_empty_flag ---------------------------- */
 
-uint32_t reset_ddr_full_flag(g_RegDev_para* g_RegDev){
-	//zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag\n");
 
+
+uint32_t ddr_empty_flag(g_RegDev_para* g_RegDev){
 	uint32_t flag = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
 	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag failed !!! \n");
-		return rc;
-	}
-
-	// set bit3 ~ bit4 : zero
-	flag &= (~(0x3<<3));
-	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, flag);
-	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"reset_ddr_full_flag write failed !!! \n");
-		return rc;
-	}
-	return 0;
-}
-
-uint32_t ddr_full_flag(g_RegDev_para* g_RegDev){
-	//zlog_info(g_RegDev->log_handler,"ddr_full_flag\n");
-	uint32_t flag = 0x00000000;
-	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
-	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"ddr_full_flag failed !!! \n");
+		zlog_info(g_RegDev->log_handler,"ddr_empty_flag failed !!! \n");
 		return rc;
 	}
 
 	// bit3 ~ bit4
-	uint32_t full_flag = flag & (0x3<<3);
-	full_flag = full_flag>>3;
+	uint32_t value = flag & (0x3<<5);
+	value = value>>5;
 
-	return full_flag;
+	return value;
 }
 
 uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev){

@@ -53,9 +53,8 @@ uint32_t getPowerLatch(g_RegDev_para* g_RegDev);
 uint32_t get_crc_correct_cnt(g_RegDev_para* g_RegDev);
 uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev);
 
-/* ----------------------------- get ddr_full_flag , airdata_buf2_empty_flag , airsignal_buf2_empty_flag ---------------------------- */
-uint32_t reset_ddr_full_flag(g_RegDev_para* g_RegDev);
-uint32_t ddr_full_flag(g_RegDev_para* g_RegDev);
+/* ----------------------------- get airdata_buf2_empty_flag , airsignal_buf2_empty_flag-------------------------- */
+uint32_t ddr_empty_flag(g_RegDev_para* g_RegDev);
 uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev);
 uint32_t airsignal_buf2_empty_flag(g_RegDev_para* g_RegDev);
 
