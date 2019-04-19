@@ -91,37 +91,19 @@ int main(int argc, char *argv[]){
 		return 0;
 	}
 	
-	int rc = enable_dac(g_RegDev);
-	rc = open_ddr(g_RegDev);
-	printf("enable_dac and open_ddr \n");
-
-	uint32_t value = getPowerLatch(g_RegDev);
-	printf("getPowerLatch() = %x \n", value);
-
-	value = get_crc_correct_cnt(g_RegDev);
-	printf("get_crc_correct_cnt() = %x \n", value);
-
-	value = get_crc_error_cnt(g_RegDev);
-	printf("get_crc_error_cnt() = %x \n", value);
-
-	value = reset_ddr_full_flag(g_RegDev);
-	printf("reset_ddr_full_flag() = %x \n", value);
-
-	value = ddr_full_flag(g_RegDev);
-	printf("ddr_full_flag() = %x \n", value);
-	value = airdata_buf2_empty_flag(g_RegDev);
-	printf("airdata_buf2_empty_flag() = %x \n", value);
-	value = airsignal_buf2_empty_flag(g_RegDev);
-	printf("airsignal_buf2_empty_flag() = %x \n", value);
-
-	value = read_unfilter_byte_low32(g_RegDev);
-	printf("read_unfilter_byte_low32() = %x \n", value);
-	value = read_unfilter_byte_high32(g_RegDev);
-	printf("read_unfilter_byte_high32() = %x \n", value);
-	value = rx_byte_filter_ether_low32(g_RegDev);
-	printf("rx_byte_filter_ether_low32() = %x \n", value);
-	value = rx_byte_filter_ether_high32(g_RegDev);
-	printf("rx_byte_filter_ether_high32() = %x \n", value);
+	//int rc = enable_dac(g_RegDev);
+	//rc = open_ddr(g_RegDev);
+	//printf("enable_dac and open_ddr \n");
+	int time_cnt = 0;
+	while(1){
+		zlog_info(handler,"ddr_full_flag: %d ",ddr_full_flag(g_RegDev));
+		zlog_info(handler,"airdata_buf2_empty_flag: %d ",airdata_buf2_empty_flag(g_RegDev));
+		zlog_info(handler,"airsignal_buf2_empty_flag: %d ",airsignal_buf2_empty_flag(g_RegDev));
+		time_cnt = time_cnt + 1;
+		if(time_cnt > 100)
+			break;
+		usleep(500);
+	}
 	
 }
 

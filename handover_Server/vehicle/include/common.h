@@ -39,7 +39,7 @@ typedef struct ConfigureNode{
 #define MSG_RECEIVED_DEASSOCIATION            11
 #define MSG_RECEIVED_HANDOVER_START_REQUEST   12
  
-#define MSG_STARTUP             20
+#define MSG_STARTUP                           20
 
 
 #endif//VEHICLE_COMMON_H
