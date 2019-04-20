@@ -80,11 +80,8 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			memcpy(g_system_info->next_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
 			
 			/* close ddr */
-
-			zlog_info(zlog_handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
-			usleep(1000); // to empty ddr
 			close_ddr(g_RegDev);
-			zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+
 
 			// testdata point
 			int time_cnt = 0;

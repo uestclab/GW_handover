@@ -68,7 +68,7 @@ static int simulate_cnt = 1;
 void simulate_single_trigger_handover(g_network_para* g_network, g_RegDev_para* g_RegDev, g_monitor_para* g_monitor){
 
 {
-	printf("bs_id %d , start to trigger_handover ......... simulate cnt = %d \n", simulate_cnt);	
+	printf("bs_id %d , start to trigger_handover ......... simulate cnt = %d \n", g_network->node->my_id, simulate_cnt);	
 
 	system_info_para* g_system_info = g_network->node->system_info;
 
