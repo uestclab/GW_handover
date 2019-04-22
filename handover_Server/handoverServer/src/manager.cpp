@@ -26,6 +26,7 @@ Manager::Manager(){
         activeBs_[i] = NULL;
     isRelocation = 0;
     changeLink_ = 0;
+	nextbs_expectId_ = 0;
 }
 
 Manager::~Manager(void){
@@ -195,7 +196,7 @@ BaseStation* Manager::findNextBaseStation(BaseStation* bs){
         return bs;
     }
     
-    int nextId = id + 1;
+    int nextId = id + 11;
     map<int,BaseStation*>::iterator it;
     it = relativeLocation_.find(nextId);
     while(it == relativeLocation_.end()){
@@ -222,9 +223,34 @@ void Manager::init_num_check(BaseStation* bs){
 		}else{
 			LOG(INFO) << " INIT_LINK ready_handover is not bs_id == 22";
 		}
+		countId_ = 0;
     }
 }
 
+//sequence handover
+int Manager::next_expectId_check(BaseStation* bs){
+	if(nextbs_expectId_ == bs->getBaseStationID())
+		return 0;
+	else
+		return -1;
+}
+
+void Manager::updateExpectId(BaseStation* bs){
+	nextbs_expectId_ = bs->getBaseStationID() + 11;
+	if(nextbs_expectId_ == ( pOptions_->num_baseStation * 11 + 22)){
+		nextbs_expectId_ = 22;
+	}
+}
+
+void Manager::recall_other_bs(BaseStation* bs){
+	map<struct bufferevent*,BaseStation*>::iterator iter;                
+	for(iter = mapBs_.begin() ; iter != mapBs_.end() ; ++iter){
+		BaseStation* bs_temp = iter->second;
+		if(bs_temp == bs)
+			continue;
+		send_server_recall_monitor_signal(bs_temp, bs_temp->getBaseStationID());// notify all other bs to monitor
+	}
+}
 
 
 

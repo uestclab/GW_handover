@@ -15,7 +15,7 @@
 #include <string>
 #include <stdlib.h>
 #include <glog/logging.h>
-#define NUM_ACTIVE 4
+#define NUM_ACTIVE 6
 using namespace std;
 struct NodeOptions;
 class BaseStation;
@@ -52,6 +52,11 @@ public:
 	int                                changeTunnel(BaseStation* bs);
 	void                               change_tunnel_Link(); // in running state , tunnel change to target bs
 
+	// sequence handover
+	int                                next_expectId_check(BaseStation* bs);
+	void                               updateExpectId(BaseStation* bs);
+	void                               recall_other_bs(BaseStation* bs);
+
 private:    
     Manager();
     ~Manager(void);
@@ -84,7 +89,7 @@ private:
     int                                       maxId_;
     int                                numBaseStation_;
 
-    int                                countId_; // 2 diffrent used for counter 
+    int                                countId_; // 3 diffrent used for counter 
     serverConfigureNode*               pOptions_;
     
     enum glory::systemState            state_;
@@ -93,6 +98,7 @@ private:
     BaseStation*                       activeBs_[NUM_ACTIVE];
     int                                isRelocation;
     int                                changeLink_;
+	int                                nextbs_expectId_;
 };
 
 #endif

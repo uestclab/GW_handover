@@ -231,6 +231,15 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			printcjson(message->buf,g_network);
 			break;
 		}
+		case SERVER_RECALL_MONITOR:
+		{
+			printcjson(message->buf,g_network);
+			struct msg_st data;
+			data.msg_type = MSG_SERVER_RECALL_MONITOR;
+			data.msg_number = MSG_SERVER_RECALL_MONITOR;
+			postMsgQueue(&data,g_network->g_msg_queue);
+			break;
+		}
         default:
         {
             break;

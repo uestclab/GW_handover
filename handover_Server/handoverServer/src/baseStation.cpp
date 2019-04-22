@@ -140,16 +140,24 @@ void BaseStation::processMessage(char* buf, int32_t length){
             }else if(pManager_->state() == glory::RUNNING){
                 item = cJSON_GetObjectItem(root, "bs_id");
 				LOG(INFO) << "bs_id : " << item->valuedouble;
-                pManager_->notifyHandover(this);
+
+				if(0 == pManager_->next_expectId_check(this))
+                	pManager_->notifyHandover(this);
+				else{
+					LOG(INFO) << "Not next expect bs id , get ready_handover bs_id : " << baseStationID_;
+					send_server_recall_monitor_signal(this, this->getBaseStationID());
+				}
             }
             break;
         }
-        case glory::INIT_COMPLETED: // init_num_check 
+        case glory::INIT_COMPLETED: 
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
             // tunnel set in establishLink() -----------
             pManager_->establishLink(this);
+			pManager_->updateExpectId(this);
+			pManager_->recall_other_bs(this);
             break;
         }
         case glory::LINK_CLOSED:
@@ -157,6 +165,7 @@ void BaseStation::processMessage(char* buf, int32_t length){
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
             pManager_->incChangeLink(this,0);
+			send_server_recall_monitor_signal(this, this->getBaseStationID());
             break;
         }
         case glory::LINK_OPEN:
@@ -164,6 +173,7 @@ void BaseStation::processMessage(char* buf, int32_t length){
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
             pManager_->incChangeLink(this,1);
+			pManager_->updateExpectId(this);
             break;
         }
 		case glory::CHANGE_TUNNEL:

@@ -32,6 +32,7 @@ enum signalType {
     LINK_OPEN,
 	CHANGE_TUNNEL,
 	CHANGE_TUNNEL_ACK,
+	SERVER_RECALL_MONITOR,
 };
 
 typedef struct messageInfo{

@@ -6,13 +6,11 @@
 int getRunningState(g_periodic_para* g_periodic, int value){
 	pthread_mutex_lock(g_periodic->para_check_t->mutex_);
 	if(value == 1){
-		//zlog_info(g_periodic->log_handler,"g_periodic->running = -1");
 		g_periodic->running = -1;
 		pthread_mutex_unlock(g_periodic->para_check_t->mutex_); // note that: pthread_mutex_unlock before return !!!!! 
 		return 0;
 	}
 	int ret = g_periodic->running;
-	//zlog_info(g_periodic->log_handler,"getRunningState ret = %d\n",ret);
 	pthread_mutex_unlock(g_periodic->para_check_t->mutex_);
 	return ret;
 }

@@ -167,7 +167,7 @@ run(void){
             (struct serverConfigureNode*)malloc(sizeof(struct serverConfigureNode));
      
     node_options->listen_port = 44444;
-    node_options->num_baseStation = 2;
+    node_options->num_baseStation = 1;
     node_options->max_listen_backlog = 16;
     node_options->timer_duration = 200000;
     node_options->water_max_read = 204800;
@@ -223,7 +223,7 @@ run(void){
     pManager->setBase(base);
     pManager->set_NodeOption(node_options);
 	//init tunnel system
-	initTunnelSystem(node_options->script);	
+	//initTunnelSystem(node_options->script);	
     /* Initalize signal event */
     signal_int = evsignal_new(base, SIGINT, signal_callback, (void*)pManager);
     event_add(signal_int, NULL);

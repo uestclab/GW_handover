@@ -17,8 +17,8 @@ void monitor_loop(g_monitor_para* g_monitor){
 	while(1){
 		usleep(1000);
 		// monitor crc and power latch
-		if(getPowerLatch(g_monitor->g_RegDev) < 400000){
-			zlog_info(g_monitor->log_handler,"PowerLatch < 400000 \n");
+		if(getPowerLatch(g_monitor->g_RegDev) < 300000){
+			//zlog_info(g_monitor->log_handler,"PowerLatch < 300000 \n");
 			continue;
 		}
 		correct_d = get_crc_correct_cnt(g_monitor->g_RegDev) - pre_correct_cnt;
@@ -28,11 +28,12 @@ void monitor_loop(g_monitor_para* g_monitor){
 		pre_error_cnt = get_crc_error_cnt(g_monitor->g_RegDev);
 		
 		quility = correct_d - error_d + quility;
-		if(quility > 15)
-			break;			
+		if(quility > 15){
+			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, quility, g_monitor->g_network);
+			g_monitor->node->system_info->monitored = 0;
+			break;
+		}		
 	}
-
-	send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, quility, g_monitor->g_network);
 }
 
 void monitor(g_monitor_para* g_monitor){

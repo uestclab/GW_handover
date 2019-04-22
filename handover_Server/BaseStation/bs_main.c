@@ -64,7 +64,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	memset(clientConfigure->system_info->ve_mac,0,6);
 	memset(clientConfigure->system_info->bs_mac,0,6);
 	memset(clientConfigure->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR
-	clientConfigure->system_info->received_start_handover_response = 0;
+	clientConfigure->system_info->monitored = 0;
+	clientConfigure->system_info->handover_cnt = 0;
 
 // 
 	const char* configure_path = "../conf/bs_conf.json";
