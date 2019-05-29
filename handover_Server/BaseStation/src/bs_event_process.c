@@ -29,7 +29,7 @@ void* check_air_tx_data_statistics(void* args){
 		usleep(500);
 		zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
 		zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
-		if(wait_cnt == 4)
+		if(wait_cnt == 2)
 			break;
 		wait_cnt = wait_cnt + 1;		
 	}
@@ -133,7 +133,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_START_HANDOVER: msg_number = %d",getData->msg_number);
 			
 			g_system_info->handover_cnt = g_system_info->handover_cnt + 1;
-			printf("receive MSG_START_HANDOVER .....................handover_cnt =  \n", g_system_info->handover_cnt);
+			printf("receive MSG_START_HANDOVER ..............-----------------.......handover_cnt =  %d \n", g_system_info->handover_cnt);
 
 			user_wait(); // hold on to start handover ---- 20190421 
 
@@ -184,7 +184,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				break;
 			}
 			
-			if(g_network->node->my_id == 22)
+			if(g_network->node->my_id == 11)
 				startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
 
 			break;
@@ -241,10 +241,10 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
 
 			zlog_info(zlog_handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
-			usleep(3000); // to empty ddr
+			usleep(1000); // to empty ddr
 			close_ddr(g_RegDev);
 			zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
-			usleep(2000);
+			usleep(1000);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			//send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
@@ -275,7 +275,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 					break;
 				}
 
-				usleep(1000); // wait source bs disabel
+				usleep(1000); // wait source bs disable
 				// for target bs
 				enable_dac(g_RegDev);
 				send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);

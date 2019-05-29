@@ -88,7 +88,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			while(1){
 				zlog_info(zlog_handler,"ve sdram buffer flag = %d ",airdata_buf2_empty_flag(g_RegDev));
 				time_cnt = time_cnt + 1;
-				if(time_cnt > 4)
+				if(time_cnt > 3)
 					break;
 				usleep(500);
 			}

@@ -17,8 +17,8 @@ void monitor_loop(g_monitor_para* g_monitor){
 	while(1){
 		usleep(1000);
 		// monitor crc and power latch
-		if(getPowerLatch(g_monitor->g_RegDev) < 300000){
-			//zlog_info(g_monitor->log_handler,"PowerLatch < 300000 \n");
+		if(getPowerLatch(g_monitor->g_RegDev) < 150000){
+			//zlog_info(g_monitor->log_handler,"PowerLatch < 150000 \n");
 			continue;
 		}
 		correct_d = get_crc_correct_cnt(g_monitor->g_RegDev) - pre_correct_cnt;
