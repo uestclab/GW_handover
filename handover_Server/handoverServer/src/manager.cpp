@@ -26,7 +26,31 @@ Manager::Manager(){
         activeBs_[i] = NULL;
     isRelocation = 0;
     changeLink_ = 0;
-	nextbs_expectId_ = 0;
+    nextbs_expectId_ = 0;
+    reset_count_ = 0;
+}
+
+void Manager::resetManager(void){
+    reset_count_ = reset_count_ + 1;
+    if(reset_count_ != config_num_baseStation()){
+	LOG(INFO) << "reset_count_ = " << reset_count_;
+        return;
+    }
+    state_ = glory::PAIR_ID;
+    countId_ = 0;
+    numBaseStation_ = 0;
+    maxId_ = -1;
+    linkBs_ = NULL;
+    nextLinkBs_ = NULL;
+    for(int i=0;i<NUM_ACTIVE;i++)
+        activeBs_[i] = NULL;
+    isRelocation = 0;
+    changeLink_ = 0;
+    nextbs_expectId_ = 0;
+    reset_count_ = 0;
+    mapBs_.clear();
+    relativeLocation_.clear();
+    LOG(INFO) << "resetManager !";
 }
 
 Manager::~Manager(void){
@@ -102,6 +126,10 @@ int Manager::incChangeLink(BaseStation* bs, int open){
 // ----------------------------- configuration file
 void Manager::set_NodeOption(serverConfigureNode* options){
     memcpy(pOptions_, options, sizeof(serverConfigureNode));
+}
+
+int Manager::config_num_baseStation(){
+    return pOptions_->num_baseStation;
 }
 
 int Manager::config_watermaxRead(){
@@ -216,12 +244,12 @@ void Manager::init_num_check(BaseStation* bs){
     if(countId_ >= pOptions_->init_num_baseStation && isRelocation == 0){
         CHECK(countId_ == pOptions_->init_num_baseStation)<<"init number error";
 		int index = 0;
-		if(bs->getBaseStationID() == 22){	
+		if(bs->getBaseStationID() == 11){	
 			send_init_link_signal(activeBs_[index], activeBs_[index]->getBaseStationID(), activeBs_[index]->getBsmac());
 		    isRelocation = 1;
 		    LOG(INFO) << "send INIT_LINK signal";
 		}else{
-			LOG(INFO) << " INIT_LINK ready_handover is not bs_id == 22";
+			LOG(INFO) << " INIT_LINK ready_handover is not bs_id == 11";
 		}
 		countId_ = 0;
     }
@@ -237,8 +265,8 @@ int Manager::next_expectId_check(BaseStation* bs){
 
 void Manager::updateExpectId(BaseStation* bs){
 	nextbs_expectId_ = bs->getBaseStationID() + 11;
-	if(nextbs_expectId_ == ( pOptions_->num_baseStation * 11 + 22)){
-		nextbs_expectId_ = 22;
+	if(nextbs_expectId_ == ( pOptions_->num_baseStation * 11 + 11)){
+		nextbs_expectId_ = 11;
 	}
 }
 

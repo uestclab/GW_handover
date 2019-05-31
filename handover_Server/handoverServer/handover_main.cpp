@@ -81,9 +81,9 @@ void
 event_callback(struct bufferevent * pBufEv, short sEvent, void * pArg){
     LOG(INFO) << "call event_callback!" ; 
     
-    //Manager* pManager = (Manager*)pArg;
+    Manager* pManager = (Manager*)pArg;
     
-    //BaseStation* bs_temp = pManager->findBaseStation(pBufEv);
+    BaseStation* bs_temp = pManager->findBaseStation(pBufEv);
     
     if( BEV_EVENT_CONNECTED == sEvent )
     {
@@ -102,12 +102,15 @@ event_callback(struct bufferevent * pBufEv, short sEvent, void * pArg){
     if (sEvent & BEV_EVENT_EOF) {
         /* connection has been closed, do any clean up here */
         /* ... */
+	LOG(INFO) << "BEV_EVENT_EOF !" ;
+	pManager->resetManager();
+	delete bs_temp;
     } else if (sEvent & BEV_EVENT_TIMEOUT) {
         /* must be a timeout event handle, handle it */
         /* ... */
     }
     LOG(INFO) << "end call event_callback () !" ;
-    
+    LOG(INFO) << "sEvent = " << sEvent;
     bufferevent_free(pBufEv);
     return ;
 }

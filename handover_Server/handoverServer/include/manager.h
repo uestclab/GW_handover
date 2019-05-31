@@ -46,6 +46,7 @@ public:
     void                               set_NodeOption(serverConfigureNode* options);
     int                                config_watermaxRead();
     int                                config_waterlowRead();
+    int                                config_num_baseStation();
 	char*                              getLocalIp();
 
 	//change tunnel
@@ -56,6 +57,7 @@ public:
 	int                                next_expectId_check(BaseStation* bs);
 	void                               updateExpectId(BaseStation* bs);
 	void                               recall_other_bs(BaseStation* bs);
+   void                                resetManager(void);
 
 private:    
     Manager();
@@ -91,6 +93,7 @@ private:
 
     int                                countId_; // 3 diffrent used for counter 
     serverConfigureNode*               pOptions_;
+    int                                reset_count_;
     
     enum glory::systemState            state_;
     BaseStation*                       linkBs_;
