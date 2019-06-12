@@ -323,7 +323,7 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 
 
 
-uint32_t ddr_empty_flag(g_RegDev_para* g_RegDev){
+uint32_t ddr_empty_flag(g_RegDev_para* g_RegDev){ // value != 0 : full
 	uint32_t flag = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &flag);
 	if(rc < 0){
@@ -332,8 +332,8 @@ uint32_t ddr_empty_flag(g_RegDev_para* g_RegDev){
 	}
 
 	// bit3 ~ bit4
-	uint32_t value = flag & (0x3<<5);
-	value = value>>5;
+	uint32_t value = flag & (0x3<<3);
+	value = value>>3;
 
 	return value;
 }
@@ -348,7 +348,7 @@ uint32_t airdata_buf2_empty_flag(g_RegDev_para* g_RegDev){
 	}
 
 	// bit0 ~ bit4
-	uint32_t fifo_data_cnt = fifo_data_cnt_read & (0xf);
+	uint32_t fifo_data_cnt = fifo_data_cnt_read & (0x1f);
 
 	zlog_info(g_RegDev->log_handler,"fifo_data_cnt = %u \n",fifo_data_cnt);
 
@@ -494,6 +494,28 @@ uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev){
 		return rc;
 	}
 	return high32;
+}
+
+
+// reset bb
+//devmem 0x43c20004  32 0x2 \n
+//devmem 0x43c20004  32 0x0 \n
+int reset_bb(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"reset_bb\n");
+	uint32_t value = 0x00000002;
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x4, value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"reset_bb_1 write failed !!! \n");
+		return rc;
+	}
+	value = 0x0;
+	rc = regdev_write(g_RegDev->mem_dev_phy, 0x4, value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"reset_bb_2 write failed !!! \n");
+		return rc;
+	}
+
+	return 0;
 }
 
 

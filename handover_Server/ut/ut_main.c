@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <math.h>
+
 #include <unistd.h>
 #include <signal.h>
 #include <sys/time.h>
@@ -15,18 +17,7 @@
 #define	REG_PHY_ADDR	0x43C20000
 #define	REG_MAP_SIZE	0X10000
 
-
-void setTimer(int seconds, int useconds)
-{
-    struct timeval temp;
-
-    temp.tv_sec = seconds;
-    temp.tv_usec = useconds;
-
-    select(0, NULL, NULL, NULL, &temp);
-    return ;
-}
-
+#define GET_SIZE        100
 
 zlog_category_t * serverLog(const char* path){
 	int rc;
@@ -52,6 +43,37 @@ void closeServerLog(){
 }
 
 
+double calculateFreq(unsigned int number){
+	int freq_offset_i = 0, freq_offset_q =0, freq_offset_i_pre=0, freq_offset_q_pre=0;
+
+	freq_offset_q_pre = number - ((number>>8) << 8);
+	number = number >> 8;
+	freq_offset_i_pre = number - ((number>>8) << 8);
+	number = number >> 8;
+	freq_offset_q = number - ((number>>8) << 8);
+	number = number >> 8;
+	freq_offset_i = number - ((number>>8) << 8);
+
+	if(freq_offset_i > 127)
+		freq_offset_i = freq_offset_i - 256;
+
+	if(freq_offset_q > 127)
+		freq_offset_q = freq_offset_q - 256;
+
+	if(freq_offset_i_pre > 127)
+		freq_offset_i_pre = freq_offset_i_pre - 256;
+
+	if(freq_offset_q_pre > 127)
+		freq_offset_q_pre = freq_offset_q_pre - 256;
+
+	double temp_1 = atan((freq_offset_q * 1.0)/(freq_offset_i * 1.0));
+	double temp_2 = atan((freq_offset_q_pre * 1.0)/(freq_offset_i_pre * 1.0));
+	double diff = temp_1 - temp_2;
+	double result = (diff / 5529.203) * 1000000000;
+	return result;
+}
+
+
 // broker callback interface
 int process_exception(char* buf, int buf_len, char *from, void* arg)
 {
@@ -62,44 +84,46 @@ int process_exception(char* buf, int buf_len, char *from, void* arg)
 	return ret;
 }
 
+uint32_t freq_offset(g_RegDev_para* g_RegDev){ // value != 0 : full
+	uint32_t flag = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x138, &flag);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"freq_offset failed !!! \n");
+		return rc;
+	}
+
+	return flag;
+}
+
 int main(int argc, char *argv[]){
 
 	zlog_category_t *handler = serverLog("../conf/zlog_default.conf");
 
 
 	printf(" +++++++++++++++++++++++++++++ start ut_main ++++++++++++++++++++++++++++++++++++++++++++++ \n");
-/*
-	printf("argc = %d \n",argc);
-	if(argc!=2)
-	{
-		printf("Usage : ethname\n");
-		return 1;
-	}
-    char    szMac[18];
-    int     nRtn = get_mac(szMac, sizeof(szMac),argv[1]);
-    if(nRtn > 0) // nRtn = 12
-    {	
-        printf("argv[1] = %s , nRtn = %d , MAC ADDR : %s\n", argv[1],nRtn,szMac);
-    }else{
-		return 0;
-	}
-*/
+
 	g_RegDev_para* g_RegDev = NULL;
 	int stat = initRegdev(&g_RegDev, handler);
 	if(stat != 0 ){
 		printf("initRegdev create failed !");
 		return 0;
 	}
+
+	uint32_t* result = (uint32_t*)malloc(sizeof(uint32_t)*GET_SIZE);
 	
-	//int rc = enable_dac(g_RegDev);
-	//rc = open_ddr(g_RegDev);
-	//printf("enable_dac and open_ddr \n");
+	uint32_t temp;
 
-	while(1){
-		zlog_info(handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
-
-		usleep(200);
+	for(int i = 0 ;i<GET_SIZE;i++){
+		temp = rx_byte_filter_ether_low32(g_RegDev);
+		result[i] = temp;
+		usleep(1000);
 	}
+	
+	for(int i = 0;i<GET_SIZE;i++){
+		printf("result[%d] = %x , ", i,result[i]);
+	}
+
+	printf("------------------- end ----------------------------------\n");
 	
 }
 

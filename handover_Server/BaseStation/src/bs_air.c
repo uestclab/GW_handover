@@ -111,7 +111,7 @@ void* process_air_thread(void* args){
 }
 
 int initProcessAirThread(struct ConfigureNode* Node, g_air_para** g_air, 
-		g_msg_queue_para*  g_msg_queue, g_timer_para* g_timer, zlog_category_t* handler){
+		g_msg_queue_para*  g_msg_queue, zlog_category_t* handler){
 	zlog_info(handler,"initProcessAirThread()");
 	*g_air = (g_air_para*)malloc(sizeof(struct g_air_para));
 	(*g_air)->log_handler = handler;
@@ -119,7 +119,6 @@ int initProcessAirThread(struct ConfigureNode* Node, g_air_para** g_air,
 	(*g_air)->send_para_t = newThreadPara();
 	(*g_air)->running = -1;
 	(*g_air)->g_msg_queue = g_msg_queue;
-	(*g_air)->g_timer = g_timer;
 
 	//zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_air)->g_msg_queue->msgid);
 	int ret = pthread_create((*g_air)->para_t->thread_pid, NULL, process_air_thread, (void*)(*g_air));

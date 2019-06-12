@@ -24,6 +24,11 @@ typedef struct ConfigureNode{
 	int32_t my_id;
 	char* my_mac_str;
 	char* my_Ethernet;
+	//configure delay ms and user_wait
+	int   enable_user_wait; //
+	int   sleep_cnt_second;
+	int   check_eth_rx_cnt; 
+
 }ConfigureNode;
 
 typedef enum signalType{

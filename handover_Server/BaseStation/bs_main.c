@@ -56,6 +56,9 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->my_id = 0;
 	clientConfigure->my_mac_str = (char*)malloc(32);
 	clientConfigure->my_Ethernet = (char*)malloc(32);
+	clientConfigure->enable_user_wait = 0; //
+	clientConfigure->sleep_cnt_second = 0;
+	clientConfigure->check_eth_rx_cnt = 0; 
 
 //  init system global variable
 	clientConfigure->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
@@ -89,6 +92,14 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 		clientConfigure->my_id = item->valueint;
 		item = cJSON_GetObjectItem(root, "my_Ethernet");
 		memcpy(clientConfigure->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
+		
+		item = cJSON_GetObjectItem(root, "enable_user_wait");
+		clientConfigure->enable_user_wait = item->valueint;
+		item = cJSON_GetObjectItem(root, "sleep_cnt_second");
+		clientConfigure->sleep_cnt_second = item->valueint;
+        item = cJSON_GetObjectItem(root, "check_eth_rx_cnt");
+		clientConfigure->check_eth_rx_cnt = item->valueint;
+
 		cJSON_Delete(root);
     }
 
@@ -101,6 +112,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
     }else{
 		printf("get mac address failed!\n");
 	}
+
+	zlog_info(log_handler," configure : enable_user_wait = %d , sleep_cnt_second = %d , check_eth_rx_cnt = %d " , clientConfigure->enable_user_wait , clientConfigure->sleep_cnt_second , clientConfigure->check_eth_rx_cnt);
 
 	return clientConfigure;
 }
@@ -148,13 +161,6 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
-
-	/* timer thread */
-	g_timer_para* g_timer = NULL;
-	state = InitTimerThread(&g_timer, g_msg_queue, zlog_handler);
-	if(state == -1){
-		return 0;
-	}
 	
 	/* network thread */
 	g_network_para* g_network = NULL;
@@ -165,7 +171,7 @@ int main(int argc, char *argv[]) // main thread
 
 	/* air process thread */
 	g_air_para* g_air = NULL;
-	state = initProcessAirThread(configureNode_, &g_air, g_msg_queue, g_timer, zlog_handler);
+	state = initProcessAirThread(configureNode_, &g_air, g_msg_queue, zlog_handler);
 
 
 	/* monitor thread */

@@ -64,5 +64,8 @@ uint32_t rx_byte_filter_ether_low32(g_RegDev_para* g_RegDev);
 uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev);
 
 
+/* ------------------------------ reset bb ------------------------------------ */
+int reset_bb(g_RegDev_para* g_RegDev);
+
 
 #endif//GW_CONTROL_H

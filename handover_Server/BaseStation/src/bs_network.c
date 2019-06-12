@@ -134,11 +134,24 @@ int initNetworkThread(struct ConfigureNode* Node, g_network_para** g_network, g_
     servaddr.sin_addr.s_addr = inet_addr(Node->server_ip);
     
     zlog_info(handler,"link %s:%d",Node->server_ip,Node->server_port);
-    if (connect((*g_network)->sock_cli, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0){
+
+	int connect_stat = connect((*g_network)->sock_cli, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+    while (connect_stat < 0){
         perror("connect");
-		return 2;
+
+		// add 0603
+		
+		gw_sleep();
+		
+		connect_stat = connect((*g_network)->sock_cli, (struct sockaddr *)&servaddr, sizeof(servaddr));
+		
+		zlog_info(handler,"No server , connect is failure");
+		// -------------------- end
+
+		//return 2;
     }
-	free(Node->server_ip);
+	//free(Node->server_ip); // 0603 modify
 	(*g_network)->connected = 1;
 	pthread_cond_signal((*g_network)->para_t->cond_);
 	
@@ -246,6 +259,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         }
     }
     free(message);
+	cJSON_Delete(root); // detect mem leak -- 0611
 }
 
 // ---- send section : sendSignal thread safety ----

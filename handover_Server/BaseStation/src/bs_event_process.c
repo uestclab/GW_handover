@@ -8,6 +8,7 @@
 #include "timer.h"
 
 typedef struct g_test_para{
+	ConfigureNode*      node;
 	g_RegDev_para* 		g_RegDev;
 	g_msg_queue_para* 	g_msg_queue;
 	para_thread*        para_t;
@@ -29,7 +30,7 @@ void* check_air_tx_data_statistics(void* args){
 		usleep(500);
 		zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
 		zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
-		if(wait_cnt == 2)
+		if(wait_cnt == g_test_all->node->check_eth_rx_cnt) // move to configure node parameter : parameter = 2
 			break;
 		wait_cnt = wait_cnt + 1;		
 	}
@@ -45,7 +46,7 @@ void* check_air_tx_data_statistics(void* args){
 	g_test_all = NULL;
 }
 
-int initCheckTxBufferThread(g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* handler)
+int initCheckTxBufferThread(struct ConfigureNode* Node, g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* handler)
 {
 
 	if(g_test_all == NULL)
@@ -54,6 +55,7 @@ int initCheckTxBufferThread(g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegD
 	g_test_all->para_t = newThreadPara();
 	g_test_all->g_msg_queue = g_msg_queue;
 	g_test_all->g_RegDev = g_RegDev;
+	g_test_all->node = Node;
 
 	int ret = pthread_create(g_test_all->para_t->thread_pid, NULL, check_air_tx_data_statistics, NULL);
     if(ret != 0){
@@ -135,12 +137,17 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			g_system_info->handover_cnt = g_system_info->handover_cnt + 1;
 			printf("receive MSG_START_HANDOVER ..............-----------------.......handover_cnt =  %d \n", g_system_info->handover_cnt);
 
-			user_wait(); // hold on to start handover ---- 20190421 
+			if(g_network->node->enable_user_wait == 1)
+				user_wait(); // hold on to start handover : move to configure node parameter
+			else{
+				for(int i = 0;i<g_network->node->sleep_cnt_second;i++)
+					gw_sleep();
+			}
 
 			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac 
 			// sync data
 			send_change_tunnel_signal(g_network->node->my_id, g_network);
-			initCheckTxBufferThread(g_network->g_msg_queue, g_RegDev, zlog_handler); // 0418 change seq
+			initCheckTxBufferThread(g_network->node, g_network->g_msg_queue, g_RegDev, zlog_handler); // 0418 change seq
 
 			break;
 		}
@@ -290,11 +297,12 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
 
 				disable_dac(g_RegDev);
+
+				reset_bb(g_RegDev);
+
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
-				
-				//StartTimer(timer_cb, NULL, 5, 0, g_air->g_timer);
 
 			}else
 				zlog_info(zlog_handler," 0415 debug -------- g_system_info->bs_state = %d \n", g_system_info->bs_state);

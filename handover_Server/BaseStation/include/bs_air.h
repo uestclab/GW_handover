@@ -8,7 +8,6 @@
 
 typedef struct g_air_para{
 	g_msg_queue_para*  g_msg_queue;
-	g_timer_para*      g_timer;
 	int                running;
 	para_thread*       para_t;
 	para_thread*       send_para_t;
@@ -16,7 +15,7 @@ typedef struct g_air_para{
 }g_air_para;
 
 int initProcessAirThread(struct ConfigureNode* Node, g_air_para** g_air, 
-		g_msg_queue_para* g_msg_queue, g_timer_para* g_timer, zlog_category_t* handler);
+		g_msg_queue_para* g_msg_queue, zlog_category_t* handler);
 int freeProcessAirThread(g_air_para* g_air);
 
 void startProcessAir(g_air_para* g_air, int running_step);
