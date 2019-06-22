@@ -17,7 +17,7 @@
 #define	REG_PHY_ADDR	0x43C20000
 #define	REG_MAP_SIZE	0X10000
 
-#define GET_SIZE        100
+#define GET_SIZE        300
 
 zlog_category_t * serverLog(const char* path){
 	int rc;
@@ -109,18 +109,19 @@ int main(int argc, char *argv[]){
 		return 0;
 	}
 
-	uint32_t* result = (uint32_t*)malloc(sizeof(uint32_t)*GET_SIZE);
+	double* result = (double*)malloc(sizeof(double)*GET_SIZE);
 	
 	uint32_t temp;
 
 	for(int i = 0 ;i<GET_SIZE;i++){
-		temp = rx_byte_filter_ether_low32(g_RegDev);
-		result[i] = temp;
+		temp = freq_offset(g_RegDev);
+		double tmp_1 = calculateFreq(temp);
+		result[i] = tmp_1;
 		usleep(1000);
 	}
 	
 	for(int i = 0;i<GET_SIZE;i++){
-		printf("result[%d] = %x , ", i,result[i]);
+		printf("result[%d] = %f , ", i,result[i]);
 	}
 
 	printf("------------------- end ----------------------------------\n");

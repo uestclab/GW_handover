@@ -34,6 +34,7 @@ void destoryThreadPara(para_thread* para_t){
     free(para_t->cond_);
     free(para_t->mutex_);
     free(para_t->thread_pid);
+	free(para_t); // mem leak clean
 	para_t = NULL;
 }
 

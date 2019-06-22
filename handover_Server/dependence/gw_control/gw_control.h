@@ -24,9 +24,6 @@ typedef int (*recv_cb)(char* buf, int buf_len, char *from, void* arg);
 
 int initBroker(char *argv, recv_cb exception_cb);
 
-int set_dst_mac(char* low_32_str, char* high_16_str);
-int set_src_mac(char* low_32_str, char* high_16_str);
-
 typedef struct g_RegDev_para{
 	//void*  			   mem_dev_phy;
 	struct mem_map_s*  mem_dev_phy; // c2
