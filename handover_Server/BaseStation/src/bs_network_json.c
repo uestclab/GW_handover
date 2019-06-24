@@ -64,6 +64,16 @@ void send_change_tunnel_signal(int bs_id, g_network_para* g_network){
 	cJSON_Delete(root);
 }
 
+void send_dac_closed_x2_signal(int bs_id, g_x2_para* g_x2){
+	cJSON* root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "x2signal", "dac_closed");
+    cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	char* json_buf = cJSON_Print(root);
+	sendX2Signal(json_buf, g_x2);
+	cJSON_Delete(root);
+	free(json_buf);
+}
+
 
 
 

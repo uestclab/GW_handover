@@ -31,7 +31,8 @@ void send_air_frame(g_periodic_para* g_periodic){
 			zlog_info(g_periodic->log_handler,"send REASSOCIATION periodic\n");
 			for(;;){ // next_bs_mac
 				send_airSignal(REASSOCIATION, g_system_info->ve_mac, g_system_info->next_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
-				gw_sleep();
+				//gw_sleep();
+				usleep(5000);
 				int ret = getRunningState(g_periodic, 0);
 				if(ret == -1)
 					break;

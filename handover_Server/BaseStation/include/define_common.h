@@ -13,7 +13,9 @@ typedef struct system_info_para{
 	char        next_bs_mac[6]; // MSG_START_HANDOVER_THROUGH_AIR use
 	int         have_ve_mac;
 	int         monitored;
-	int         handover_cnt;    
+	int         handover_cnt;
+// --------  x2 interface 
+	int         sourceBs_dac_disabled;    
 }system_info_para;
 
 
@@ -27,7 +29,10 @@ typedef struct ConfigureNode{
 	//configure delay ms and user_wait
 	int   enable_user_wait; //
 	int   sleep_cnt_second;
-	int   check_eth_rx_cnt; 
+	int   check_eth_rx_cnt;
+	// udp x2 interface
+	int32_t udp_server_port;
+	char*   udp_server_ip; 
 
 }ConfigureNode;
 
@@ -75,6 +80,7 @@ typedef struct messageInfo{
 #define MSG_INIT_SELECTED              11
 #define MSG_START_HANDOVER             12
 #define MSG_SERVER_RECALL_MONITOR      13
+#define MSG_SOURCE_BS_DAC_CLOSED       14
 
 
 #define MSG_TIMEOUT                    20

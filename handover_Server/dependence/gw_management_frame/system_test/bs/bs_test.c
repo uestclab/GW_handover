@@ -83,17 +83,6 @@ void testCase(zlog_category_t *zlog_handler){
 				int64_t end = now();
 				double sec = (end-start)/1000000.0;
 				zlog_info(zlog_handler,"---------- %f sec %f ms \n", sec, 1000*sec);
-				//management_frame_Info* send_Info = new_air_frame(ASSOCIATION_REQUEST,0,mac_buf,ve_mac_buf,mac_buf_next,tx_seq_id);
-				//status = handle_air_tx(send_Info, zlog_handler);
-				//if(status == 26){
-				//	zlog_info(zlog_handler,"send ASSOCIATION_REQUEST success: tx_seq_id = %d \n",tx_seq_id);
-				//}else{
-				//	zlog_info(zlog_handler,"air_tx,status = %d \n" , status);
-				//	printf("air_tx,status = %d \n" , status);
-					//user_wait();
-				//}
-				//tx_seq_id = tx_seq_id + 1;
-				//free(send_Info);
 			}else{
 				zlog_info(zlog_handler,"!!!!!!!! received other type : %d \n",temp_Info->subtype);
 			}

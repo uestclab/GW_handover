@@ -20,85 +20,87 @@ void* receive_thread(void* args){
 	g_network_para* g_network = (g_network_para*)args;
 	zlog_info(g_network->log_handler,"Enter receive_thread()");
 	pthread_mutex_lock(g_network->para_t->mutex_);
-    while(1){
-		while (g_network->connected == 0 )
-		{
-			pthread_cond_wait(g_network->para_t->cond_, g_network->para_t->mutex_);
-		}
-		pthread_mutex_unlock(g_network->para_t->mutex_);
+	while (g_network->connected == 0 )
+	{
+		pthread_cond_wait(g_network->para_t->cond_, g_network->para_t->mutex_);
+	}
+	pthread_mutex_unlock(g_network->para_t->mutex_);
 
-		if(g_network->startup == 0){ // start event link ---------------------------------------------------- bs first action !!!!
-			zlog_info(g_network->log_handler,"send_id_pair_signal -------- first action to handover server");
-			send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac_str, g_network);
-			g_network->startup = 1;
-		}
+	if(g_network->startup == 0){ // start event link ---------------------------------------------------- bs first action !!!!
+		zlog_info(g_network->log_handler,"send_id_pair_signal -------- first action to handover server");
+		send_id_pair_signal(g_network->node->my_id, g_network->node->my_mac_str, g_network);
+		g_network->startup = 1;
+	}
+	receive(g_network);
 
-    	receive(g_network);
-		if(g_network->connected == 0)
-			break;
-    }
     zlog_info(g_network->log_handler,"Exit receive_thread()");
 }
 
-void receive(g_network_para* g_network){ 
-    int n;
-    int size = 0;
-    int totalByte = 0;
-    int messageLength = 0;
-    
-    char* temp_receBuffer = g_network->recvbuf + 1000; //
-    char* pStart = NULL;
-    char* pCopy = NULL;
+void receive(g_network_para* g_network){
+	while(1){ 
+		int n;
+		int size = 0;
+		int totalByte = 0;
+		int messageLength = 0;
+		
+		char* temp_receBuffer = g_network->recvbuf + 1000; //
+		char* pStart = NULL;
+		char* pCopy = NULL;
 
-    n = recv(g_network->sock_cli, temp_receBuffer, BUFFER_SIZE,0); // block 
-    if(n<=0){
-		return;
-    }
-    size = n;
-    //zlog_info(g_network->log_handler,"-------------------- size = %d", size);
+		n = recv(g_network->sock_cli, temp_receBuffer, BUFFER_SIZE,0); // block 
+		if(n<=0){
+			//return;
+			continue;
+		}
+		size = n;
+		//zlog_info(g_network->log_handler,"-------------------- size = %d", size);
 
-    pStart = temp_receBuffer - g_network->gMoreData_;
-    totalByte = size + g_network->gMoreData_;
-    
-    const int MinHeaderLen = sizeof(int32_t);
+		pStart = temp_receBuffer - g_network->gMoreData_;
+		totalByte = size + g_network->gMoreData_;
+		
+		const int MinHeaderLen = sizeof(int32_t);
 
-    while(1){
-        if(totalByte <= MinHeaderLen)
-        {
-            g_network->gMoreData_ = totalByte;
-            pCopy = pStart;
-            if(g_network->gMoreData_ > 0)
-            {
-                memcpy(temp_receBuffer - g_network->gMoreData_, pCopy, g_network->gMoreData_);
-            }
-            break;
-        }
-        if(totalByte > MinHeaderLen)
-        {
-            messageLength= myNtohl(pStart);
+		while(1){
+		    if(totalByte <= MinHeaderLen)
+		    {
+		        g_network->gMoreData_ = totalByte;
+		        pCopy = pStart;
+		        if(g_network->gMoreData_ > 0)
+		        {
+		            memcpy(temp_receBuffer - g_network->gMoreData_, pCopy, g_network->gMoreData_);
+		        }
+		        break;
+		    }
+		    if(totalByte > MinHeaderLen)
+		    {
+		        messageLength= myNtohl(pStart);
 	
-            if(totalByte < messageLength + MinHeaderLen )
-            {
-                g_network->gMoreData_ = totalByte;
-                pCopy = pStart;
-                if(g_network->gMoreData_ > 0){
-                    memcpy(temp_receBuffer - g_network->gMoreData_, pCopy, g_network->gMoreData_);
-                }
-                break;
-            } 
-            else// at least one message 
-            {
-				processMessage(pStart,messageLength,g_network);
-				// move to next message
-                pStart = pStart + messageLength + MinHeaderLen;
-                totalByte = totalByte - messageLength - MinHeaderLen;
-                if(totalByte == 0){
-                    g_network->gMoreData_ = 0;
-                    break;
-                }
-            }         
-        }
-    }	
+		        if(totalByte < messageLength + MinHeaderLen )
+		        {
+		            g_network->gMoreData_ = totalByte;
+		            pCopy = pStart;
+		            if(g_network->gMoreData_ > 0){
+		                memcpy(temp_receBuffer - g_network->gMoreData_, pCopy, g_network->gMoreData_);
+		            }
+		            break;
+		        } 
+		        else// at least one message 
+		        {
+					processMessage(pStart,messageLength,g_network);
+					// move to next message
+		            pStart = pStart + messageLength + MinHeaderLen;
+		            totalByte = totalByte - messageLength - MinHeaderLen;
+		            if(totalByte == 0){
+		                g_network->gMoreData_ = 0;
+		                break;
+		            }
+		        }         
+		    }
+		}
+
+		if(g_network->connected == 0)
+			break;
+	}	
 }
 
 int initNetworkThread(struct ConfigureNode* Node, g_network_para** g_network, g_msg_queue_para* g_msg_queue, zlog_category_t* handler){
@@ -234,7 +236,8 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			struct msg_st data;
 			data.msg_type = MSG_START_HANDOVER;
 			data.msg_number = MSG_START_HANDOVER;
-			memcpy(data.msg_json,target_mac_buf,6); // Note : !!
+			memcpy(data.msg_json,target_mac_buf,6); // Note : !! 
+			
 			postMsgQueue(&data,g_network->g_msg_queue);
 
             break;

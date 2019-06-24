@@ -102,7 +102,7 @@ void configureDstMacToBB(char* dst_buf, g_RegDev_para* g_RegDev, zlog_category_t
 }
 
 void process_network_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -144,7 +144,8 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 					gw_sleep();
 			}
 
-			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac 
+			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac
+			configure_target_ip(NULL, g_x2); 
 			// sync data
 			send_change_tunnel_signal(g_network->node->my_id, g_network);
 			initCheckTxBufferThread(g_network->node, g_network->g_msg_queue, g_RegDev, zlog_handler); // 0418 change seq
@@ -165,13 +166,19 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			}
 			break;
 		}
+		case MSG_SOURCE_BS_DAC_CLOSED:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_SOURCE_BS_DAC_CLOSED: msg_number = %d",getData->msg_number);
+			g_system_info->sourceBs_dac_disabled = 1;
+			break;
+		}
 		default:
 			break;
 	}	
 }
 
 void process_air_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -282,7 +289,11 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 					break;
 				}
 
-				usleep(1000); // wait source bs disable
+				//usleep(3000); // wait source bs disable
+				if(g_system_info->sourceBs_dac_disabled == 0){
+					break;				
+				}
+
 				// for target bs
 				enable_dac(g_RegDev);
 				send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
@@ -291,12 +302,15 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				zlog_info(zlog_handler,"MSG_RECEIVED_REASSOCIATION:rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
 
 				g_system_info->bs_state = STATE_TARGET_SELECTED;
+				g_system_info->sourceBs_dac_disabled = 0; // clear status 
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
 
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
 
 				disable_dac(g_RegDev);
+
+				send_dac_closed_x2_signal(g_network->node->my_id, g_x2); // inform target bs , dac is closed
 
 				reset_bb(g_RegDev);
 
@@ -349,7 +363,7 @@ void init_state(g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_categor
 	close_ddr(g_RegDev);
 }
 
-void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para* g_air, 
+void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para* g_air, g_x2_para* g_x2, 
     g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 
@@ -363,9 +377,9 @@ void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para*
 			continue;
 
 		if(getData->msg_type < MSG_START_MONITOR)
-			process_air_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
+			process_air_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, zlog_handler);
 		else if(getData->msg_type < MSG_TIMEOUT)
-			process_network_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
+			process_network_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, zlog_handler);
 		else if(getData->msg_type >= MSG_TIMEOUT)
 			process_self_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
 

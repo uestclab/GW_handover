@@ -180,6 +180,32 @@ int get_mac(char * mac, int len_limit, char *arg)
     return snprintf (mac, len_limit, "%02x%02x%02x%02x%02x%02x", (unsigned char) ifreq.ifr_hwaddr.sa_data[0], (unsigned char) ifreq.ifr_hwaddr.sa_data[1], (unsigned char) ifreq.ifr_hwaddr.sa_data[2], (unsigned char) ifreq.ifr_hwaddr.sa_data[3], (unsigned char) ifreq.ifr_hwaddr.sa_data[4], (unsigned char) ifreq.ifr_hwaddr.sa_data[5]);
 }
 
+int get_ip(char* ip, char* arg){
+ 
+	int sockfd;
+	struct ifreq ifr;
+	struct sockaddr_in sin;
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	{
+		printf("get_ip->socket error");
+		return -1;
+	}
+	strcpy(ifr.ifr_name, arg);
+	if(ioctl(sockfd, SIOCGIFADDR, &ifr) < 0)//直接获取IP地址
+	{
+		printf("get_ip->ioctl error");
+		close(sockfd);
+		return -2;
+	}
+	memcpy(&sin, &ifr.ifr_dstaddr, sizeof(sin));
+
+	memcpy(ip, inet_ntoa(sin.sin_addr) , strlen(inet_ntoa(sin.sin_addr)) + 1);
+
+	close(sockfd);
+
+	return 0;
+}
+
 // in_addr[12] , out_addr[6] : 000c29d46f68 , 0
 void change_mac_buf(char* in_addr, char* out_addr){
 	int i = 0;
