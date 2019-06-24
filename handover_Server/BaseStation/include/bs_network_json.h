@@ -16,7 +16,7 @@ void send_change_tunnel_signal(int bs_id, g_network_para* g_network);
 
 // ------------- x2 interface -----
 void send_dac_closed_x2_signal(int bs_id, g_x2_para* g_x2);
-
+void send_dac_closed_x2_ack_signal(int bs_id, g_x2_para* g_x2);
 
 
 

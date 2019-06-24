@@ -15,7 +15,8 @@ typedef struct system_info_para{
 	int         monitored;
 	int         handover_cnt;
 // --------  x2 interface 
-	int         sourceBs_dac_disabled;    
+	int         sourceBs_dac_disabled;
+	int         received_reassociation;    
 }system_info_para;
 
 
@@ -57,34 +58,30 @@ typedef struct messageInfo{
     char* buf; // cjson define payload : signal_json
 }messageInfo;
 
-
-// test msg type
-#define MSG_NETWORK 1
-#define MSG_AIR     2
-#define MSG_MONITOR 3
-
-
-// event
-/*
-	receive air signal , air event
-*/
-#define MSG_RECEIVED_BEACON                         4
-#define MSG_RECEIVED_ASSOCIATION_RESPONSE           5
-#define MSG_RECEIVED_HANDOVER_START_RESPONSE        6
-#define MSG_RECEIVED_REASSOCIATION                  7
-
-/*
-	receive network signal , network event
-*/
-#define MSG_START_MONITOR              10
-#define MSG_INIT_SELECTED              11
-#define MSG_START_HANDOVER             12
-#define MSG_SERVER_RECALL_MONITOR      13
-#define MSG_SOURCE_BS_DAC_CLOSED       14
+typedef enum msg_event{
+	/* test msg type */
+    MSG_NETWORK = 1,
+	MSG_AIR,
+	MSG_MONITOR,
+	/* receive air signal , air event */
+	MSG_RECEIVED_BEACON,
+    MSG_RECEIVED_ASSOCIATION_RESPONSE,
+    MSG_RECEIVED_HANDOVER_START_RESPONSE,
+    MSG_RECEIVED_REASSOCIATION,
+	/* receive network signal , network event */
+    MSG_START_MONITOR, // boundary
+    MSG_INIT_SELECTED, 
+    MSG_START_HANDOVER,
+    MSG_SERVER_RECALL_MONITOR,
+    MSG_SOURCE_BS_DAC_CLOSED,
+	/* self event */
+	MSG_TIMEOUT, // boundary
+	MSG_START_HANDOVER_THROUGH_AIR,
+	MSG_TARGET_BS_START_WORKING,
+}msg_event;
 
 
-#define MSG_TIMEOUT                    20
-#define MSG_START_HANDOVER_THROUGH_AIR 21
+
 
 // system state 
 

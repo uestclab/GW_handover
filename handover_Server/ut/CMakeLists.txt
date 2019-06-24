@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch:"${PUBLIC})
-project(ut_test)
+project(ut_main)
 
 if(${PUBLIC} STREQUAL "ON")
 	message(STATUS "start to build ARM platform.")
@@ -36,7 +36,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(ROOT_PATH ".")  
 
 file(GLOB_RECURSE SOURCE_FILES "src/*.c")
-file(GLOB_RECURSE ALL_EXECUTABLES "*_main.c")
+file(GLOB_RECURSE ALL_EXECUTABLES "ut_main.c")
 
 add_executable(${PROJECT_NAME} ${ALL_EXECUTABLES} ${SOURCE_FILES})
 

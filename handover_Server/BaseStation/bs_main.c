@@ -75,6 +75,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->system_info->monitored = 0;
 	clientConfigure->system_info->handover_cnt = 0;
 	clientConfigure->system_info->sourceBs_dac_disabled = 0;
+	clientConfigure->system_info->received_reassociation = 0;
 
 // 
 	const char* configure_path = "../conf/bs_conf.json";

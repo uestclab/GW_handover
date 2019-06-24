@@ -169,7 +169,18 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		case MSG_SOURCE_BS_DAC_CLOSED:
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_SOURCE_BS_DAC_CLOSED: msg_number = %d",getData->msg_number);
+			
 			g_system_info->sourceBs_dac_disabled = 1;
+			if(g_system_info->received_reassociation == 0){
+				break;				
+			}
+
+			// for target bs
+			struct msg_st data;
+			data.msg_type = MSG_TARGET_BS_START_WORKING;
+			data.msg_number = MSG_TARGET_BS_START_WORKING;
+			data.msg_len = 0;
+			postMsgQueue(&data,g_x2->g_msg_queue);
 			break;
 		}
 		default:
@@ -281,29 +292,25 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			/* check dest mac and state */
 			if(g_system_info->bs_state == STATE_WAIT_MONITOR){ // for target bs and other waiting bs
 				if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){// waiting bs
-					zlog_info(zlog_handler," 0415 debug -------- waiting bs ");
-					printf("bs_mac = :");
-					hexdump(g_system_info->bs_mac, 6);
+					printf(" 0415 debug -------- waiting bs \n");
 					printf("msgJsonDestMac(getData->msg_json) = : ");
 					hexdump(msgJsonDestMac(getData->msg_json), 6);
 					break;
 				}
 
 				//usleep(3000); // wait source bs disable
+				g_system_info->received_reassociation = 1;
 				if(g_system_info->sourceBs_dac_disabled == 0){
 					break;				
 				}
 
 				// for target bs
-				enable_dac(g_RegDev);
-				send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 
-				zlog_info(zlog_handler,"MSG_RECEIVED_REASSOCIATION:rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
-				zlog_info(zlog_handler,"MSG_RECEIVED_REASSOCIATION:rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
-
-				g_system_info->bs_state = STATE_TARGET_SELECTED;
-				g_system_info->sourceBs_dac_disabled = 0; // clear status 
-				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
+				struct msg_st data;
+				data.msg_type = MSG_TARGET_BS_START_WORKING;
+				data.msg_number = MSG_TARGET_BS_START_WORKING;
+				data.msg_len = 0;
+				postMsgQueue(&data,g_x2->g_msg_queue);
 
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
@@ -319,7 +326,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 
 			}else
-				zlog_info(zlog_handler," 0415 debug -------- g_system_info->bs_state = %d \n", g_system_info->bs_state);
+				zlog_info(zlog_handler," 0415 debug ----STATE_TARGET_SELECTED ? ---- g_system_info->bs_state = %d \n", g_system_info->bs_state);
 
 			break;
 		}
@@ -348,6 +355,19 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->next_bs_mac, g_air);
 			memset(g_system_info->next_bs_mac,0,6);
 			break;
+		}
+		case MSG_TARGET_BS_START_WORKING:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_TARGET_BS_START_WORKING: msg_number = %d",getData->msg_number);
+
+			enable_dac(g_RegDev);
+			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+
+			g_system_info->bs_state = STATE_TARGET_SELECTED;
+			g_system_info->received_reassociation = 0; // clear status
+			g_system_info->sourceBs_dac_disabled = 0; // clear status  
+			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
+			break;	
 		}
 		default:
 			break;
