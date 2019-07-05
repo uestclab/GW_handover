@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch:"${PUBLIC})
-project(bs_main)
+project(ut_main)
 
 if(${PUBLIC} STREQUAL "ON")
 	message(STATUS "start to build ARM platform.")
@@ -36,7 +36,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(ROOT_PATH ".")  
 
 file(GLOB_RECURSE SOURCE_FILES "src/*.c")
-file(GLOB_RECURSE ALL_EXECUTABLES "*_main.c")
+file(GLOB_RECURSE ALL_EXECUTABLES "ut_main.c")
 
 add_executable(${PROJECT_NAME} ${ALL_EXECUTABLES} ${SOURCE_FILES})
 
@@ -44,20 +44,21 @@ include_directories("${PROJECT_SOURCE_DIR}/../dependence/include")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
 target_link_libraries(${PROJECT_NAME} cjson)
-target_link_libraries(${PROJECT_NAME} gw_msgQueue)
 target_link_libraries(${PROJECT_NAME} gw_utility)
-target_link_libraries(${PROJECT_NAME} gw_control)
 target_link_libraries(${PROJECT_NAME} gw_frame)
+target_link_libraries(${PROJECT_NAME} gw_control)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
-
-if(${PUBLIC} STREQUAL "ON")
+target_link_libraries(${PROJECT_NAME} -lm)
+if(${PUBLIC} STREQUAL "ON") # arm
 	target_link_libraries(${PROJECT_NAME} broker)
 	target_link_libraries(${PROJECT_NAME} mosquitto)
+	target_link_libraries(${PROJECT_NAME} gw_regdev)
 endif(${PUBLIC} STREQUAL "ON")
 
-
-
+if(${PUBLIC} STREQUAL "OFF") # PC
+	target_link_libraries(${PROJECT_NAME} gw_tunnel)
+endif(${PUBLIC} STREQUAL "OFF")
 
 
 

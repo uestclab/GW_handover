@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch:"${PUBLIC})
-project(bs_main)
+project(vehicle)
 
 if(${PUBLIC} STREQUAL "ON")
 	message(STATUS "start to build ARM platform.")
@@ -51,7 +51,7 @@ target_link_libraries(${PROJECT_NAME} gw_frame)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
 
-if(${PUBLIC} STREQUAL "ON")
+if(${PUBLIC} STREQUAL "ON") # arm
 	target_link_libraries(${PROJECT_NAME} broker)
 	target_link_libraries(${PROJECT_NAME} mosquitto)
 endif(${PUBLIC} STREQUAL "ON")

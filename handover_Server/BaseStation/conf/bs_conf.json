@@ -1,0 +1,10 @@
+{
+	"server_ip": "192.168.10.99",
+	"server_port": 44444,
+	"my_Ethernet": "eth1",
+	"udp_server_port": 60444,
+	"my_id": 11,
+	"enable_user_wait": 0,
+	"sleep_cnt_second": 10,
+	"check_eth_rx_cnt": 2
+}
