@@ -5,10 +5,12 @@
 #include "gw_utility.h"
 #include "msg_queue.h"
 #include "timer.h"
+#include "define_common.h"
 
 typedef struct g_air_para{
 	g_msg_queue_para*  g_msg_queue;
 	int                running;
+    ConfigureNode*     node;
 	para_thread*       para_t;
 	para_thread*       send_para_t;
 	zlog_category_t*   log_handler;

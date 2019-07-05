@@ -3,7 +3,7 @@
 #include "gw_frame.h"
 #include "cJSON.h"
 
-void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
+void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // add parse seq_id ---- continue
 	struct msg_st data;
 	switch(Info->subtype){
 		case BEACON:
@@ -13,6 +13,7 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			memcpy(data.msg_json,Info->source_mac_addr,6);
 			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
 			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -23,6 +24,7 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			memcpy(data.msg_json,Info->source_mac_addr,6);
 			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
 			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -33,6 +35,7 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			memcpy(data.msg_json,Info->source_mac_addr,6);
 			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
 			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -43,12 +46,13 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			memcpy(data.msg_json,Info->source_mac_addr,6);
 			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
 			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
 		default:
 		{
-			zlog_info(g_air->log_handler,"error subtype in process_recived_signal(), Info->subtype = %d \n", Info->subtype);
+			zlog_info(g_air->log_handler,"error subtype : Info->subtype = %d !!!!!!!!!!!!!!!!!!!\n", Info->subtype);
 			break;
 		}
 	}
@@ -62,35 +66,13 @@ void gw_poll_receive(g_air_para* g_air){
 	while(1){ // wait for air_signal
 		int stat = gw_monitor_poll(temp_Info, 2, g_air->log_handler); // receive 2 * 5ms
 		if(stat == 26){
-			zlog_info(g_air->log_handler,"receive new air frame \n");
+			//zlog_info(g_air->log_handler,"receive new air frame \n");
 			process_recived_signal(temp_Info, g_air);
 		}else if(stat < 26){
 			//zlog_info(g_air->log_handler,"poll timeout , stat = %d \n" , stat);
 		}
 	}
 	free(temp_Info);
-}
-
-void process_air(g_air_para* g_air){ // simulate
-	zlog_info(g_air->log_handler,"Enter process_air()");
-
-	char mac_buf[6];
-	char mac_buf_dest[6];
-	char mac_buf_next[6];	
-	char* ve_mac = "00aa00bb00cc";
-	char* bs_mac = "000c29d46f68";
-
-	change_mac_buf(ve_mac,mac_buf);	
-	change_mac_buf(bs_mac,mac_buf_dest);
-	change_mac_buf(bs_mac,mac_buf_next);
-	{
-		management_frame_Info* temp_Info = new_air_frame(g_air->running,0,mac_buf,mac_buf_dest,mac_buf_next,0);
-		process_recived_signal(temp_Info, g_air);
-		free(temp_Info);
-		g_air->running = -1;
-	}
-	
-	zlog_info(g_air->log_handler,"exit process_air()");
 }
 
 void* process_air_thread(void* args){
@@ -112,12 +94,13 @@ void* process_air_thread(void* args){
 
 int initProcessAirThread(struct ConfigureNode* Node, g_air_para** g_air, 
 		g_msg_queue_para*  g_msg_queue, zlog_category_t* handler){
-	zlog_info(handler,"initProcessAirThread()");
+	//zlog_info(handler,"initProcessAirThread()");
 	*g_air = (g_air_para*)malloc(sizeof(struct g_air_para));
 	(*g_air)->log_handler = handler;
 	(*g_air)->para_t = newThreadPara();
 	(*g_air)->send_para_t = newThreadPara();
 	(*g_air)->running = -1;
+	(*g_air)->node = Node;
 	(*g_air)->g_msg_queue = g_msg_queue;
 
 	//zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_air)->g_msg_queue->msgid);
@@ -166,19 +149,19 @@ void print_subtype(int32_t subtype, g_air_para* g_air){
 
 
 int send_airSignal(int32_t subtype, char* mac_buf, char* mac_buf_dest, char* mac_buf_next, g_air_para* g_air){
-	zlog_info(g_air->log_handler,"send_airSignal : subtype = %d \n" , subtype);
 	pthread_mutex_lock(g_air->send_para_t->mutex_);
+	system_info_para* g_system_info = g_air->node->system_info;
+	g_system_info->send_id = g_system_info->send_id  + 1;
 	int status;
-	management_frame_Info* frame_Info = new_air_frame(subtype, 0,mac_buf,mac_buf_dest,mac_buf_next,0);
+	management_frame_Info* frame_Info = new_air_frame(subtype, 0,mac_buf,mac_buf_dest,mac_buf_next,g_system_info->send_id);
 	status = handle_air_tx(frame_Info,g_air->log_handler);
 	free(frame_Info);
 	pthread_mutex_unlock(g_air->send_para_t->mutex_);
 
 	if(status == 26){ // send success
-		//zlog_info(g_air->log_handler,"send_airSignal :  subtype = %d , send successful\n" , subtype);
 		print_subtype(subtype,g_air);
 	}else if(status < 26){
-		zlog_info(g_air->log_handler,"air_tx,status = %d \n" , status);
+		zlog_info(g_air->log_handler,"air_tx,status = %d , subtype = %d \n" , status, subtype);
 	}
 	return status;
 }

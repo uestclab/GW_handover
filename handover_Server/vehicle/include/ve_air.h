@@ -12,6 +12,7 @@ typedef struct g_air_para{
 	int                startup;
 	para_thread*       para_t;
 	para_thread*       send_para_t;
+	ConfigureNode*     node;
 	zlog_category_t*   log_handler;
 }g_air_para;
 

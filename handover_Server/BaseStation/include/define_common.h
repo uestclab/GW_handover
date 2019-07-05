@@ -14,11 +14,13 @@ typedef struct system_info_para{
 	int         have_ve_mac;
 	int         monitored;
 	int         handover_cnt;
+// --------  handover signal sequece 
+    uint16_t    send_id;
+	uint16_t    rcv_id;
 // --------  x2 interface 
 	int         sourceBs_dac_disabled;
 	int         received_reassociation;    
 }system_info_para;
-
 
 typedef struct ConfigureNode{
 	system_info_para*  system_info; // system all info : include state variable

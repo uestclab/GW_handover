@@ -10,7 +10,9 @@ typedef struct system_info_para{
 	char        link_bs_mac[6];
 	char        ve_mac[6];
 	char        next_bs_mac[6]; // send REASSOCIATION as dst
-	int         isLinked;    
+	int         isLinked;
+	uint16_t    send_id;
+	uint16_t    rcv_id;    
 }system_info_para;
 
 

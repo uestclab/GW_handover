@@ -26,7 +26,11 @@ void monitor_loop(g_monitor_para* g_monitor){
 
 		error_d = get_crc_error_cnt(g_monitor->g_RegDev) - pre_error_cnt;
 		pre_error_cnt = get_crc_error_cnt(g_monitor->g_RegDev);
-		
+
+		if(correct_d < error_d){
+			printf("monitor_loop : correct_d < error_d , %d, %d --- quility = %d \n", correct_d, error_d,quility);
+		}		
+
 		quility = correct_d - error_d + quility;
 		if(quility > 15){
 			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, quility, g_monitor->g_network);

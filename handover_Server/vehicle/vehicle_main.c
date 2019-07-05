@@ -59,6 +59,9 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	memset(clientConfigure->system_info->ve_mac,0,6);
 	memset(clientConfigure->system_info->link_bs_mac,0,6);
 	memset(clientConfigure->system_info->next_bs_mac,0,6);
+
+	clientConfigure->system_info->send_id = 0;
+	clientConfigure->system_info->rcv_id = 0;
 // 
 	const char* configure_path = "../conf/ve_conf.json";
 	char* pConfigure_file = readfile(configure_path);
@@ -105,6 +108,16 @@ int process_exception(char* buf, int buf_len, char *from, void* arg)
 
 int main(int argc, char *argv[]) // main thread
 {
+	if(argc == 2){
+		if(argv[1] != NULL){
+			if(strcmp(argv[1],"-v") == 0)
+				printf("version : [%s %s] \n",__DATE__,__TIME__);
+			else
+				printf("error parameter\n");
+			return 0;
+		}
+	}
+
 	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 

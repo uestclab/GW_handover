@@ -75,7 +75,6 @@ void timer_cb(void* in_data, g_msg_queue_para* g_msg_queue){
 	postMsgQueue(&data,g_msg_queue);
 }
 
-
 int is_my_air_frame(char* src, char* dest){
 	int i = 0;
 	for(i=0;i<6;i++){
@@ -95,6 +94,12 @@ char* msgJsonDestMac(char* msg_json){
 
 char* msgJsonNextDstMac(char* msg_json){
 	return msg_json + 12;
+}
+
+uint16_t msgJsonSeqId(char* msg_json){
+	uint16_t seq_id = 0;
+	memcpy(&seq_id, msg_json + 18, 2);
+	return seq_id;
 }
 
 void configureDstMacToBB(char* dst_buf, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler){
@@ -155,9 +160,6 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		case MSG_SERVER_RECALL_MONITOR:
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_SERVER_RECALL_MONITOR: msg_number = %d",getData->msg_number);
-			printf("receive MSG_SERVER_RECALL_MONITOR \n");
-			for(int i=0;i<2;i++)
-				gw_sleep();
 			if(g_system_info->monitored == 0 && g_system_info->bs_state == STATE_WAIT_MONITOR){
 				g_system_info->monitored = 1;
 				startMonitor(g_monitor,3);
@@ -188,14 +190,32 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 	}	
 }
 
+void printMsgType(long int type){
+	if(type == MSG_RECEIVED_BEACON)
+		printf("receive MSG_RECEIVED_BEACON \n");
+	else if(type == MSG_RECEIVED_ASSOCIATION_RESPONSE)
+		printf("receive MSG_RECEIVED_ASSOCIATION_RESPONSE \n");
+	else if(type == MSG_RECEIVED_HANDOVER_START_RESPONSE)
+		printf("receive MSG_RECEIVED_HANDOVER_START_RESPONSE \n");
+	else if(type == MSG_RECEIVED_REASSOCIATION)
+		printf("receive MSG_RECEIVED_REASSOCIATION \n");
+}
+
 void process_air_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
 				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
+
+	if(g_system_info->rcv_id == msgJsonSeqId(getData->msg_json)){
+		printMsgType(getData->msg_type);
+	}
+	g_system_info->rcv_id = msgJsonSeqId(getData->msg_json);
+
 	switch(getData->msg_type){
 		case MSG_RECEIVED_BEACON:
 		{
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_BEACON: msg_number = %d",getData->msg_number);
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_BEACON: msg_number = %d ", getData->msg_number);
+
 			if(g_system_info->have_ve_mac == 0){
 				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
 				g_system_info->have_ve_mac = 1;
@@ -216,7 +236,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
 		{
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_RESPONSE: msg_number = %d",getData->msg_number);
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_RESPONSE: msg_number = %d ", getData->msg_number);
 
 			/* check dest mac */
 			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
@@ -227,7 +247,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			// need check system state
 			if(g_system_info->bs_state == STATE_INIT_SELECTED){
 				send_initcompleted_signal(g_network->node->my_id, g_network);
-				trigger_mac_id(g_RegDev); // 0418 add 
+				trigger_mac_id(g_RegDev); 
 				open_ddr(g_RegDev);
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING");
@@ -251,7 +271,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 		}
 		case MSG_RECEIVED_HANDOVER_START_RESPONSE:
 		{
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_RESPONSE: msg_number = %d",getData->msg_number);
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_RESPONSE: msg_number = %d ", getData->msg_number);
 
 			/* check dest mac */
 			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
@@ -272,14 +292,13 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			usleep(1000);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			//send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 
 			break;
 		}
 		case MSG_RECEIVED_REASSOCIATION:// !!!!!!!!!!!!!!!!!!!!!!!! ve start to connect target bs
 		{
 
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_REASSOCIATION: msg_number = %d",getData->msg_number);
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_REASSOCIATION: msg_number = %d ", getData->msg_number);
 
 			if(g_system_info->have_ve_mac == 0){
 				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
@@ -298,14 +317,12 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 					break;
 				}
 
-				//usleep(3000); // wait source bs disable
 				g_system_info->received_reassociation = 1;
 				if(g_system_info->sourceBs_dac_disabled == 0){
 					break;				
 				}
 
 				// for target bs
-
 				struct msg_st data;
 				data.msg_type = MSG_TARGET_BS_START_WORKING;
 				data.msg_number = MSG_TARGET_BS_START_WORKING;
@@ -319,14 +336,14 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 				send_dac_closed_x2_signal(g_network->node->my_id, g_x2); // inform target bs , dac is closed
 
-				reset_bb(g_RegDev);
+				//reset_bb(g_RegDev); //tmp cancel for sync failed test
 
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 
 			}else
-				zlog_info(zlog_handler," 0415 debug ----STATE_TARGET_SELECTED ? ---- g_system_info->bs_state = %d \n", g_system_info->bs_state);
+				zlog_info(zlog_handler," debug error----STATE_TARGET_SELECTED ? ---- g_system_info->bs_state = %d \n", g_system_info->bs_state);
 
 			break;
 		}
@@ -376,7 +393,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 
 void init_state(g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler){
 	system_info_para* g_system_info = g_network->node->system_info;
-	
+	reset_bb(g_RegDev);
 	/* init src_mac */
 	int ret = set_src_mac_fast(g_RegDev, g_system_info->bs_mac);
 	disable_dac(g_RegDev);
