@@ -149,8 +149,8 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 	int fill_len = frame_Info->length;
 	rc = write(g_paramter->fd,g_paramter->buf,fill_len);
 	// debug	
-	zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
-				rc , g_paramter->fd , fill_len);
+	//zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
+	//			rc , g_paramter->fd , fill_len);
 	if(rc < 0)
 		return rc;
 

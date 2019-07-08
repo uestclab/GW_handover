@@ -50,7 +50,7 @@ void monitor(g_monitor_para* g_monitor){
 			zlog_info(g_monitor->log_handler,"simulate ready_handover in RUNNING STATE\n");
 			send_ready_handover_signal(g_monitor->node->my_id, g_monitor->node->my_mac_str, 20, g_monitor->g_network);
 		}else if(g_monitor->running == 3){
-			zlog_info(g_monitor->log_handler,"start monitor process to check if trigger ready_handover \n");
+			//zlog_info(g_monitor->log_handler,"start monitor process to check if trigger ready_handover \n");
 			monitor_loop(g_monitor); 
 		}
 		g_monitor->running = 0;
@@ -65,7 +65,7 @@ void* monitor_thread(void* args){
     while(1){
 		while (g_monitor->running == 0 )
 		{
-			zlog_info(g_monitor->log_handler,"monitor_thread() : wait for start\n");
+			//zlog_info(g_monitor->log_handler,"monitor_thread() : wait for start\n");
 			pthread_cond_wait(g_monitor->para_t->cond_, g_monitor->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_monitor->para_t->mutex_);
@@ -98,7 +98,7 @@ int initMonitorThread(struct ConfigureNode* Node, g_monitor_para** g_monitor,
 	//zlog_info(handler,"g_msg_queue->msgid = %d \n" , (*g_monitor)->g_msg_queue->msgid);
 	int ret = pthread_create((*g_monitor)->para_t->thread_pid, NULL, monitor_thread, (void*)(*g_monitor));
     if(ret != 0){
-        zlog_error(handler,"create monitor_thread error ! error_code = %d", ret);
+        zlog_error(handler,"error ! --- create monitor_thread error ! error_code = %d", ret);
 		return -1;
     }	
 	return 0;
