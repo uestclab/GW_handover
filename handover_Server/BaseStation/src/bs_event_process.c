@@ -84,26 +84,29 @@ int is_my_air_frame(char* src, char* dest){
 	return 0;
 }
 
-char* msgJsonSourceMac(char* msg_json){
-	return msg_json;
-}
-
-char* msgJsonDestMac(char* msg_json){
-	return msg_json + 6;
-}
-
-char* msgJsonNextDstMac(char* msg_json){
-	return msg_json + 12;
-}
-
-uint16_t msgJsonSeqId(char* msg_json){
-	uint16_t seq_id = 0;
-	memcpy(&seq_id, msg_json + 18, 2);
-	return seq_id;
-}
-
 void configureDstMacToBB(char* dst_buf, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler){
 	set_dst_mac_fast(g_RegDev, dst_buf);
+}
+
+struct net_data* parseNetMsg(struct msg_st* getData){
+
+	char* msg_json = getData->msg_json;
+	if(getData->msg_len == 0)
+		return NULL;
+	cJSON * root = NULL;
+	cJSON * item = NULL;
+	root = cJSON_Parse(msg_json);
+
+	struct net_data* tmp_data = (struct net_data*)malloc(sizeof(struct net_data));
+	item = cJSON_GetObjectItem(root, "target_bs_mac");
+	char target_mac_buf[6];
+	change_mac_buf(item->valuestring,target_mac_buf);
+	memcpy(tmp_data->target_bs_mac,target_mac_buf,6);
+	item = cJSON_GetObjectItem(root, "target_bs_ip");
+	memcpy(tmp_data->target_bs_ip,item->valuestring,strlen(item->valuestring)+1);
+
+	cJSON_Delete(root);
+	return tmp_data;
 }
 
 void process_network_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
@@ -148,13 +151,13 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 				for(int i = 0;i<g_network->node->sleep_cnt_second;i++)
 					gw_sleep();
 			}
-
-			memcpy(g_system_info->next_bs_mac,msgJsonSourceMac(getData->msg_json),6); // temp save next bs mac
-			configure_target_ip(NULL, g_x2); 
+			struct net_data* netMsg = parseNetMsg(getData);
+			memcpy(g_system_info->next_bs_mac,netMsg->target_bs_mac,6); // temp save next bs mac
+			configure_target_ip(netMsg->target_bs_ip, g_x2); 
 			// sync data
 			send_change_tunnel_signal(g_network->node->my_id, g_network);
 			initCheckTxBufferThread(g_network->node, g_network->g_msg_queue, g_RegDev, zlog_handler); // 0418 change seq
-
+			free(netMsg);
 			break;
 		}
 		case MSG_SERVER_RECALL_MONITOR:
@@ -201,15 +204,24 @@ void printMsgType(long int type){
 		printf("receive MSG_RECEIVED_REASSOCIATION \n");
 }
 
+struct air_data* parseAirMsg(char* msg_json){
+	struct air_data* tmp_data = (struct air_data*)malloc(sizeof(struct air_data));
+	memcpy(tmp_data,msg_json,sizeof(struct air_data));
+	return tmp_data;
+}
+
+
 void process_air_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
 				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
+	
+	struct air_data* air_msg = parseAirMsg(getData->msg_json);
 
-	if(g_system_info->rcv_id == msgJsonSeqId(getData->msg_json)){
+	if(g_system_info->rcv_id == air_msg->seq_id){
 		printMsgType(getData->msg_type);
 	}
-	g_system_info->rcv_id = msgJsonSeqId(getData->msg_json);
+	g_system_info->rcv_id = air_msg->seq_id;
 
 	switch(getData->msg_type){
 		case MSG_RECEIVED_BEACON:
@@ -217,7 +229,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_BEACON: msg_number = %d ", getData->msg_number);
 
 			if(g_system_info->have_ve_mac == 0){
-				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
+				memcpy(g_system_info->ve_mac,air_msg->source_mac_addr, 6);
 				g_system_info->have_ve_mac = 1;
 				configureDstMacToBB(g_system_info->ve_mac,g_RegDev,zlog_handler);
 				printf(" BEACON receive ve_mac = : \n");
@@ -239,7 +251,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_RESPONSE: msg_number = %d ", getData->msg_number);
 
 			/* check dest mac */
-			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
+			if(is_my_air_frame(g_system_info->bs_mac, air_msg->dest_mac_addr) != 0){
 				zlog_info(zlog_handler," check dest MAC fail , not to my air frame");
 				break;
 			}
@@ -274,7 +286,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_RESPONSE: msg_number = %d ", getData->msg_number);
 
 			/* check dest mac */
-			if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){
+			if(is_my_air_frame(g_system_info->bs_mac, air_msg->dest_mac_addr) != 0){
 				zlog_info(zlog_handler," check dest MAC fail , not to my air frame");
 				break;
 			}
@@ -301,7 +313,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_REASSOCIATION: msg_number = %d ", getData->msg_number);
 
 			if(g_system_info->have_ve_mac == 0){
-				memcpy(g_system_info->ve_mac,msgJsonSourceMac(getData->msg_json), 6);
+				memcpy(g_system_info->ve_mac,air_msg->source_mac_addr, 6);
 				g_system_info->have_ve_mac = 1;
 				configureDstMacToBB(g_system_info->ve_mac,g_RegDev,zlog_handler);
 				zlog_info(zlog_handler," REASSOCIATION receive ve_mac = : ");
@@ -310,10 +322,10 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 
 			/* check dest mac and state */
 			if(g_system_info->bs_state == STATE_WAIT_MONITOR){ // for target bs and other waiting bs
-				if(is_my_air_frame(g_system_info->bs_mac, msgJsonDestMac(getData->msg_json)) != 0){// waiting bs
+				if(is_my_air_frame(g_system_info->bs_mac, air_msg->dest_mac_addr) != 0){// waiting bs
 					printf(" 0415 debug -------- waiting bs \n");
 					printf("msgJsonDestMac(getData->msg_json) = : ");
-					hexdump(msgJsonDestMac(getData->msg_json), 6);
+					hexdump(air_msg->dest_mac_addr, 6);
 					break;
 				}
 
@@ -333,8 +345,8 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
 
 				disable_dac(g_RegDev);
-
-				send_dac_closed_x2_signal(g_network->node->my_id, g_x2); // inform target bs , dac is closed
+				// inform target bs , dac is closed
+				send_dac_closed_x2_signal(g_network->node->my_id, g_network->node->udp_server_ip, g_x2);
 
 				//reset_bb(g_RegDev); //tmp cancel for sync failed test
 
@@ -350,6 +362,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 		default:
 			break;
 	}
+	free(air_msg);
 }
 
 void process_self_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 

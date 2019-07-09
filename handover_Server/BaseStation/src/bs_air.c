@@ -3,17 +3,36 @@
 #include "gw_frame.h"
 #include "cJSON.h"
 
+struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
+/*
+typedef struct air_data{
+	char source_mac_addr[6];
+	char dest_mac_addr[6];
+	char Next_dest_mac_addr[6];
+	uint16_t seq_id;
+}air_data;
+*/
+	struct air_data* tmp_data = (struct air_data*)malloc(sizeof(struct air_data));
+
+	tmp_data->seq_id = Info->seq_id;
+	memcpy(tmp_data->source_mac_addr,Info->source_mac_addr,6);
+	memcpy(tmp_data->dest_mac_addr,Info->dest_mac_addr,6);
+	memcpy(tmp_data->Next_dest_mac_addr,Info->Next_dest_mac_addr,6);
+
+	return tmp_data;
+}
+
+
 void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // add parse seq_id ---- continue
 	struct msg_st data;
+	struct air_data* json_buf = bufTojson(Info,g_air);
+	data.msg_len = sizeof(struct air_data);
+	memcpy(data.msg_json, (char*)json_buf, data.msg_len);
 	switch(Info->subtype){
 		case BEACON:
 		{
 			data.msg_type = MSG_RECEIVED_BEACON;
 			data.msg_number = MSG_RECEIVED_BEACON;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -21,10 +40,6 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // 
 		{
 			data.msg_type = MSG_RECEIVED_ASSOCIATION_RESPONSE;
 			data.msg_number = MSG_RECEIVED_ASSOCIATION_RESPONSE;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -32,10 +47,6 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // 
 		{
 			data.msg_type = MSG_RECEIVED_HANDOVER_START_RESPONSE;
 			data.msg_number = MSG_RECEIVED_HANDOVER_START_RESPONSE;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -43,10 +54,6 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // 
 		{
 			data.msg_type = MSG_RECEIVED_REASSOCIATION;
 			data.msg_number = MSG_RECEIVED_REASSOCIATION;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
@@ -56,6 +63,7 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // 
 			break;
 		}
 	}
+	free(json_buf);
 }
 
 
@@ -69,7 +77,7 @@ void gw_poll_receive(g_air_para* g_air){
 			zlog_info(g_air->log_handler,"receive new air frame \n");
 			process_recived_signal(temp_Info, g_air);
 		}else if(stat < 26){
-			zlog_error(g_air->log_handler,"error ! --- poll timeout , stat = %d \n" , stat);
+			//zlog_error(g_air->log_handler,"error ! --- poll timeout , stat = %d \n" , stat);
 		}
 	}
 	free(temp_Info);

@@ -82,6 +82,18 @@ typedef enum msg_event{
 	MSG_TARGET_BS_START_WORKING,
 }msg_event;
 
+// used in msg_json
+typedef struct air_data{
+	char source_mac_addr[6];
+	char dest_mac_addr[6];
+	char Next_dest_mac_addr[6];
+	uint16_t seq_id;
+}air_data;
+
+typedef struct net_data{
+	char  target_bs_mac[6];
+	char  target_bs_ip[32];
+}net_data;
 
 
 

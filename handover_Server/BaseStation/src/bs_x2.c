@@ -20,7 +20,7 @@ void printcx2json(char* json, g_x2_para* g_x2){
 	zlog_info(g_x2->log_handler,"--------------------------------------\n");
 }
 
-void processX2Signal(char* buf, int32_t length, g_x2_para* g_x2){ // continue
+void processX2Signal(char* buf, int32_t length, struct sockaddr_in remote_addr, g_x2_para* g_x2){ // continue
 
 	cJSON * root = NULL;
     cJSON * item = NULL;
@@ -34,6 +34,8 @@ void processX2Signal(char* buf, int32_t length, g_x2_para* g_x2){ // continue
 		data.msg_number = MSG_SOURCE_BS_DAC_CLOSED;
 		data.msg_len = 0;
 		postMsgQueue(&data,g_x2->g_msg_queue);
+		item = cJSON_GetObjectItem(root,"own_ip");
+		memcpy(g_x2->remote_ip, item->valuestring, strlen(item->valuestring)+1);
 		send_dac_closed_x2_ack_signal(g_x2->node->my_id, g_x2);
 	}else if(strcmp(item->valuestring,"dac_closed_ack") == 0){
 		printcx2json(buf,g_x2);
@@ -52,7 +54,7 @@ void x2_receive(g_x2_para* g_x2){
 			continue;
 		}
 		//printf("%s",g_x2->receive_buf);
-		processX2Signal(g_x2->receive_buf, ret, g_x2);
+		processX2Signal(g_x2->receive_buf, ret, remote_addr, g_x2);
 	}
 }
 
@@ -136,7 +138,7 @@ int freeX2Thread(g_x2_para* g_x2)
 // --------------------------------------
 void sendX2Signal(char* json, g_x2_para* g_x2){
 	zlog_info(g_x2->log_handler,"bs x2 send : %s \n" , json);
-	configure_target_ip(NULL, g_x2); // temp for test process 
+	//configure_target_ip(NULL, g_x2); // temp for test process 
 	g_x2->sock_client = socket(AF_INET,SOCK_DGRAM,0);
 	struct sockaddr_in saddr;
     memset(&saddr,0,sizeof(saddr));
@@ -152,13 +154,13 @@ void sendX2Signal(char* json, g_x2_para* g_x2){
 }
 
 void configure_target_ip(char* ip, g_x2_para* g_x2){
-	//memcpy(g_x2->remote_ip,ip,strlen(ip)+1);
+	memcpy(g_x2->remote_ip,ip,strlen(ip)+1);
 	if(g_x2->node->my_id == 11){
 		char* ip_66 = "192.168.10.66";
-		memcpy(g_x2->remote_ip,ip_66,strlen(ip_66)+1);
+		//memcpy(g_x2->remote_ip,ip_66,strlen(ip_66)+1);
 	}else if(g_x2->node->my_id == 22){
 		char* ip_33 = "192.168.10.33";
-		memcpy(g_x2->remote_ip,ip_33,strlen(ip_33)+1);
+		//memcpy(g_x2->remote_ip,ip_33,strlen(ip_33)+1);
 	}
 }
 
