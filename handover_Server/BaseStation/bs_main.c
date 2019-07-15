@@ -23,6 +23,7 @@
 #include "cJSON.h"
 #include "gw_utility.h"
 #include "gw_control.h"
+#include "ThreadPool.h"
 
 
 zlog_category_t * serverLog(const char* path){
@@ -79,6 +80,11 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
 	clientConfigure->system_info->send_id = 0;
 	clientConfigure->system_info->rcv_id = 0;
+
+	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	clientConfigure->system_info->received_air_state_list->received_association_response = 0;
+	clientConfigure->system_info->received_air_state_list->received_handover_start_response = 0;
+	clientConfigure->system_info->received_air_state_list->received_reassociation = 0;
 
 // 
 	const char* configure_path = "../conf/bs_conf.json";
@@ -223,13 +229,16 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 
+	/* ThreadPool handler */
+	ThreadPool* g_threadpool = NULL;
+	createThreadPool(4096, 4, &g_threadpool);
 
 	gw_sleep();
 
 // ------------------------
 
 	/* msg loop */ /* state machine */
-	eventLoop(g_network, g_monitor, g_air, g_x2, g_msg_queue, g_RegDev, zlog_handler);
+	eventLoop(g_network, g_monitor, g_air, g_x2, g_msg_queue, g_RegDev, g_threadpool, zlog_handler);
 
 
 	freeNetworkThread(g_network);

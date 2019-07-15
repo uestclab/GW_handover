@@ -5,6 +5,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+typedef struct received_state_list{
+	int32_t            received_association_response;
+	int32_t            received_handover_start_response;
+	int32_t            received_reassociation; 
+}received_state_list;
+
+
 typedef struct system_info_para{
 	int32_t     bs_state; // indicate system state while time flow
 	char        bs_mac[6];
@@ -19,7 +26,9 @@ typedef struct system_info_para{
 	uint16_t    rcv_id;
 // --------  x2 interface 
 	int         sourceBs_dac_disabled;
-	int         received_reassociation;    
+	int         received_reassociation;
+// -------- air_signal retransmit 
+	received_state_list* received_air_state_list;
 }system_info_para;
 
 typedef struct ConfigureNode{
@@ -80,6 +89,7 @@ typedef enum msg_event{
 	MSG_TIMEOUT, // boundary
 	MSG_START_HANDOVER_THROUGH_AIR,
 	MSG_TARGET_BS_START_WORKING,
+	MSG_CHECK_RECEIVED_LIST,
 }msg_event;
 
 // used in msg_json
@@ -94,7 +104,6 @@ typedef struct net_data{
 	char  target_bs_mac[6];
 	char  target_bs_ip[32];
 }net_data;
-
 
 
 // system state 

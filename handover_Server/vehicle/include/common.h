@@ -5,14 +5,23 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+typedef struct received_state_list{
+	int32_t            received_association_request;
+	int32_t            received_handover_start_request;
+	int32_t            received_deassociation; 
+}received_state_list;
+
 typedef struct system_info_para{
 	int32_t     ve_state; // indicate system state while time flow
 	char        link_bs_mac[6];
 	char        ve_mac[6];
 	char        next_bs_mac[6]; // send REASSOCIATION as dst
 	int         isLinked;
+// --------  handover signal sequece 
 	uint16_t    send_id;
-	uint16_t    rcv_id;    
+	uint16_t    rcv_id;
+// -------- air_signal retransmit 
+	received_state_list* received_air_state_list;    
 }system_info_para;
 
 
@@ -23,12 +32,6 @@ typedef struct ConfigureNode{
 	char* my_Ethernet;
 }ConfigureNode;
 
-// test msg type
-#define MSG_NETWORK 1
-#define MSG_AIR     2
-#define MSG_MONITOR 3
-
-
 // system state 
 
 #define STATE_STARTUP           0
@@ -36,12 +39,19 @@ typedef struct ConfigureNode{
 #define STATE_WORKING           2
 #define STATE_HANDOVER          3
 
-
-#define MSG_RECEIVED_ASSOCIATION_REQUEST      10
-#define MSG_RECEIVED_DEASSOCIATION            11
-#define MSG_RECEIVED_HANDOVER_START_REQUEST   12
- 
-#define MSG_STARTUP                           20
+typedef enum msg_event{
+	/* test msg type */
+    MSG_NETWORK = 1,
+	MSG_AIR,
+	MSG_MONITOR,
+	/* receive air signal , air event */
+	MSG_RECEIVED_ASSOCIATION_REQUEST,
+    MSG_RECEIVED_DEASSOCIATION,
+    MSG_RECEIVED_HANDOVER_START_REQUEST,
+	/* self event */
+	MSG_STARTUP,
+}msg_event;
 
 
 #endif//VEHICLE_COMMON_H
+

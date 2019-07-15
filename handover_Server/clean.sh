@@ -1,8 +1,21 @@
 #！/bin/sh
 f=./arm
+b=./build
 # cjson
 cd ./dependence
 cd ./cjson
+if [ -d $f ]
+then 
+    rm -rf $f
+fi
+
+if [ -d $b ]
+then 
+    rm -rf $b
+fi
+
+# gw_threadpool
+cd ../gw_threadpool
 if [ -d $f ]
 then 
     rm -rf $f
@@ -27,6 +40,11 @@ cd ../gw_utility
 if [ -d $f ]
 then 
     rm -rf $f
+fi
+
+if [ -d $b ]
+then 
+    rm -rf $b
 fi
 
 # gw_management_frame
@@ -63,6 +81,12 @@ then
 fi
 
 cd ../handoverServer
+if [ -d "./build" ]
+then 
+    rm -rf ./build
+fi
+
+cd ../ut
 if [ -d "./build" ]
 then 
     rm -rf ./build

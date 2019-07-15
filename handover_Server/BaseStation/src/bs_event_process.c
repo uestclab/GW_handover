@@ -4,6 +4,7 @@
 #include "bs_network_json.h"
 #include "gw_frame.h"
 #include "gw_control.h"
+#include "bs_utility.h"
 
 #include "timer.h"
 
@@ -67,50 +68,10 @@ int initCheckTxBufferThread(struct ConfigureNode* Node, g_msg_queue_para* g_msg_
 
 // -----------------------------------------------------------------------------------------------------------
 
-void timer_cb(void* in_data, g_msg_queue_para* g_msg_queue){
-	struct msg_st data;
-	data.msg_type = MSG_TIMEOUT;
-	data.msg_number = MSG_TIMEOUT;
-	data.msg_len = 0;
-	postMsgQueue(&data,g_msg_queue);
-}
-
-int is_my_air_frame(char* src, char* dest){
-	int i = 0;
-	for(i=0;i<6;i++){
-		if(src[i] != dest[i])
-			return -1;
-	}
-	return 0;
-}
-
-void configureDstMacToBB(char* dst_buf, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler){
-	set_dst_mac_fast(g_RegDev, dst_buf);
-}
-
-struct net_data* parseNetMsg(struct msg_st* getData){
-
-	char* msg_json = getData->msg_json;
-	if(getData->msg_len == 0)
-		return NULL;
-	cJSON * root = NULL;
-	cJSON * item = NULL;
-	root = cJSON_Parse(msg_json);
-
-	struct net_data* tmp_data = (struct net_data*)malloc(sizeof(struct net_data));
-	item = cJSON_GetObjectItem(root, "target_bs_mac");
-	char target_mac_buf[6];
-	change_mac_buf(item->valuestring,target_mac_buf);
-	memcpy(tmp_data->target_bs_mac,target_mac_buf,6);
-	item = cJSON_GetObjectItem(root, "target_bs_ip");
-	memcpy(tmp_data->target_bs_ip,item->valuestring,strlen(item->valuestring)+1);
-
-	cJSON_Delete(root);
-	return tmp_data;
-}
-
+/* network event */
 void process_network_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+				ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -132,7 +93,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 
 			// Next_dest_mac_addr set itself -- first air frame sent by bs ---!
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-
+			postCheckWorkToThreadPool(ASSOCIATION_REQUEST, g_msg_queue, g_threadpool);
 			g_system_info->bs_state = STATE_INIT_SELECTED;
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_INIT_SELECTED");
 
@@ -193,26 +154,10 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 	}	
 }
 
-void printMsgType(long int type){
-	if(type == MSG_RECEIVED_BEACON)
-		printf("receive MSG_RECEIVED_BEACON \n");
-	else if(type == MSG_RECEIVED_ASSOCIATION_RESPONSE)
-		printf("receive MSG_RECEIVED_ASSOCIATION_RESPONSE \n");
-	else if(type == MSG_RECEIVED_HANDOVER_START_RESPONSE)
-		printf("receive MSG_RECEIVED_HANDOVER_START_RESPONSE \n");
-	else if(type == MSG_RECEIVED_REASSOCIATION)
-		printf("receive MSG_RECEIVED_REASSOCIATION \n");
-}
-
-struct air_data* parseAirMsg(char* msg_json){
-	struct air_data* tmp_data = (struct air_data*)malloc(sizeof(struct air_data));
-	memcpy(tmp_data,msg_json,sizeof(struct air_data));
-	return tmp_data;
-}
-
-
+/* air event */
 void process_air_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+				ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	
@@ -256,6 +201,12 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				break;
 			}
 
+			/* check  duplicate air frame */
+			if(checkAirFrameDuplicate(MSG_RECEIVED_ASSOCIATION_RESPONSE, g_system_info)){
+				zlog_info(zlog_handler, "duplicated association response air frame !!!!!!!! ");
+				break;
+			}
+
 			// need check system state
 			if(g_system_info->bs_state == STATE_INIT_SELECTED){
 				send_initcompleted_signal(g_network->node->my_id, g_network);
@@ -290,6 +241,12 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				zlog_info(zlog_handler," check dest MAC fail , not to my air frame");
 				break;
 			}
+
+			/* check  duplicate air frame */
+			if(checkAirFrameDuplicate(MSG_RECEIVED_HANDOVER_START_RESPONSE, g_system_info)){
+				zlog_info(zlog_handler, "duplicated handover start response air frame !!!!!!!! ");
+				break;
+			}
 	
 			/* 3. send DEASSOCIATION via air */
 	
@@ -303,7 +260,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 			zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
 			usleep(1000);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			postCheckWorkToThreadPool(DEASSOCIATION, g_msg_queue, g_threadpool);
 
 			break;
 		}
@@ -344,11 +301,17 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
 
+				/* check  duplicate air frame */
+				if(checkAirFrameDuplicate(MSG_RECEIVED_REASSOCIATION, g_system_info)){
+					zlog_info(zlog_handler, "duplicated reassociation air frame in source bs !!!!!!!! ");
+					break;
+				}
+
 				disable_dac(g_RegDev);
 				// inform target bs , dac is closed
 				send_dac_closed_x2_signal(g_network->node->my_id, g_network->node->udp_server_ip, g_x2);
 
-				//reset_bb(g_RegDev); //tmp cancel for sync failed test
+				reset_bb(g_RegDev);
 
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
@@ -365,11 +328,23 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 	free(air_msg);
 }
 
+/* self event */
 void process_self_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+				g_air_para* g_air, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+				ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
+		case MSG_CHECK_RECEIVED_LIST:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_CHECK_RECEIVED_LIST: msg_number = %d", getData->msg_number);
+
+			int32_t subtype = -1;
+			memcpy((char*)(&subtype), getData->msg_json, getData->msg_len);
+			// check receive list according to subtype
+			checkReceivedList(subtype, g_system_info, g_msg_queue, g_air, g_threadpool);
+			break;
+		}
 		case MSG_TIMEOUT:
 		{
 
@@ -383,7 +358,8 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			
 			/* 1. air_interface send Handover start request (Next_dest_mac_addr set target) */
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->next_bs_mac, g_air);
-			memset(g_system_info->next_bs_mac,0,6);
+			//memset(g_system_info->next_bs_mac,0,6); // note in checkRecivedList
+			postCheckWorkToThreadPool(HANDOVER_START_REQUEST, g_msg_queue, g_threadpool);
 			break;
 		}
 		case MSG_TARGET_BS_START_WORKING:
@@ -392,7 +368,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 
 			enable_dac(g_RegDev);
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-
+			postCheckWorkToThreadPool(ASSOCIATION_REQUEST, g_msg_queue, g_threadpool);
 			g_system_info->bs_state = STATE_TARGET_SELECTED;
 			g_system_info->received_reassociation = 0; // clear status
 			g_system_info->sourceBs_dac_disabled = 0; // clear status  
@@ -414,7 +390,7 @@ void init_state(g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_categor
 }
 
 void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para* g_air, g_x2_para* g_x2, 
-    g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+    g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 
 	init_state(g_network, g_RegDev,zlog_handler);
@@ -427,11 +403,11 @@ void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para*
 			continue;
 
 		if(getData->msg_type < MSG_START_MONITOR)
-			process_air_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, zlog_handler);
+			process_air_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 		else if(getData->msg_type < MSG_TIMEOUT)
-			process_network_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, zlog_handler);
+			process_network_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 		else if(getData->msg_type >= MSG_TIMEOUT)
-			process_self_event(getData, g_network, g_monitor, g_air, g_RegDev, zlog_handler);
+			process_self_event(getData, g_network, g_monitor, g_air, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 
 		free(getData);
 	}

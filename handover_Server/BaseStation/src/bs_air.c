@@ -4,14 +4,6 @@
 #include "cJSON.h"
 
 struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
-/*
-typedef struct air_data{
-	char source_mac_addr[6];
-	char dest_mac_addr[6];
-	char Next_dest_mac_addr[6];
-	uint16_t seq_id;
-}air_data;
-*/
 	struct air_data* tmp_data = (struct air_data*)malloc(sizeof(struct air_data));
 
 	tmp_data->seq_id = Info->seq_id;

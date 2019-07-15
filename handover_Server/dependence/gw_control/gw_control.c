@@ -169,13 +169,13 @@ int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf){ //src_mac_buf[
 }
 
 /* ----------------------------- process ddr_tx_hold_on and mac_id sync ---------------------------- */
-
+ 
 // bit : 2 , 0 -- open , 1 -- close
 int open_ddr(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"open_ddr\n");
 	uint32_t value = 0x00000000;
 	//value = value << 24;
-	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value); // Note :
 	if(rc < 0){
 		zlog_info(g_RegDev->log_handler,"open_ddr write failed !!! \n");
 		return rc;
@@ -187,7 +187,7 @@ int close_ddr(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"close_ddr\n");
 	uint32_t value = 0x00000004;
 	//value = value << 24;
-	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value); // Note :
 	if(rc < 0){
 		zlog_info(g_RegDev->log_handler,"close_ddr write failed !!! \n");
 		return rc;
@@ -200,7 +200,7 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"trigger_mac_id\n");
 	uint32_t value = 0x00000002;
 	//value = value << 24;
-	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value); // Note :
 	if(rc < 0){
 		zlog_info(g_RegDev->log_handler,"trigger_mac_id write failed !!! \n");
 		return rc;

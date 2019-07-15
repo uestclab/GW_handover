@@ -62,6 +62,11 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
 	clientConfigure->system_info->send_id = 0;
 	clientConfigure->system_info->rcv_id = 0;
+
+	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	clientConfigure->system_info->received_air_state_list->received_association_request = 0;
+	clientConfigure->system_info->received_air_state_list->received_handover_start_request = 0;
+	clientConfigure->system_info->received_air_state_list->received_deassociation = 0;
 // 
 	const char* configure_path = "../conf/ve_conf.json";
 	char* pConfigure_file = readfile(configure_path);

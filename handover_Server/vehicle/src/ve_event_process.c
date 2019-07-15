@@ -2,7 +2,44 @@
 #include "zlog.h"
 #include "cJSON.h"
 #include "gw_frame.h"
+/* ----------------------------------------------------------------- */
 
+int checkAirFrameDuplicate(msg_event receivedAirEvent, system_info_para* g_system_info){
+	int flag = 0;
+	received_state_list* list = g_system_info->received_air_state_list;
+	switch(receivedAirEvent){
+		case MSG_RECEIVED_HANDOVER_START_REQUEST:
+		{
+			if(list->received_handover_start_request == 0){
+				list->received_handover_start_request = 1;
+			}else{
+				flag = 1;
+			}			
+			break;
+		}
+		case MSG_RECEIVED_DEASSOCIATION:
+		{
+			if(list->received_deassociation == 0){
+				list->received_deassociation = 1;
+			}else{
+				flag = 1;
+			}			
+			break;
+		}
+		case MSG_RECEIVED_ASSOCIATION_REQUEST:
+		{
+			if(list->received_association_request == 0){
+				list->received_association_request = 1;
+			}else{
+				flag = 1;
+			}			
+			break;
+		}
+	}
+	return flag;
+}
+
+/* ----------------------------------------------------------------- */
 
 int is_my_air_frame(char* src, char* dest){
 	int i = 0;
@@ -44,6 +81,8 @@ void printMsgType(long int type){
 		printf("receive MSG_RECEIVED_HANDOVER_START_REQUEST \n");
 }
 
+
+
 void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_para* g_periodic, g_RegDev_para* g_RegDev, 
 					zlog_category_t* zlog_handler)
 {
@@ -60,7 +99,11 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_REQUEST: msg_number = %d",getData->msg_number);
 
-			if(g_system_info->isLinked == 1 && g_system_info->ve_state == STATE_WORKING){
+			/* check duplicate air frame */
+			if(checkAirFrameDuplicate(MSG_RECEIVED_ASSOCIATION_REQUEST, g_system_info)){
+				zlog_info(zlog_handler, "duplicated association request air frame !!!!!!!! ");
+			}
+			if(g_system_info->isLinked == 1 && g_system_info->ve_state == STATE_WORKING){ // 
 				break;
 			}
 			
@@ -87,6 +130,10 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_DEASSOCIATION: msg_number = %d",getData->msg_number);
 
+			/* check duplicate air frame */
+			if(checkAirFrameDuplicate(MSG_RECEIVED_DEASSOCIATION, g_system_info)){
+				zlog_info(zlog_handler, "duplicated deassociation air frame !!!!!!!! ");
+			}
 			if(g_system_info->isLinked == 0)
 				break;
 
@@ -103,11 +150,16 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_REQUEST: msg_number = %d",getData->msg_number);
 
+			/* check duplicate air frame */
+			if(checkAirFrameDuplicate(MSG_RECEIVED_HANDOVER_START_REQUEST, g_system_info)){
+				zlog_info(zlog_handler, "duplicated handover start request air frame !!!!!!!! ");
+				//break;
+			}
+
 			memcpy(g_system_info->next_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
 			
 			/* close ddr */
 			close_ddr(g_RegDev);
-
 
 			// testdata point
 			int time_cnt = 0;

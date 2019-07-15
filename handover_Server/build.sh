@@ -1,8 +1,35 @@
 #！/bin/sh
 f=./arm
+b=./build
+
 # cjson
 cd ./dependence
 cd ./cjson
+if [ -d $f ]
+then 
+    rm -rf $f
+	mkdir $f
+else
+    mkdir $f
+fi
+cd ./arm
+cmake ..
+make && make install
+
+cd ..
+if [ -d $b ]
+then 
+    rm -rf $b
+	mkdir $b
+else
+    mkdir $b
+fi
+cd ./build
+cmake .. -DPUBLIC=OFF
+make && make install
+
+# gw_threadpool
+cd ../../gw_threadpool
 if [ -d $f ]
 then 
     rm -rf $f
@@ -51,6 +78,18 @@ else
 fi
 cd ./arm
 cmake ..
+make && make install
+
+cd ..
+if [ -d $b ]
+then 
+    rm -rf $b
+	mkdir $b
+else
+    mkdir $b
+fi
+cd ./build
+cmake .. -DPUBLIC=OFF
 make && make install
 
 # gw_management_frame
