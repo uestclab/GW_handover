@@ -113,8 +113,14 @@ void resetReceivedList(received_state_list* list){
 
 void* retrans_air_process_thread(void* arg){
 	retrans_air_t* tmp = (retrans_air_t*)arg;
-	zlog_info(tmp->g_msg_queue->log_handler,"retrans_air_process_thread : thread_Id = %lu \n", pthread_self());
-	usleep(1000);
+	//zlog_info(tmp->g_msg_queue->log_handler,"retrans_air_process_thread : thread_Id = %lu \n", pthread_self());
+	int32_t subtype = tmp->subtype;
+	if(subtype == ASSOCIATION_REQUEST)
+		usleep(2000);
+	else if(subtype == HANDOVER_START_REQUEST)
+		usleep(4000);
+	else if(subtype == DEASSOCIATION)
+		usleep(2000);
 	postCheckSendSignal(tmp->subtype, tmp->g_msg_queue);
 	free(tmp);
 }

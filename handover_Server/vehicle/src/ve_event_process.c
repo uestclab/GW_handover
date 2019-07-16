@@ -99,11 +99,9 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_ASSOCIATION_REQUEST: msg_number = %d",getData->msg_number);
 
-			/* check duplicate air frame */
-			if(checkAirFrameDuplicate(MSG_RECEIVED_ASSOCIATION_REQUEST, g_system_info)){
-				zlog_info(zlog_handler, "duplicated association request air frame !!!!!!!! ");
-			}
-			if(g_system_info->isLinked == 1 && g_system_info->ve_state == STATE_WORKING){ // 
+			if(g_system_info->isLinked == 1 && g_system_info->ve_state == STATE_WORKING){
+				zlog_info(zlog_handler," response more ASSOCIATION_REQUEST \n");
+				send_airSignal(ASSOCIATION_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 				break;
 			}
 			
@@ -130,10 +128,6 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_DEASSOCIATION: msg_number = %d",getData->msg_number);
 
-			/* check duplicate air frame */
-			if(checkAirFrameDuplicate(MSG_RECEIVED_DEASSOCIATION, g_system_info)){
-				zlog_info(zlog_handler, "duplicated deassociation air frame !!!!!!!! ");
-			}
 			if(g_system_info->isLinked == 0)
 				break;
 
@@ -150,11 +144,13 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_HANDOVER_START_REQUEST: msg_number = %d",getData->msg_number);
 
-			/* check duplicate air frame */
-			if(checkAirFrameDuplicate(MSG_RECEIVED_HANDOVER_START_REQUEST, g_system_info)){
-				zlog_info(zlog_handler, "duplicated handover start request air frame !!!!!!!! ");
-				//break;
+			if(g_system_info->ve_state == STATE_HANDOVER){
+				zlog_info(zlog_handler," response more HANDOVER_START_REQUEST \n");
+				send_airSignal(HANDOVER_START_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, 
+							   g_system_info->ve_mac, g_periodic->g_air);
+				break;
 			}
+				
 
 			memcpy(g_system_info->next_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
 			
@@ -199,7 +195,7 @@ void init_state(g_air_para* g_air, g_periodic_para* g_periodic, g_RegDev_para* g
 	int ret = set_src_mac_fast(g_RegDev, g_system_info->ve_mac);
 	disable_dac(g_RegDev);
 	close_ddr(g_RegDev);
-
+	release_bb(g_RegDev);
 	enable_dac(g_RegDev);
 	g_system_info->ve_state = STATE_SYSTEM_READY;
 	zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");

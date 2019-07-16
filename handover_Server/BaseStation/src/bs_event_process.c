@@ -312,6 +312,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				send_dac_closed_x2_signal(g_network->node->my_id, g_network->node->udp_server_ip, g_x2);
 
 				reset_bb(g_RegDev);
+				release_bb(g_RegDev);
 
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
@@ -337,10 +338,14 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 	switch(getData->msg_type){
 		case MSG_CHECK_RECEIVED_LIST:
 		{
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_CHECK_RECEIVED_LIST: msg_number = %d", getData->msg_number);
-
 			int32_t subtype = -1;
 			memcpy((char*)(&subtype), getData->msg_json, getData->msg_len);
+			if(subtype == ASSOCIATION_REQUEST)
+				zlog_info(zlog_handler," --- ASSOCIATION_REQUEST ------- EVENT : MSG_CHECK_RECEIVED_LIST: msg_number = %d", getData->msg_number);
+			else if(subtype == HANDOVER_START_REQUEST)
+				zlog_info(zlog_handler," --- HANDOVER_START_REQUEST ----- EVENT : MSG_CHECK_RECEIVED_LIST: msg_number = %d", getData->msg_number);
+			else if(subtype == DEASSOCIATION)
+				zlog_info(zlog_handler," --- DEASSOCIATION ----- EVENT : MSG_CHECK_RECEIVED_LIST: msg_number = %d", getData->msg_number);
 			// check receive list according to subtype
 			checkReceivedList(subtype, g_system_info, g_msg_queue, g_air, g_threadpool);
 			break;
@@ -387,6 +392,7 @@ void init_state(g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_categor
 	int ret = set_src_mac_fast(g_RegDev, g_system_info->bs_mac);
 	disable_dac(g_RegDev);
 	close_ddr(g_RegDev);
+	release_bb(g_RegDev);
 }
 
 void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para* g_air, g_x2_para* g_x2, 

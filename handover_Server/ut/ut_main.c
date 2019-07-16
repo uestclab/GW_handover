@@ -13,6 +13,7 @@
 #include "gw_control.h"
 #include "zlog.h"
 #include "regdev_common.h"
+#include "ThreadPool.h"
 
 #define	REG_PHY_ADDR	0x43C20000
 #define	REG_MAP_SIZE	0X10000
@@ -42,58 +43,25 @@ void closeServerLog(){
 	zlog_fini();
 }
 
+typedef struct id_Info{
+	int32_t id;
+}id_Info;
 
-double calculateFreq(unsigned int number){
-	int freq_offset_i = 0, freq_offset_q =0, freq_offset_i_pre=0, freq_offset_q_pre=0;
-
-	freq_offset_q_pre = number - ((number>>8) << 8);
-	number = number >> 8;
-	freq_offset_i_pre = number - ((number>>8) << 8);
-	number = number >> 8;
-	freq_offset_q = number - ((number>>8) << 8);
-	number = number >> 8;
-	freq_offset_i = number - ((number>>8) << 8);
-
-	if(freq_offset_i > 127)
-		freq_offset_i = freq_offset_i - 256;
-
-	if(freq_offset_q > 127)
-		freq_offset_q = freq_offset_q - 256;
-
-	if(freq_offset_i_pre > 127)
-		freq_offset_i_pre = freq_offset_i_pre - 256;
-
-	if(freq_offset_q_pre > 127)
-		freq_offset_q_pre = freq_offset_q_pre - 256;
-
-	double temp_1 = atan((freq_offset_q * 1.0)/(freq_offset_i * 1.0));
-	double temp_2 = atan((freq_offset_q_pre * 1.0)/(freq_offset_i_pre * 1.0));
-	double diff = temp_1 - temp_2;
-	double result = (diff / 5529.203) * 1000000000;
-	return result;
+void* test_process_thread(void* arg){
+	id_Info* tmp = (id_Info*)arg;
+	uint32_t sum = 0;
+	for(int i = 0; i < 100000; i++)
+		for(int j = 0; j < 10000; j++)
+			sum = sum + i + j;
+	printf("call id = %d sum = %u \n", tmp->id, sum);
 }
 
+void WorkToThreadPool(int32_t id, ThreadPool* g_threadpool){
+	id_Info* tmp = (id_Info*)malloc(sizeof(id_Info));
+	tmp->id = id;
+	AddWorker(test_process_thread,(void*)tmp,g_threadpool);
+} 
 
-// broker callback interface
-int process_exception(char* buf, int buf_len, char *from, void* arg)
-{
-	int ret = 0;
-	if(strcmp(from,"mon/all/pub/system_stat") == 0){
-		printf("system_stat is %s \n" , buf);
-	}
-	return ret;
-}
-
-uint32_t freq_offset(g_RegDev_para* g_RegDev){ // value != 0 : full
-	uint32_t flag = 0x00000000;
-	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x138, &flag);
-	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"freq_offset failed !!! \n");
-		return rc;
-	}
-
-	return flag;
-}
 
 int main(int argc, char *argv[]){
 
@@ -101,29 +69,17 @@ int main(int argc, char *argv[]){
 
 
 	printf(" +++++++++++++++++++++++++++++ start ut_main ++++++++++++++++++++++++++++++++++++++++++++++ \n");
-
-	g_RegDev_para* g_RegDev = NULL;
-	int stat = initRegdev(&g_RegDev, handler);
-	if(stat != 0 ){
-		printf("initRegdev create failed !");
-		return 0;
-	}
-
-	double* result = (double*)malloc(sizeof(double)*GET_SIZE);
+	/* ThreadPool handler */
+	ThreadPool* g_threadpool = NULL;
+	createThreadPool(4096, 8, &g_threadpool);
 	
-	uint32_t temp;
+		
 
-	for(int i = 0 ;i<GET_SIZE;i++){
-		temp = freq_offset(g_RegDev);
-		double tmp_1 = calculateFreq(temp);
-		result[i] = tmp_1;
-		usleep(1000);
-	}
+	for(int32_t id = 0; id < 20; id++)
+		WorkToThreadPool(id, g_threadpool);
+
 	
-	for(int i = 0;i<GET_SIZE;i++){
-		printf("result[%d] = %f , ", i,result[i]);
-	}
-
+	user_wait();
 	printf("------------------- end ----------------------------------\n");
 	
 }

@@ -133,10 +133,10 @@ void JoinFollower(ThreadPool* g_threadpool)
 {
 	pthread_mutex_lock(&(g_threadpool->m_pLeaderMutex));
 	while(g_threadpool->m_oLeaderID!=NO_CURRENT_LEADER&&!g_threadpool->m_bPoolClose){     
-		printf("thread block\n");
+		//printf("thread block\n");
 
 		pthread_cond_wait(&(g_threadpool->m_pNoLeader),&(g_threadpool->m_pLeaderMutex));
-		printf("the win thread is %lu\n",pthread_self());
+		//printf("the win thread is %lu\n",pthread_self());
 	}
 
 	if(g_threadpool->m_bPoolClose){

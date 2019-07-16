@@ -397,16 +397,20 @@ int reset_bb(g_RegDev_para* g_RegDev){
 		zlog_info(g_RegDev->log_handler,"reset_bb_1 write failed !!! \n");
 		return rc;
 	}
-	value = 0x0;
-	rc = regdev_write(g_RegDev->mem_dev_phy, 0x4, value);
-	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"reset_bb_2 write failed !!! \n");
-		return rc;
-	}
 
 	return 0;
 }
 
+int release_bb(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"reset_bb\n");
+	uint32_t value = 0x0;
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x4, value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"reset_bb_1 write failed !!! \n");
+		return rc;
+	}
+	return 0;
+}
 
 
 
