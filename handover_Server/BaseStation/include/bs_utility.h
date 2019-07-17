@@ -21,6 +21,12 @@ typedef struct retrans_air_t{
 	g_msg_queue_para* g_msg_queue;
 }retrans_air_t;
 
+typedef struct g_test_para{
+	ConfigureNode*      node;
+	g_RegDev_para* 		g_RegDev;
+	g_msg_queue_para* 	g_msg_queue;
+}g_test_para;
+
 void timer_cb(void* in_data, g_msg_queue_para* g_msg_queue);
 
 int is_my_air_frame(char* src, char* dest);
@@ -49,7 +55,8 @@ void* retrans_air_process_thread(void* arg);
 void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool);
 
 
-
+void postCheckTxBufferWorkToThreadPool(struct ConfigureNode* Node, g_msg_queue_para* g_msg_queue, 
+									   g_RegDev_para* g_RegDev, ThreadPool* g_threadpool);
 
 
 

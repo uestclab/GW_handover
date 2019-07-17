@@ -8,63 +8,6 @@
 
 #include "timer.h"
 
-typedef struct g_test_para{
-	ConfigureNode*      node;
-	g_RegDev_para* 		g_RegDev;
-	g_msg_queue_para* 	g_msg_queue;
-	para_thread*        para_t;
-	zlog_category_t*    log_handler;
-}g_test_para;
-
-struct g_test_para* g_test_all = NULL;
-
-void* check_air_tx_data_statistics(void* args){
-
-	g_RegDev_para*         g_RegDev = g_test_all->g_RegDev;
-	zlog_category_t*    log_handler = g_test_all->log_handler;
-	
-	zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
-	zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
-	int wait_cnt = 0;
-	while(1)
-	{
-		usleep(500);
-		zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
-		zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
-		if(wait_cnt == g_test_all->node->check_eth_rx_cnt) // move to configure node parameter : parameter = 2
-			break;
-		wait_cnt = wait_cnt + 1;		
-	}
-
-	struct msg_st data;
-	data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
-	data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
-	data.msg_len = 0;
-	postMsgQueue(&data,g_test_all->g_msg_queue);
-
-	destoryThreadPara(g_test_all->para_t);
-	free(g_test_all);
-	g_test_all = NULL;
-}
-
-int initCheckTxBufferThread(struct ConfigureNode* Node, g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, zlog_category_t* handler)
-{
-
-	if(g_test_all == NULL)
-		g_test_all = (struct g_test_para* )malloc(sizeof(struct g_test_para));
-	g_test_all->log_handler = handler;
-	g_test_all->para_t = newThreadPara();
-	g_test_all->g_msg_queue = g_msg_queue;
-	g_test_all->g_RegDev = g_RegDev;
-	g_test_all->node = Node;
-
-	int ret = pthread_create(g_test_all->para_t->thread_pid, NULL, check_air_tx_data_statistics, NULL);
-    if(ret != 0){
-        zlog_error(handler,"create initCheckTxBufferThread error ! error_code = %d", ret);
-		return -1;
-    }	
-	return 0;
-}
 
 // -----------------------------------------------------------------------------------------------------------
 
@@ -117,7 +60,8 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			configure_target_ip(netMsg->target_bs_ip, g_x2); 
 			// sync data
 			send_change_tunnel_signal(g_network->node->my_id, g_network);
-			initCheckTxBufferThread(g_network->node, g_network->g_msg_queue, g_RegDev, zlog_handler); // 0418 change seq
+			//initCheckTxBufferThread(g_network->node, g_network->g_msg_queue, g_RegDev, zlog_handler); // 0418 change seq
+			postCheckTxBufferWorkToThreadPool(g_network->node, g_msg_queue, g_RegDev, g_threadpool);
 			free(netMsg);
 			break;
 		}

@@ -44,8 +44,10 @@ typedef struct ConfigureNode{
 	int   check_eth_rx_cnt;
 	// udp x2 interface
 	int32_t udp_server_port;
-	char*   udp_server_ip; 
-
+	char*   udp_server_ip;
+	// threadpool parameter
+	int32_t task_queue_size;
+	int32_t threads_num;
 }ConfigureNode;
 
 typedef enum signalType{

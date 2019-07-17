@@ -41,6 +41,31 @@ cd ./arm
 cmake ..
 make && make install
 
+# gw_utility
+cd ../../gw_utility
+if [ -d $f ]
+then 
+    rm -rf $f
+	mkdir $f
+else
+    mkdir $f
+fi
+cd ./arm
+cmake ..
+make && make install
+
+cd ..
+if [ -d $b ]
+then 
+    rm -rf $b
+	mkdir $b
+else
+    mkdir $b
+fi
+cd ./build
+cmake .. -DPUBLIC=OFF
+make && make install
+
 # gw_msg_queue
 cd ../../gw_msg_queue
 if [ -d $f ]
@@ -65,31 +90,6 @@ else
 fi
 cd ./arm
 cmake ..
-make && make install
-
-# gw_utility
-cd ../../gw_utility
-if [ -d $f ]
-then 
-    rm -rf $f
-	mkdir $f
-else
-    mkdir $f
-fi
-cd ./arm
-cmake ..
-make && make install
-
-cd ..
-if [ -d $b ]
-then 
-    rm -rf $b
-	mkdir $b
-else
-    mkdir $b
-fi
-cd ./build
-cmake .. -DPUBLIC=OFF
 make && make install
 
 # gw_management_frame

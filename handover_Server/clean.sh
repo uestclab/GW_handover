@@ -92,3 +92,22 @@ then
     rm -rf ./build
 fi
 
+if [ -d $f ]
+then 
+    rm -rf $f
+fi
+
+# delete header and lib
+cd ../dependence/include
+find -L ./ -maxdepth 1 ! -name "broker.h" ! -wholename "./" -exec rm -rf {} \;
+
+cd ../lib
+rm -rf *
+
+cd ../lib_arm
+find -L ./ -maxdepth 1 ! -name "libbroker.so" ! -name "libmosquitto.so" ! -wholename "./" -exec rm -rf {} \;
+
+
+
+
+

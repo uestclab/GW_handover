@@ -157,3 +157,48 @@ void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_q
 		}
 	}
 }
+
+/* ------------------------------------- */
+
+void* check_air_tx_data_statistics(void* args){
+	struct g_test_para* g_test_all = (g_test_para*)args;
+	g_RegDev_para*         g_RegDev = g_test_all->g_RegDev;
+	zlog_category_t*    log_handler = g_RegDev->log_handler; 
+	
+	zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
+	zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
+	int wait_cnt = 0;
+	while(1)
+	{
+		usleep(500);
+		zlog_info(log_handler,"rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
+		zlog_info(log_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
+		if(wait_cnt == g_test_all->node->check_eth_rx_cnt) // move to configure node parameter : parameter = 2
+			break;
+		wait_cnt = wait_cnt + 1;		
+	}
+
+	struct msg_st data;
+	data.msg_type = MSG_START_HANDOVER_THROUGH_AIR;
+	data.msg_number = MSG_START_HANDOVER_THROUGH_AIR;
+	data.msg_len = 0;
+	postMsgQueue(&data,g_test_all->g_msg_queue);
+
+	free(g_test_all);
+}
+
+void postCheckTxBufferWorkToThreadPool(struct ConfigureNode* Node, g_msg_queue_para* g_msg_queue, 
+									   g_RegDev_para* g_RegDev, ThreadPool* g_threadpool)
+{
+	struct g_test_para* g_test_all = (g_test_para*)malloc(sizeof(g_test_para));
+	g_test_all->g_msg_queue = g_msg_queue;
+	g_test_all->g_RegDev = g_RegDev;
+	g_test_all->node = Node;
+	AddWorker(check_air_tx_data_statistics,(void*)g_test_all,g_threadpool);
+}
+
+
+
+
+
+

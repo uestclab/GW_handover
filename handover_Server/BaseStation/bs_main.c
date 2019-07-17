@@ -64,6 +64,9 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	// x2 interface 
 	clientConfigure->udp_server_ip    = (char*)malloc(32);
 	clientConfigure->udp_server_port  = 60000;
+	// thread pool
+	clientConfigure->task_queue_size = 0;
+	clientConfigure->threads_num = 0;
 	
 
 //  init system global variable
@@ -119,6 +122,12 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
         item = cJSON_GetObjectItem(root, "udp_server_port");
 		clientConfigure->udp_server_port = item->valueint;
+
+		item = cJSON_GetObjectItem(root, "task_queue_size");
+		clientConfigure->task_queue_size = item->valueint;
+
+        item = cJSON_GetObjectItem(root, "threads_num");
+		clientConfigure->threads_num = item->valueint;
 
 		cJSON_Delete(root);
     }
@@ -231,7 +240,8 @@ int main(int argc, char *argv[]) // main thread
 
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
-	createThreadPool(4096, 4, &g_threadpool);
+	printf("Thread pool parameter : task_queue_size = %s , threads_num = %d \n", configureNode_->task_queue_size, configureNode_->threads_num);
+	createThreadPool(configureNode_->task_queue_size, configureNode_->threads_num, &g_threadpool); // 4096 , 8
 
 	gw_sleep();
 
