@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) // main thread
 
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
-	printf("Thread pool parameter : task_queue_size = %s , threads_num = %d \n", configureNode_->task_queue_size, configureNode_->threads_num);
+	printf("Thread pool parameter : task_queue_size = %d , threads_num = %d \n", configureNode_->task_queue_size, configureNode_->threads_num);
 	createThreadPool(configureNode_->task_queue_size, configureNode_->threads_num, &g_threadpool); // 4096 , 8
 
 	gw_sleep();

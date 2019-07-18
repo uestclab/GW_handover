@@ -72,13 +72,13 @@ void configureDstMacToBB(char* link_bs_mac, g_RegDev_para* g_RegDev, zlog_catego
 	set_dst_mac_fast(g_RegDev, link_bs_mac);
 }
 
-void printMsgType(long int type){
+void printMsgType(long int type, uint16_t seq_id){
 	if(type == MSG_RECEIVED_ASSOCIATION_REQUEST)
-		printf("receive MSG_RECEIVED_ASSOCIATION_REQUEST \n");
+		printf("receive MSG_RECEIVED_ASSOCIATION_REQUEST : seq_id = %d \n", seq_id);
 	else if(type == MSG_RECEIVED_DEASSOCIATION)
-		printf("receive MSG_RECEIVED_DEASSOCIATION \n");
+		printf("receive MSG_RECEIVED_DEASSOCIATION : seq_id = %d \n", seq_id);
 	else if(type == MSG_RECEIVED_HANDOVER_START_REQUEST)
-		printf("receive MSG_RECEIVED_HANDOVER_START_REQUEST \n");
+		printf("receive MSG_RECEIVED_HANDOVER_START_REQUEST : seq_id = %d \n", seq_id);
 }
 
 
@@ -89,7 +89,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 	system_info_para* g_system_info = g_periodic->node->system_info;
 
 	if(g_system_info->rcv_id == msgJsonSeqId(getData->msg_json)){
-		printMsgType(getData->msg_type);
+		printMsgType(getData->msg_type, msgJsonSeqId(getData->msg_json));
 	}
 	g_system_info->rcv_id = msgJsonSeqId(getData->msg_json);
 
@@ -160,13 +160,13 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			// testdata point
 			int time_cnt = 0;
 			while(1){
-				zlog_info(zlog_handler,"ve sdram buffer flag = %d ",airdata_buf2_empty_flag(g_RegDev));
+				//zlog_info(zlog_handler,"ve sdram buffer flag = %d ",airdata_buf2_empty_flag(g_RegDev));
 				time_cnt = time_cnt + 1;
 				if(time_cnt > 3)
 					break;
 				usleep(500);
 			}
-
+			zlog_info(zlog_handler,"ve sdram buffer flag = %d ",airdata_buf2_empty_flag(g_RegDev));
 			send_airSignal(HANDOVER_START_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 	
 			g_system_info->ve_state = STATE_HANDOVER;

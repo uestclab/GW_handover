@@ -108,7 +108,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 	struct air_data* air_msg = parseAirMsg(getData->msg_json);
 
 	if(g_system_info->rcv_id == air_msg->seq_id){
-		printMsgType(getData->msg_type);
+		printMsgType(getData->msg_type, air_msg->seq_id);
 	}
 	g_system_info->rcv_id = air_msg->seq_id;
 

@@ -42,15 +42,15 @@ struct net_data* parseNetMsg(struct msg_st* getData){
 	return tmp_data;
 }
 
-void printMsgType(long int type){
+void printMsgType(long int type, uint16_t seq_id){
 	if(type == MSG_RECEIVED_BEACON)
-		printf("receive MSG_RECEIVED_BEACON \n");
+		printf("receive MSG_RECEIVED_BEACON : seq_id = %d \n", seq_id);
 	else if(type == MSG_RECEIVED_ASSOCIATION_RESPONSE)
-		printf("receive MSG_RECEIVED_ASSOCIATION_RESPONSE \n");
+		printf("receive MSG_RECEIVED_ASSOCIATION_RESPONSE : seq_id = %d \n", seq_id);
 	else if(type == MSG_RECEIVED_HANDOVER_START_RESPONSE)
-		printf("receive MSG_RECEIVED_HANDOVER_START_RESPONSE \n");
+		printf("receive MSG_RECEIVED_HANDOVER_START_RESPONSE : seq_id = %d \n", seq_id);
 	else if(type == MSG_RECEIVED_REASSOCIATION)
-		printf("receive MSG_RECEIVED_REASSOCIATION \n");
+		printf("receive MSG_RECEIVED_REASSOCIATION : seq_id = %d \n", seq_id);
 }
 
 struct air_data* parseAirMsg(char* msg_json){

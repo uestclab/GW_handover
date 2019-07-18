@@ -35,7 +35,7 @@ void configureDstMacToBB(char* dst_buf, g_RegDev_para* g_RegDev, zlog_category_t
 
 struct net_data* parseNetMsg(struct msg_st* getData);
 
-void printMsgType(long int type);
+void printMsgType(long int type, uint16_t seq_id);
 
 struct air_data* parseAirMsg(char* msg_json);
 
