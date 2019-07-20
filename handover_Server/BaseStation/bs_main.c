@@ -89,6 +89,10 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->system_info->received_air_state_list->received_handover_start_response = 0;
 	clientConfigure->system_info->received_air_state_list->received_reassociation = 0;
 
+	clientConfigure->system_info->received_network_state_list = (struct received_network_list*)malloc(sizeof(struct received_network_list));
+	clientConfigure->system_info->received_network_state_list->received_dac_closed_x2_ack = 0;
+	clientConfigure->system_info->received_network_state_list->received_dac_closed_x2 = 0;
+
 // 
 	const char* configure_path = "../conf/bs_conf.json";
 	char* pConfigure_file = readfile(configure_path);

@@ -12,9 +12,16 @@
 #include "bs_air.h"
 #include "gw_control.h"
 #include "gw_frame.h"
+#include "bs_x2.h"
+#include "bs_network_json.h"
 #include "msg_queue.h"
 #include "define_common.h"
 #include "ThreadPool.h"
+
+typedef struct retrans_network_t{
+	int32_t signal;
+	g_msg_queue_para* g_msg_queue;
+}retrans_network_t;
 
 typedef struct retrans_air_t{
 	int32_t subtype;
@@ -45,12 +52,8 @@ int checkAirFrameDuplicate(msg_event receivedAirEvent, system_info_para* g_syste
 
 void resetReceivedList(received_state_list* list);
 
-void postCheckSendSignal(int32_t subtype, g_msg_queue_para* g_msg_queue);
-
 void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_queue_para* g_msg_queue, 
 					  g_air_para* g_air, ThreadPool* g_threadpool);
-
-void* retrans_air_process_thread(void* arg);
 
 void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool);
 
@@ -59,7 +62,12 @@ void postCheckTxBufferWorkToThreadPool(struct ConfigureNode* Node, g_msg_queue_p
 									   g_RegDev_para* g_RegDev, ThreadPool* g_threadpool);
 
 
+void resetReceivedNetworkList(received_network_list* list);
 
+void postCheckNetworkSignalWorkToThreadPool(int32_t signal, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool);
+
+void checkNetWorkReceivedList(int32_t signal, system_info_para* g_system_info, g_msg_queue_para* g_msg_queue, 
+					  g_x2_para* g_x2, ThreadPool* g_threadpool);
 
 
 

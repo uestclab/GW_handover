@@ -80,7 +80,9 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		case MSG_SOURCE_BS_DAC_CLOSED:
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_SOURCE_BS_DAC_CLOSED: msg_number = %d",getData->msg_number);
-			
+			if(g_system_info->received_network_state_list->received_dac_closed_x2 == 1)
+				break;
+			g_system_info->received_network_state_list->received_dac_closed_x2 = 1;
 			g_system_info->sourceBs_dac_disabled = 1;
 			if(g_system_info->received_reassociation == 0){
 				break;				
@@ -92,6 +94,12 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			data.msg_number = MSG_TARGET_BS_START_WORKING;
 			data.msg_len = 0;
 			postMsgQueue(&data,g_x2->g_msg_queue);
+			break;
+		}
+		case MSG_RECEIVED_DAC_CLOSED_ACK:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_DAC_CLOSED_ACK: msg_number = %d",getData->msg_number);
+			g_system_info->received_network_state_list->received_dac_closed_x2_ack = 1;
 			break;
 		}
 		default:
@@ -256,7 +264,8 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				disable_dac(g_RegDev);
 				// inform target bs , dac is closed
 				send_dac_closed_x2_signal(g_network->node->my_id, g_network->node->udp_server_ip, g_x2);
-
+				postCheckNetworkSignalWorkToThreadPool(MSG_RECEIVED_DAC_CLOSED_ACK, g_msg_queue, g_threadpool);				
+				
 				reset_bb(g_RegDev);
 				release_bb(g_RegDev);
 
@@ -277,7 +286,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 
 /* self event */
 void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air_para* g_air, 
-                        g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+                        g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
 				        ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
@@ -334,6 +343,16 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air
 			send_ready_handover_signal(g_network->node->my_id, g_network->node->my_mac_str, quility, g_network);
 			g_system_info->monitored = 0;
         }
+		case MSG_CHECK_RECEIVED_NETWORK_LIST:
+		{
+			int32_t signal = -1;
+			memcpy((char*)(&signal), getData->msg_json, getData->msg_len);
+			if(signal == MSG_RECEIVED_DAC_CLOSED_ACK)
+				zlog_info(zlog_handler," --- dac closed ------- EVENT : MSG_CHECK_RECEIVED_NETWORK_LIST: msg_number = %d", getData->msg_number);
+			// check receive list according to subtype
+			checkNetWorkReceivedList(signal, g_system_info, g_msg_queue, g_x2, g_threadpool);
+			break;
+		}
 		default:
 			break;
 	}
@@ -367,7 +386,7 @@ void eventLoop(g_network_para* g_network, g_air_para* g_air, g_x2_para* g_x2, g_
 		else if(getData->msg_type < MSG_TIMEOUT)
 			process_network_event(getData, g_network, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 		else if(getData->msg_type >= MSG_TIMEOUT)
-			process_self_event(getData, g_network, g_air, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
+			process_self_event(getData, g_network, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 
 		free(getData);
 	}

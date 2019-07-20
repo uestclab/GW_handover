@@ -39,6 +39,11 @@ void processX2Signal(char* buf, int32_t length, struct sockaddr_in remote_addr, 
 		send_dac_closed_x2_ack_signal(g_x2->node->my_id, g_x2);
 	}else if(strcmp(item->valuestring,"dac_closed_ack") == 0){
 		printcx2json(buf,g_x2);
+		struct msg_st data;
+		data.msg_type = MSG_RECEIVED_DAC_CLOSED_ACK;
+		data.msg_number = MSG_RECEIVED_DAC_CLOSED_ACK;
+		data.msg_len = 0;
+		postMsgQueue(&data,g_x2->g_msg_queue);
 	}
 	
 	cJSON_Delete(root);
