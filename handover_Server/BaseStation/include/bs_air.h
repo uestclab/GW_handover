@@ -4,7 +4,6 @@
 #include "zlog.h"
 #include "gw_utility.h"
 #include "msg_queue.h"
-#include "timer.h"
 #include "define_common.h"
 
 typedef struct g_air_para{

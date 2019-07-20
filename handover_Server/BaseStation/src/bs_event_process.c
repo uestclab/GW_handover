@@ -6,15 +6,13 @@
 #include "gw_control.h"
 #include "bs_utility.h"
 
-#include "timer.h"
-
 
 // -----------------------------------------------------------------------------------------------------------
 
 /* network event */
-void process_network_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
-				ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
+void process_network_event(struct msg_st* getData, g_network_para* g_network, g_air_para* g_air, 
+                          g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+				          ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -70,9 +68,12 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_SERVER_RECALL_MONITOR: msg_number = %d",getData->msg_number);
 			if(g_system_info->monitored == 0 && g_system_info->bs_state == STATE_WAIT_MONITOR){
 				g_system_info->monitored = 1;
-				startMonitor(g_monitor,3);
+				//startMonitor(g_monitor,3);
+				for(int i = 0 ; i < g_network->node->delay_mon_cnt_second ; i++)
+					gw_sleep();
+				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 3);
 			}else{
-				zlog_info(zlog_handler," already in monitor or STATE_WORKING ");
+				zlog_info(zlog_handler," already in monitor or STATE_WORKING %d , %d ",g_system_info->monitored, g_system_info->bs_state);
 			}
 			break;
 		}
@@ -99,9 +100,9 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 }
 
 /* air event */
-void process_air_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
-				ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
+void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_para* g_air, 
+                       g_x2_para* g_x2, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+				       ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	
@@ -130,9 +131,10 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 				break;
 			}
 			
-			if(g_network->node->my_id == 11)
-				startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
-
+			if(g_network->node->my_id == 11){
+				//startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
+				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 1);			
+			}	
 			break;
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
@@ -274,9 +276,9 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_moni
 }
 
 /* self event */
-void process_self_event(struct msg_st* getData, g_network_para* g_network, g_monitor_para* g_monitor, 
-				g_air_para* g_air, g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
-				ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
+void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air_para* g_air, 
+                        g_RegDev_para* g_RegDev, g_msg_queue_para* g_msg_queue, 
+				        ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_network->node->system_info;
 	switch(getData->msg_type){
@@ -324,6 +326,14 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_mon
 			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
 			break;	
 		}
+		case MSG_MONITOR_READY_HANDOVER:
+		{
+            zlog_info(zlog_handler," ---------------- EVENT : MSG_MONITOR_READY_HANDOVER: msg_number = %d",getData->msg_number);
+			int32_t quility = -1;
+			memcpy((char*)(&quility), getData->msg_json, getData->msg_len);
+			send_ready_handover_signal(g_network->node->my_id, g_network->node->my_mac_str, quility, g_network);
+			g_system_info->monitored = 0;
+        }
 		default:
 			break;
 	}
@@ -339,8 +349,8 @@ void init_state(g_network_para* g_network, g_RegDev_para* g_RegDev, zlog_categor
 	release_bb(g_RegDev);
 }
 
-void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para* g_air, g_x2_para* g_x2, 
-    g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
+void eventLoop(g_network_para* g_network, g_air_para* g_air, g_x2_para* g_x2, g_msg_queue_para* g_msg_queue, 
+               g_RegDev_para* g_RegDev, ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 
 	init_state(g_network, g_RegDev,zlog_handler);
@@ -353,11 +363,11 @@ void eventLoop(g_network_para* g_network, g_monitor_para* g_monitor, g_air_para*
 			continue;
 
 		if(getData->msg_type < MSG_START_MONITOR)
-			process_air_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
+			process_air_event(getData, g_network, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 		else if(getData->msg_type < MSG_TIMEOUT)
-			process_network_event(getData, g_network, g_monitor, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
+			process_network_event(getData, g_network, g_air, g_x2, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 		else if(getData->msg_type >= MSG_TIMEOUT)
-			process_self_event(getData, g_network, g_monitor, g_air, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
+			process_self_event(getData, g_network, g_air, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
 
 		free(getData);
 	}

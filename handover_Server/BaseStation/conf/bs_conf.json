@@ -6,6 +6,7 @@
 	"my_id": 11,
 	"enable_user_wait": 0,
 	"sleep_cnt_second": 10,
+	"delay_mon_cnt_second": 5,
 	"check_eth_rx_cnt": 2,
 	"task_queue_size":  4096,
 	"threads_num":      8

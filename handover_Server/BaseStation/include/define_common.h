@@ -42,6 +42,7 @@ typedef struct ConfigureNode{
 	int   enable_user_wait; //
 	int   sleep_cnt_second;
 	int   check_eth_rx_cnt;
+	int   delay_mon_cnt_second;
 	// udp x2 interface
 	int32_t udp_server_port;
 	char*   udp_server_ip;
@@ -92,6 +93,7 @@ typedef enum msg_event{
 	MSG_START_HANDOVER_THROUGH_AIR,
 	MSG_TARGET_BS_START_WORKING,
 	MSG_CHECK_RECEIVED_LIST,
+	MSG_MONITOR_READY_HANDOVER,
 }msg_event;
 
 // used in msg_json

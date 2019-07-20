@@ -16,7 +16,6 @@
 #include "bs_air.h"
 #include "bs_x2.h"
 #include "msg_queue.h"
-#include "timer.h"
 #include "define_common.h"
 #include "zlog.h"
 
@@ -61,6 +60,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->enable_user_wait = 0; //
 	clientConfigure->sleep_cnt_second = 0;
 	clientConfigure->check_eth_rx_cnt = 0;
+	clientConfigure->delay_mon_cnt_second = 0;
 	// x2 interface 
 	clientConfigure->udp_server_ip    = (char*)malloc(32);
 	clientConfigure->udp_server_port  = 60000;
@@ -119,6 +119,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
         item = cJSON_GetObjectItem(root, "check_eth_rx_cnt");
 		clientConfigure->check_eth_rx_cnt = item->valueint;
 
+		item = cJSON_GetObjectItem(root, "delay_mon_cnt_second");
+		clientConfigure->delay_mon_cnt_second = item->valueint;
 
         item = cJSON_GetObjectItem(root, "udp_server_port");
 		clientConfigure->udp_server_port = item->valueint;
@@ -227,8 +229,8 @@ int main(int argc, char *argv[]) // main thread
 
 
 	/* monitor thread */
-	g_monitor_para* g_monitor = NULL;
-	state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
+	//g_monitor_para* g_monitor = NULL;
+	//state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
 
 	/* x2 interface thread */
 	g_x2_para* g_x2 = NULL;
@@ -248,13 +250,13 @@ int main(int argc, char *argv[]) // main thread
 // ------------------------
 
 	/* msg loop */ /* state machine */
-	eventLoop(g_network, g_monitor, g_air, g_x2, g_msg_queue, g_RegDev, g_threadpool, zlog_handler);
+	eventLoop(g_network, g_air, g_x2, g_msg_queue, g_RegDev, g_threadpool, zlog_handler);
 
 
 	freeNetworkThread(g_network);
 	closeServerLog();
 	
-	pthread_join(*(g_monitor->para_t->thread_pid),NULL);
+	//pthread_join(*(g_monitor->para_t->thread_pid),NULL);
 	pthread_join(*(g_network->para_t->thread_pid),NULL);
 	pthread_join(*(g_air->para_t->thread_pid),NULL);
 	pthread_join(*(g_x2->para_t->thread_pid),NULL);
