@@ -155,6 +155,8 @@ int main(int argc, char *argv[]) // main thread
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
 
+	state = clearMsgQueue(g_msg_queue);
+
 	/* air process thread */
 	g_air_para* g_air = NULL;
 	state = initProcessAirThread(configureNode_, &g_air, g_msg_queue, zlog_handler);

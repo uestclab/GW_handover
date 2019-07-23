@@ -215,6 +215,8 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
+
+	state = clearMsgQueue(g_msg_queue);
 	
 	/* network thread */
 	g_network_para* g_network = NULL;

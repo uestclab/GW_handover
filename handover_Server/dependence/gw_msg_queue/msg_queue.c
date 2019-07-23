@@ -4,6 +4,31 @@
 
 //key_t ftok(char *pathname, char proj)
 
+int msg_show_attr(g_msg_queue_para* g_msg_queue){
+	int ret = -1;
+	struct msqid_ds msg_info;
+	ret = msgctl(g_msg_queue->msgid,IPC_STAT,&msg_info);
+	if(-1 == ret){
+		zlog_info(g_msg_queue->log_handler, "fail get msg queue infomation ");
+		return -1;
+	}
+
+	return msg_info.msg_qnum;
+}
+
+int clearMsgQueue(g_msg_queue_para* g_msg_queue){
+	int msg_qnum = msg_show_attr(g_msg_queue);
+	zlog_info(g_msg_queue->log_handler," msg_qnum = %d ", msg_qnum);
+	while(msg_qnum != 0){
+		struct msg_st* getData = getMsgQueue(g_msg_queue);
+		if(getData == NULL)
+			continue;
+		zlog_info(g_msg_queue->log_handler," ----- clearMsgQueue : msg_number = %d , msg_type = %d ", 
+		          getData->msg_number , getData->msg_type);
+	}
+	return 0;
+}
+
 g_msg_queue_para* createMsgQueue(const char *pathname, zlog_category_t* handler){
 	zlog_info(handler,"Enter createMsgQueue\n");
 	g_msg_queue_para* g_msg_queue = (g_msg_queue_para*)malloc(sizeof(struct g_msg_queue_para));

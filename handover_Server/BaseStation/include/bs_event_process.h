@@ -21,7 +21,6 @@ void eventLoop(g_network_para* g_network, g_air_para* g_air, g_x2_para* g_x2,
 	g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, ThreadPool* g_threadpool, zlog_category_t* zlog_handler); 
 
 
-
 #endif//GW_EVENT_PROCESS_H
 
 
