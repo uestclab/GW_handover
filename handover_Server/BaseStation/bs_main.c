@@ -16,13 +16,13 @@
 #include "bs_air.h"
 #include "bs_x2.h"
 #include "msg_queue.h"
-#include "timer.h"
 #include "define_common.h"
 #include "zlog.h"
 
 #include "cJSON.h"
 #include "gw_utility.h"
 #include "gw_control.h"
+#include "ThreadPool.h"
 
 
 zlog_category_t * serverLog(const char* path){
@@ -60,9 +60,13 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	clientConfigure->enable_user_wait = 0; //
 	clientConfigure->sleep_cnt_second = 0;
 	clientConfigure->check_eth_rx_cnt = 0;
+	clientConfigure->delay_mon_cnt_second = 0;
 	// x2 interface 
 	clientConfigure->udp_server_ip    = (char*)malloc(32);
 	clientConfigure->udp_server_port  = 60000;
+	// thread pool
+	clientConfigure->task_queue_size = 0;
+	clientConfigure->threads_num = 0;
 	
 
 //  init system global variable
@@ -79,6 +83,15 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
 	clientConfigure->system_info->send_id = 0;
 	clientConfigure->system_info->rcv_id = 0;
+
+	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	clientConfigure->system_info->received_air_state_list->received_association_response = 0;
+	clientConfigure->system_info->received_air_state_list->received_handover_start_response = 0;
+	clientConfigure->system_info->received_air_state_list->received_reassociation = 0;
+
+	clientConfigure->system_info->received_network_state_list = (struct received_network_list*)malloc(sizeof(struct received_network_list));
+	clientConfigure->system_info->received_network_state_list->received_dac_closed_x2_ack = 0;
+	clientConfigure->system_info->received_network_state_list->received_dac_closed_x2 = 0;
 
 // 
 	const char* configure_path = "../conf/bs_conf.json";
@@ -110,9 +123,17 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
         item = cJSON_GetObjectItem(root, "check_eth_rx_cnt");
 		clientConfigure->check_eth_rx_cnt = item->valueint;
 
+		item = cJSON_GetObjectItem(root, "delay_mon_cnt_second");
+		clientConfigure->delay_mon_cnt_second = item->valueint;
 
         item = cJSON_GetObjectItem(root, "udp_server_port");
 		clientConfigure->udp_server_port = item->valueint;
+
+		item = cJSON_GetObjectItem(root, "task_queue_size");
+		clientConfigure->task_queue_size = item->valueint;
+
+        item = cJSON_GetObjectItem(root, "threads_num");
+		clientConfigure->threads_num = item->valueint;
 
 		cJSON_Delete(root);
     }
@@ -163,6 +184,9 @@ int main(int argc, char *argv[]) // main thread
 		}
 	}
 
+	fflush(stdout);
+    setvbuf(stdout, NULL, _IONBF, 0);
+
 	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
@@ -194,6 +218,8 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
+
+	state = clearMsgQueue(g_msg_queue);
 	
 	/* network thread */
 	g_network_para* g_network = NULL;
@@ -212,8 +238,8 @@ int main(int argc, char *argv[]) // main thread
 
 
 	/* monitor thread */
-	g_monitor_para* g_monitor = NULL;
-	state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
+	//g_monitor_para* g_monitor = NULL;
+	//state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
 
 	/* x2 interface thread */
 	g_x2_para* g_x2 = NULL;
@@ -223,19 +249,23 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 
+	/* ThreadPool handler */
+	ThreadPool* g_threadpool = NULL;
+	printf("Thread pool parameter : task_queue_size = %d , threads_num = %d \n", configureNode_->task_queue_size, configureNode_->threads_num);
+	createThreadPool(configureNode_->task_queue_size, configureNode_->threads_num, &g_threadpool); // 4096 , 8
 
 	gw_sleep();
 
 // ------------------------
 
 	/* msg loop */ /* state machine */
-	eventLoop(g_network, g_monitor, g_air, g_x2, g_msg_queue, g_RegDev, zlog_handler);
+	eventLoop(g_network, g_air, g_x2, g_msg_queue, g_RegDev, g_threadpool, zlog_handler);
 
 
 	freeNetworkThread(g_network);
 	closeServerLog();
 	
-	pthread_join(*(g_monitor->para_t->thread_pid),NULL);
+	//pthread_join(*(g_monitor->para_t->thread_pid),NULL);
 	pthread_join(*(g_network->para_t->thread_pid),NULL);
 	pthread_join(*(g_air->para_t->thread_pid),NULL);
 	pthread_join(*(g_x2->para_t->thread_pid),NULL);

@@ -194,9 +194,9 @@ void printcjson(char* json, g_network_para* g_network){
 
 void processMessage(char* buf, int32_t length, g_network_para* g_network){
     messageInfo* message = parseMessage(buf,length);
-	cJSON * root = NULL;
-    cJSON * item = NULL;
-    root = cJSON_Parse(message->buf);
+	//cJSON * root = NULL;
+    //cJSON * item = NULL;
+    //root = cJSON_Parse(message->buf);
     switch(message->signal){
         case ID_RECEIVED:
         {
@@ -210,6 +210,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			struct msg_st data;
 			data.msg_type = MSG_START_MONITOR;
 			data.msg_number = MSG_START_MONITOR;
+			data.msg_len = 0;
 			postMsgQueue(&data,g_network->g_msg_queue);
 
             break;
@@ -221,6 +222,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			struct msg_st data;
 			data.msg_type = MSG_INIT_SELECTED;
 			data.msg_number = MSG_INIT_SELECTED;
+			data.msg_len = 0;
 			postMsgQueue(&data,g_network->g_msg_queue);
 
             break;
@@ -229,14 +231,18 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         {
 			printcjson(message->buf,g_network);
 
-			item = cJSON_GetObjectItem(root, "target_bs_mac");
-			char target_mac_buf[6];
-			change_mac_buf(item->valuestring,target_mac_buf);
+			//item = cJSON_GetObjectItem(root, "target_bs_mac");
+			//char target_mac_buf[6];
+			//change_mac_buf(item->valuestring,target_mac_buf);
+
+			
 
 			struct msg_st data;
 			data.msg_type = MSG_START_HANDOVER;
 			data.msg_number = MSG_START_HANDOVER;
-			memcpy(data.msg_json,target_mac_buf,6); // Note : !! 
+			data.msg_len = strlen(message->buf) + 1;
+			memcpy(data.msg_json,message->buf,data.msg_len);
+			//memcpy(data.msg_json,target_mac_buf,6); // Note : !! 
 			
 			postMsgQueue(&data,g_network->g_msg_queue);
 
@@ -253,6 +259,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			struct msg_st data;
 			data.msg_type = MSG_SERVER_RECALL_MONITOR;
 			data.msg_number = MSG_SERVER_RECALL_MONITOR;
+			data.msg_len = 0;
 			postMsgQueue(&data,g_network->g_msg_queue);
 			break;
 		}
@@ -262,7 +269,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         }
     }
     free(message);
-	cJSON_Delete(root); // detect mem leak -- 0611
+	//cJSON_Delete(root); // detect mem leak -- 0611
 }
 
 // ---- send section : sendSignal thread safety ----

@@ -102,29 +102,78 @@ int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler)
 	return 0;
 }
 
-
-int disable_dac(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"disable_dac\n");
+int close_dac(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"close_dac\n");
 	int rc = 0;
 	rc = write(g_RegDev->dac_fd, SYSFS_GPIO_RST_VAL_L, sizeof(SYSFS_GPIO_RST_VAL_L));
 	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"error in disable_dac , rc = %d \n", rc);
+		zlog_info(g_RegDev->log_handler,"error in close_dac , rc = %d \n", rc);
 		return rc;
 	}
 
 	return rc;
 }
 
-int enable_dac(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"enable_dac\n");
+int open_dac(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"open_dac\n");
 	int rc = 0;
 	rc = write(g_RegDev->dac_fd, SYSFS_GPIO_RST_VAL_H, sizeof(SYSFS_GPIO_RST_VAL_H));
 	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"error in enable_dac , rc = %d \n", rc);
+		zlog_info(g_RegDev->log_handler,"error in open_dac , rc = %d \n", rc);
 		return rc;
 	}
 	return rc;
 }
+
+int gpio_read(int pin)
+{  
+    char path[64];  
+
+    char value_str[3];  
+
+    int fd;  
+
+  
+	/* /sys/class/gpio/gpio973/value */
+    snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d/value", pin);  
+
+    fd = open(path, O_RDONLY);  
+
+    if (fd < 0){
+        printf("Failed to open gpio value for reading!\n");
+        return -1;
+    }  
+
+    if (read(fd, value_str, 3) < 0){
+        printf("Failed to read value!\n");
+        return -1;
+    }
+    close(fd);
+    return (atoi(value_str));
+}
+
+int enable_dac(g_RegDev_para* g_RegDev){
+	open_dac(g_RegDev);
+	int value = gpio_read(973);
+	while(value != 1){
+		printf(" open dac error !!!!!!!!!!!!!!! \n");
+		open_dac(g_RegDev);
+		value = gpio_read(973);
+	}
+	return 0;
+}
+
+int disable_dac(g_RegDev_para* g_RegDev){
+	close_dac(g_RegDev);
+	int value = gpio_read(973);
+	while(value != 0){
+		printf(" close dac error !!!!!!!!!!!!!!! \n");
+		close_dac(g_RegDev);
+		value = gpio_read(973);
+	}
+	return 0;
+}
+/* ------------------------------------------------------ */
 
 int set_dst_mac_fast(g_RegDev_para* g_RegDev, char* dst_mac_buf){ // mac_buf[6]
 	zlog_info(g_RegDev->log_handler,"set_dst_mac_fast\n");
@@ -169,13 +218,13 @@ int set_src_mac_fast(g_RegDev_para* g_RegDev, char* src_mac_buf){ //src_mac_buf[
 }
 
 /* ----------------------------- process ddr_tx_hold_on and mac_id sync ---------------------------- */
-
+ 
 // bit : 2 , 0 -- open , 1 -- close
 int open_ddr(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"open_ddr\n");
 	uint32_t value = 0x00000000;
 	//value = value << 24;
-	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value); // Note :
 	if(rc < 0){
 		zlog_info(g_RegDev->log_handler,"open_ddr write failed !!! \n");
 		return rc;
@@ -187,7 +236,7 @@ int close_ddr(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"close_ddr\n");
 	uint32_t value = 0x00000004;
 	//value = value << 24;
-	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value); // Note :
 	if(rc < 0){
 		zlog_info(g_RegDev->log_handler,"close_ddr write failed !!! \n");
 		return rc;
@@ -200,7 +249,7 @@ int trigger_mac_id(g_RegDev_para* g_RegDev){
 	zlog_info(g_RegDev->log_handler,"trigger_mac_id\n");
 	uint32_t value = 0x00000002;
 	//value = value << 24;
-	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value);
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x82c, value); // Note :
 	if(rc < 0){
 		zlog_info(g_RegDev->log_handler,"trigger_mac_id write failed !!! \n");
 		return rc;
@@ -397,13 +446,18 @@ int reset_bb(g_RegDev_para* g_RegDev){
 		zlog_info(g_RegDev->log_handler,"reset_bb_1 write failed !!! \n");
 		return rc;
 	}
-	value = 0x0;
-	rc = regdev_write(g_RegDev->mem_dev_phy, 0x4, value);
+
+	return 0;
+}
+
+int release_bb(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"release_bb\n");
+	uint32_t value = 0x0;
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x4, value);
 	if(rc < 0){
-		zlog_info(g_RegDev->log_handler,"reset_bb_2 write failed !!! \n");
+		zlog_info(g_RegDev->log_handler,"release_bb_1 write failed !!! \n");
 		return rc;
 	}
-
 	return 0;
 }
 

@@ -38,6 +38,7 @@ int delMsgQueue(g_msg_queue_para* g_msg_queue);
 void postMsgQueue(struct msg_st* data, g_msg_queue_para* g_msg_queue);
 struct msg_st* getMsgQueue(g_msg_queue_para* g_msg_queue);
 
+int clearMsgQueue(g_msg_queue_para* g_msg_queue);
 
 #endif//GW_MSG_QUEUE_H
 

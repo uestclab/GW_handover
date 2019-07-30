@@ -37,8 +37,8 @@ void send_air_frame(g_periodic_para* g_periodic){
 				if(send_reassociation_cnt > 10){
 					printf("reassociation is send too much more ------- error !\n");
 					send_reassociation_cnt = 0;
-					stopPeriodic(g_periodic);
-					break;
+					//stopPeriodic(g_periodic);
+					//break;
 				}
 				
 				int ret = getRunningState(g_periodic, 0);

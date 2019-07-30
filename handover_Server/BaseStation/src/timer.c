@@ -11,21 +11,9 @@
 #include "timer.h"
 
 
-
-void setTimer(int seconds, int mseconds)
-{
-    struct timeval temp;
-
-    temp.tv_sec = seconds;
-    temp.tv_usec = mseconds;
-
-    select(0, NULL, NULL, NULL, &temp);
-    return ;
-}
-
 void process_once(g_timer_para* g_timer){
 	g_timer->running = 0;
-	setTimer(g_timer->seconds,g_timer->mseconds);
+	//usleep()
 	g_timer->timer_cb(g_timer->in_data,g_timer->g_msg_queue);
 }
 
@@ -40,24 +28,18 @@ void* timer_thread(void* args){
 			pthread_cond_wait(g_timer->para_t->cond_, g_timer->para_t->mutex_);
 		}
 		pthread_mutex_unlock(g_timer->para_t->mutex_);
-		if(g_timer->running == 2)
-			break;
     	process_once(g_timer);		
     }
     zlog_info(g_timer->log_handler,"Exit timer_thread()");
 
 }
 
-void StartTimer(timercb_func timer_cb, void* in_data, int sec, int msec, g_timer_para* g_timer){
+void StartTimer(timercb_func timer_cb, g_timer_para* g_timer){
 	zlog_info(g_timer->log_handler,"StartTimer()");
 	g_timer->timer_cb = timer_cb;
-	g_timer->in_data = in_data;
-	g_timer-> seconds  = sec;
-	g_timer-> mseconds  = msec;
-	g_timer-> running  = 1;
+	g_timer->running  = 1;
 	pthread_cond_signal(g_timer->para_t->cond_);
 }
-
 
 
 int InitTimerThread(g_timer_para** g_timer, g_msg_queue_para* g_msg_queue, zlog_category_t* handler){
@@ -65,15 +47,13 @@ int InitTimerThread(g_timer_para** g_timer, g_msg_queue_para* g_msg_queue, zlog_
 	*g_timer = (g_timer_para*)malloc(sizeof(struct g_timer_para));
 	(*g_timer)-> timer_cb = NULL;
 	(*g_timer)-> running  = 0;
-	(*g_timer)-> seconds  = 0;
-	(*g_timer)-> mseconds  = 0;
+	(*g_timer)-> in_data = NULL; 
 	(*g_timer)-> para_t = newThreadPara();
 	(*g_timer)->g_msg_queue = g_msg_queue;
-	(*g_timer)->in_data = NULL;
 	(*g_timer)-> log_handler = handler;
 	int ret = pthread_create((*g_timer)->para_t->thread_pid, NULL, timer_thread, (void*)(*g_timer));
     if(ret != 0){
-        zlog_error(handler,"create monitor_thread error ! error_code = %d", ret);
+        zlog_error(handler,"create timer_thread error ! error_code = %d", ret);
 		return -1;
     }	
 	return 0;
@@ -81,9 +61,9 @@ int InitTimerThread(g_timer_para** g_timer, g_msg_queue_para* g_msg_queue, zlog_
 
 
 void closeTimer(g_timer_para* g_timer){
-	g_timer-> running  = 2;
-	pthread_cond_signal(g_timer->para_t->cond_);
-	pthread_join(*(g_timer->para_t->thread_pid),NULL);
+	//g_timer-> running  = 2;
+	//pthread_cond_signal(g_timer->para_t->cond_);
+	//pthread_join(*(g_timer->para_t->thread_pid),NULL);
 	zlog_info(g_timer->log_handler,"closeTimer()");
 	// continue to release timer resource --- 
 }

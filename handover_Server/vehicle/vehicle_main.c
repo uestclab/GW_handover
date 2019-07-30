@@ -62,6 +62,11 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 
 	clientConfigure->system_info->send_id = 0;
 	clientConfigure->system_info->rcv_id = 0;
+
+	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	clientConfigure->system_info->received_air_state_list->received_association_request = 0;
+	clientConfigure->system_info->received_air_state_list->received_handover_start_request = 0;
+	clientConfigure->system_info->received_air_state_list->received_deassociation = 0;
 // 
 	const char* configure_path = "../conf/ve_conf.json";
 	char* pConfigure_file = readfile(configure_path);
@@ -118,6 +123,9 @@ int main(int argc, char *argv[]) // main thread
 		}
 	}
 
+    fflush(stdout);
+    setvbuf(stdout, NULL, _IONBF, 0);
+
 	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
@@ -149,6 +157,8 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
+
+	state = clearMsgQueue(g_msg_queue);
 
 	/* air process thread */
 	g_air_para* g_air = NULL;

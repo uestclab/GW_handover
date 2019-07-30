@@ -14,8 +14,6 @@ typedef struct g_timer_para{
 	g_msg_queue_para*  g_msg_queue;
 	timercb_func       timer_cb;
 	void*              in_data;
-	int                seconds;
-	int                mseconds;       
 	int                running;
 	para_thread*       para_t;
 	zlog_category_t*   log_handler;
@@ -24,7 +22,7 @@ typedef struct g_timer_para{
 
 int InitTimerThread(g_timer_para** g_timer, g_msg_queue_para* g_msg_queue, zlog_category_t* handler);
 void closeTimer(g_timer_para* g_timer);
-void StartTimer(timercb_func timer_cb, void* in_data, int sec, int msec, g_timer_para* g_timer);
+void StartTimer(timercb_func timer_cb, g_timer_para* g_timer);
 
 
 #endif//GW_TIMER_H

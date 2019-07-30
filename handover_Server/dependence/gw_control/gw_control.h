@@ -63,6 +63,6 @@ uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev);
 
 /* ------------------------------ reset bb ------------------------------------ */
 int reset_bb(g_RegDev_para* g_RegDev);
-
+int release_bb(g_RegDev_para* g_RegDev);
 
 #endif//GW_CONTROL_H

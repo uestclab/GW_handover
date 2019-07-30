@@ -5,6 +5,20 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+typedef struct received_network_list{
+	int32_t            received_dac_closed_x2;
+	int32_t            received_dac_closed_x2_ack;
+}received_network_list;
+
+
+
+typedef struct received_state_list{
+	int32_t            received_association_response;
+	int32_t            received_handover_start_response;
+	int32_t            received_reassociation; 
+}received_state_list;
+
+
 typedef struct system_info_para{
 	int32_t     bs_state; // indicate system state while time flow
 	char        bs_mac[6];
@@ -19,7 +33,11 @@ typedef struct system_info_para{
 	uint16_t    rcv_id;
 // --------  x2 interface 
 	int         sourceBs_dac_disabled;
-	int         received_reassociation;    
+	int         received_reassociation;
+// -------- air_signal retransmit 
+	received_state_list* received_air_state_list;
+// -------- network signal retransmit
+	received_network_list* received_network_state_list;
 }system_info_para;
 
 typedef struct ConfigureNode{
@@ -33,10 +51,13 @@ typedef struct ConfigureNode{
 	int   enable_user_wait; //
 	int   sleep_cnt_second;
 	int   check_eth_rx_cnt;
+	int   delay_mon_cnt_second;
 	// udp x2 interface
 	int32_t udp_server_port;
-	char*   udp_server_ip; 
-
+	char*   udp_server_ip;
+	// threadpool parameter
+	int32_t task_queue_size;
+	int32_t threads_num;
 }ConfigureNode;
 
 typedef enum signalType{
@@ -76,13 +97,28 @@ typedef enum msg_event{
     MSG_START_HANDOVER,
     MSG_SERVER_RECALL_MONITOR,
     MSG_SOURCE_BS_DAC_CLOSED,
+	MSG_RECEIVED_DAC_CLOSED_ACK,
 	/* self event */
 	MSG_TIMEOUT, // boundary
 	MSG_START_HANDOVER_THROUGH_AIR,
 	MSG_TARGET_BS_START_WORKING,
+	MSG_CHECK_RECEIVED_LIST,
+	MSG_MONITOR_READY_HANDOVER,
+	MSG_CHECK_RECEIVED_NETWORK_LIST,
 }msg_event;
 
+// used in msg_json
+typedef struct air_data{
+	char source_mac_addr[6];
+	char dest_mac_addr[6];
+	char Next_dest_mac_addr[6];
+	uint16_t seq_id;
+}air_data;
 
+typedef struct net_data{
+	char  target_bs_mac[6];
+	char  target_bs_ip[32];
+}net_data;
 
 
 // system state 

@@ -101,7 +101,7 @@ void Manager::notifyHandover(BaseStation* ready_bs){
             LOG(WARNING) << "access ready_bs is not the next neighbour";
         }
     }
-	send_start_handover_signal(linkBs_, ready_bs->getBaseStationID(), ready_bs->getBsmac()); // notify linkBs , air send signal to vehicle
+	send_start_handover_signal(linkBs_, ready_bs, ready_bs->getBaseStationID(), ready_bs->getBsmac()); // notify linkBs , air send signal to vehicle
 
 	LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel wait change_tunnel signal "; // 
 }

@@ -29,11 +29,15 @@ void send_init_link_signal(BaseStation* bs, int bs_id, char* mac){
 	cJSON_Delete(root);
 }
 
-void send_start_handover_signal(BaseStation* bs, int bs_id, char* mac){
+void send_start_handover_signal(BaseStation* bs, BaseStation* next_bs, int bs_id, char* mac){
+
+	char* remote_ip = next_bs->getBsIP();
+
 	cJSON* root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "signal", "start_handover_signal");
     cJSON_AddNumberToObject(root, "bs_id", bs_id);
 	cJSON_AddStringToObject(root, "target_bs_mac", mac);
+	cJSON_AddStringToObject(root, "target_bs_ip", remote_ip);
 	char* json_buf = cJSON_Print(root);
 	bs->sendSignal(glory::START_HANDOVER, json_buf);
 	cJSON_Delete(root);
