@@ -36,7 +36,8 @@
 typedef struct g_args_frame{
 	struct pollfd poll_fd;
 	int fd;
-	char* buf;
+	char* send_buf;
+	char* recv_buf;
 }g_args_frame;
 
 struct g_args_frame* g_paramter = NULL; // thread safe ?
@@ -47,13 +48,38 @@ int ManagementFrame_create_monitor_interface(){
 	fd = open("/dev/sig-chan", O_RDWR|O_NONBLOCK);
 	g_paramter = (g_args_frame*)malloc(sizeof(g_args_frame));
 
-	g_paramter->buf = malloc(1500);
+	g_paramter->send_buf = malloc(1500);
+	g_paramter->recv_buf = malloc(1500); // buf
 	g_paramter->poll_fd.fd = fd;
 	g_paramter->poll_fd.events=POLLIN;
 	g_paramter->fd = fd;
 	
 	return fd;
 }
+
+/* crc 8 */
+unsigned char crc_high_first(unsigned char *ptr, unsigned char len, unsigned char crc)
+{
+    unsigned char i;
+    //unsigned char crc=0x00;
+ 
+    while(len--)
+    {
+		/* 每次先与需要计算的数据异或,计算完指向下一数据 */ 
+        crc ^= *ptr++;
+        for (i=8; i>0; --i) 
+        { 
+            if (crc & 0x80)
+                crc = (crc << 1) ^ 0x31;
+            else
+                crc = (crc << 1);
+        }
+    }
+ 
+    return (crc);
+}
+
+
 
 // bit26 ~ bit29
 void bits_set_subtype(unsigned int* frame_control, unsigned int subtype){
@@ -145,9 +171,9 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 		return -1;
 	int rc = 0;
 
-	fill_buffer(frame_Info, g_paramter->buf);
+	fill_buffer(frame_Info, g_paramter->send_buf); // g_parameter->buf ??? 
 	int fill_len = frame_Info->length;
-	rc = write(g_paramter->fd,g_paramter->buf,fill_len);
+	rc = write(g_paramter->fd,g_paramter->send_buf,fill_len);
 	// debug	
 	//zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
 	//			rc , g_paramter->fd , fill_len);
@@ -166,10 +192,10 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_catego
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
 			if(POLLIN == g_paramter->poll_fd.revents){
-				rc = read(g_paramter->fd, g_paramter->buf, 1500);
+				rc = read(g_paramter->fd, g_paramter->recv_buf, 1500); // g_parameter->buf ????
 				if(rc){
 					// get management frame
-					parse_buffer(frame_Info,g_paramter->buf);
+					parse_buffer(frame_Info,g_paramter->recv_buf); // g_parameter->buf ????
 					//hexdump_zlog(g_paramter->buf,28,zlog_handler);
 					break;
 				}else{
@@ -190,7 +216,8 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_catego
 
 void close_monitor_interface(){
 	close(g_paramter->fd);
-	free(g_paramter->buf);
+	free(g_paramter->send_buf);
+	free(g_paramter->recv_buf);
 	free(g_paramter);
 }
 

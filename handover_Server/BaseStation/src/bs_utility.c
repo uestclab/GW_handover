@@ -138,7 +138,7 @@ void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_q
 		if(list->received_association_response == 0){
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool);
-		}	
+		}
 	}else if(subtype == HANDOVER_START_REQUEST){
 		if(list->received_handover_start_response == 0){
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->next_bs_mac, g_air);

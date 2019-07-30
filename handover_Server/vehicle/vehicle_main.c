@@ -123,6 +123,9 @@ int main(int argc, char *argv[]) // main thread
 		}
 	}
 
+    fflush(stdout);
+    setvbuf(stdout, NULL, _IONBF, 0);
+
 	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
