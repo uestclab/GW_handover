@@ -173,6 +173,9 @@ int main(int argc, char *argv[]){
 	printf("next_dest _mac : \n");
 	print_buf(temp_Info->Next_dest_mac_addr,6);
 
+	/* get 0x43c20140 snr */
+	
+
 }
 
 

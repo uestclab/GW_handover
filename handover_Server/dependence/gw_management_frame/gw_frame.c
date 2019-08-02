@@ -163,13 +163,16 @@ int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handl
 	if(frame_Info == NULL)
 		return -1;
 	int rc = 0;
-
+	zlog_info(zlog_handler,"air_tx : send_id = %d ", frame_Info->seq_id);
 	fill_buffer(frame_Info, g_paramter->send_buf); // g_parameter->buf ??? 
 	int fill_len = frame_Info->length;
+	int64_t start = now();
 	rc = write(g_paramter->fd,g_paramter->send_buf,fill_len);
-	// debug	
-	//zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
-	//			rc , g_paramter->fd , fill_len);
+	int64_t end = now();
+	double msec = (end-start)/1000.0;
+	zlog_info(zlog_handler,"msec = %f ", msec);
+	if(msec > 1.0)
+		zlog_info(zlog_handler," ***** handle_air_tx : write is too long ---- msec = %f",msec);
 	if(rc < 0)
 		return rc;
 

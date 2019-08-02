@@ -1,4 +1,9 @@
 #！/bin/sh
+
+echo call clean.sh
+sh clean.sh
+
+
 f=./arm
 b=./build
 
@@ -167,4 +172,13 @@ fi
 cd ./build
 cmake ..
 make
+
+# display build result
+
+
+
+
+
+
+
 

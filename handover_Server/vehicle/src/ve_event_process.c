@@ -120,7 +120,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			open_ddr(g_RegDev); // for init bs or for target bs
 				
 
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
+			zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : ve state STATE_SYSTEM_READY -> STATE_WORKING");
 
 			break;
 		}
@@ -136,7 +136,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			g_system_info->isLinked = 0;
 			g_system_info->ve_state = STATE_SYSTEM_READY;			
 			
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : ve state STATE_HANDOVER -> STATE_SYSTEM_READY");
+			zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : ve state STATE_HANDOVER -> STATE_SYSTEM_READY");
 				
 			break;
 		}
@@ -166,11 +166,11 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 					break;
 				usleep(500);
 			}
-			zlog_info(zlog_handler,"ve sdram buffer flag = %d ",airdata_buf2_empty_flag(g_RegDev));
+			//zlog_info(zlog_handler,"ve sdram buffer flag = %d ",airdata_buf2_empty_flag(g_RegDev));
 			send_airSignal(HANDOVER_START_RESPONSE, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
 	
 			g_system_info->ve_state = STATE_HANDOVER;
-			zlog_info(zlog_handler," ************************ SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
+			zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
 			break;
 		}
 		default:
@@ -198,7 +198,7 @@ void init_state(g_air_para* g_air, g_periodic_para* g_periodic, g_RegDev_para* g
 	release_bb(g_RegDev);
 	enable_dac(g_RegDev);
 	g_system_info->ve_state = STATE_SYSTEM_READY;
-	zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");
+	zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");
 
 	startProcessAir(g_air, 1); 
 	startPeriodic(g_periodic,BEACON); // --------------------------------------- first periodic action

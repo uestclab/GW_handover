@@ -119,11 +119,16 @@ void postSendReadyHandoverSignal(int32_t quility, g_msg_queue_para* g_msg_queue)
 	postMsgQueue(&data,g_msg_queue);
 }
 
+/* 1. check rx mcs, snr, crc */
+
 void* monitor_loop(void* args){
 	g_monitor_para* g_monitor = (g_monitor_para*)args;
 	int32_t quility = 0;
 	int32_t correct_d = 0;
 	int32_t error_d = 0;
+
+	for(int i = 0 ; i < g_monitor->node->delay_mon_cnt_second ; i++)
+		gw_sleep();
 
 	// get init compare value
 

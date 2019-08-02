@@ -160,13 +160,6 @@ void sendX2Signal(char* json, g_x2_para* g_x2){
 
 void configure_target_ip(char* ip, g_x2_para* g_x2){
 	memcpy(g_x2->remote_ip,ip,strlen(ip)+1);
-	if(g_x2->node->my_id == 11){
-		char* ip_66 = "192.168.10.66";
-		//memcpy(g_x2->remote_ip,ip_66,strlen(ip_66)+1);
-	}else if(g_x2->node->my_id == 22){
-		char* ip_33 = "192.168.10.33";
-		//memcpy(g_x2->remote_ip,ip_33,strlen(ip_33)+1);
-	}
 }
 
 

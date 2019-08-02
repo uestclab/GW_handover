@@ -20,7 +20,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_START_MONITOR: msg_number = %d",getData->msg_number);
 			g_system_info->bs_state = STATE_WAIT_MONITOR;
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_WAIT_MONITOR");
+			zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_WAIT_MONITOR");
 
 			startProcessAir(g_air,1); // open air signal receive
 
@@ -36,7 +36,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			postCheckWorkToThreadPool(ASSOCIATION_REQUEST, g_msg_queue, g_threadpool);
 			g_system_info->bs_state = STATE_INIT_SELECTED;
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_INIT_SELECTED");
+			zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_INIT_SELECTED");
 
 			break;
 		}
@@ -69,8 +69,6 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			if(g_system_info->monitored == 0 && g_system_info->bs_state == STATE_WAIT_MONITOR){
 				g_system_info->monitored = 1;
 				//startMonitor(g_monitor,3);
-				for(int i = 0 ; i < g_network->node->delay_mon_cnt_second ; i++)
-					gw_sleep();
 				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 3);
 			}else{
 				zlog_info(zlog_handler," already in monitor or STATE_WORKING %d , %d ",g_system_info->monitored, g_system_info->bs_state);
@@ -167,9 +165,9 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				trigger_mac_id(g_RegDev); 
 				open_ddr(g_RegDev);
 				g_system_info->bs_state = STATE_WORKING;
-				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING");
+				zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING");
 		
-				printf(" ************************* SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING\n");
+				printf(" SYSTEM STATE CHANGE : bs state STATE_INIT_SELECTED -> STATE_WORKING\n");
 				printf(" ---------------------- B1 Events completed --------------------------\n");
 
 
@@ -179,7 +177,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				open_ddr(g_RegDev);
 
 				g_system_info->bs_state = STATE_WORKING;
-				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
+				zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
 
 				send_linkopen_signal(g_network->node->my_id, g_network);
 
@@ -208,10 +206,10 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 			zlog_info(zlog_handler,"before close_ddr : rx_byte_filter_ether_low32() = %x \n", rx_byte_filter_ether_low32(g_RegDev));
 			zlog_info(zlog_handler,"rx_byte_filter_ether_high32() = %x \n", rx_byte_filter_ether_high32(g_RegDev));
 
-			zlog_info(zlog_handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+			//zlog_info(zlog_handler,"point 1 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
 			usleep(1000); // to empty ddr
 			close_ddr(g_RegDev);
-			zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
+			//zlog_info(zlog_handler,"point 2 :ddr_empty = %u \n",ddr_empty_flag(g_RegDev));
 			usleep(1000);
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			postCheckWorkToThreadPool(DEASSOCIATION, g_msg_queue, g_threadpool);
@@ -271,7 +269,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 
 				send_linkclosed_signal(g_network->node->my_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
-				zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
+				zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 
 			}else
 				zlog_info(zlog_handler," debug error----STATE_TARGET_SELECTED ? ---- g_system_info->bs_state = %d \n", g_system_info->bs_state);
@@ -332,7 +330,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air
 			g_system_info->bs_state = STATE_TARGET_SELECTED;
 			g_system_info->received_reassociation = 0; // clear status
 			g_system_info->sourceBs_dac_disabled = 0; // clear status  
-			zlog_info(zlog_handler," ************************* SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
+			zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_WAIT_MONITOR -> STATE_TARGET_SELECTED");
 			break;	
 		}
 		case MSG_MONITOR_READY_HANDOVER:
