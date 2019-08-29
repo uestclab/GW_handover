@@ -397,6 +397,31 @@ uint32_t get_crc_error_cnt(g_RegDev_para* g_RegDev){
 	return crc_error_cnt;
 }
 
+/* ----------------------------- ready handover related (snr , rx mcs ,) ---------------------------- */
+double get_rx_snr(g_RegDev_para* g_RegDev){
+	uint32_t snr_i = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x140, &snr_i);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_rx_snr failed !!! \n");
+		return -1.0;
+	}
+	double snr_tmp = snr_i / 4.0;
+	return snr_tmp;
+}
+
+// 0 : bpsk , 1 : qpsk 2 , 2 : 16qam
+uint32_t get_rx_mcs(g_RegDev_para* g_RegDev){
+	uint32_t rx_vector = 0x0;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x84c, &rx_vector);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_rx_mcs failed !!! \n");
+		return rc;
+	}
+	//uint32_t rx_mcs= (rx_vector << 14) >> 14;// [17:0]
+	//unsigned int agg_num = (cnt << 5) >> 28;// [26:23]
+	uint32_t rx_mcs = (rx_vector<<9) >> 27;//[22:18]
+	return rx_mcs;
+}
 
 // ----------------------------------------------------------------------------------------
 
@@ -475,6 +500,28 @@ int release_bb(g_RegDev_para* g_RegDev){
 }
 
 
+// delay tick for distance measure
+uint32_t get_delay_tick(g_RegDev_para* g_RegDev){
+	zlog_info(g_RegDev->log_handler,"get_delay_tick\n");
+	uint32_t delay_tick = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x864, &delay_tick);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_delay_tick failed !!! \n");
+		return rc;
+	}
+	return delay_tick;	
+}
+
+int set_delay_tick(g_RegDev_para* g_RegDev, uint32_t delay){
+	zlog_info(g_RegDev->log_handler,"set_delay_tick\n");
+	int	rc = regdev_write(g_RegDev->mem_dev_phy, 0x868, delay);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"set_delay_tick write failed !!! \n");
+		return rc;
+	}
+
+	return 0;
+}
 
 
 

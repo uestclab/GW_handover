@@ -119,7 +119,10 @@ void postSendReadyHandoverSignal(int32_t quility, g_msg_queue_para* g_msg_queue)
 	postMsgQueue(&data,g_msg_queue);
 }
 
-/* 1. check rx mcs, snr, crc */
+/* 
+	1. check rx mcs, snr, crc
+	2. add punish to avoid handover to source bs immediately 
+*/
 
 void* monitor_loop(void* args){
 	g_monitor_para* g_monitor = (g_monitor_para*)args;
