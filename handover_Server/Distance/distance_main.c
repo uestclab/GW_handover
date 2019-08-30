@@ -54,6 +54,7 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
 	clientConfigure->my_id = 0;
 	clientConfigure->my_mac_str = (char*)malloc(32);
 	clientConfigure->my_Ethernet = (char*)malloc(32);
+	clientConfigure->measure_cnt_ms = 0;
 	
 
 //  init system global variable
@@ -93,8 +94,8 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
 		item = cJSON_GetObjectItem(root, "my_Ethernet");
 		memcpy(clientConfigure->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
 		
-		// item = cJSON_GetObjectItem(root, "enable_user_wait");
-		// clientConfigure->enable_user_wait = item->valueint;
+		item = cJSON_GetObjectItem(root, "measure_cnt_ms");
+		clientConfigure->measure_cnt_ms = item->valueint;
 
 		cJSON_Delete(root);
     }
@@ -109,7 +110,7 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
 	// 	printf("get mac address failed!\n");
 	// }
 
-	//zlog_info(log_handler," configure : enable_user_wait = %d  " , clientConfigure->enable_user_wait);
+	zlog_info(log_handler," configure : measure_cnt_ms = %d  " , clientConfigure->measure_cnt_ms);
 
 	return clientConfigure;
 }
@@ -163,7 +164,11 @@ void* periodic_distance_measure_send(void* arg){
 		data.msg_number = MSG_CACULATE_DISTANCE;
 		postMsgQueue(&data,g_air->g_msg_queue);
 
-		usleep(1000000);
+		//usleep(1000000);
+
+		for(int i = 0;i<g_air->node->measure_cnt_ms;i++){
+			usleep(1000);
+		}
 	}
 }
 

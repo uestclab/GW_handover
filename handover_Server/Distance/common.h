@@ -32,6 +32,7 @@ typedef struct ConfigureNode{
 	int32_t my_id;
 	char* my_mac_str;
 	char* my_Ethernet;
+	int32_t measure_cnt_ms;
 }ConfigureNode;
 
 
