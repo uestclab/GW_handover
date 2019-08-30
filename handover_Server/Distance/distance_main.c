@@ -20,40 +20,6 @@
 #include "cJSON.h"
 #include "common.h"
 
-#define DISTANC_MEASURE_REQUEST    9
-#define DELAY_EXCHANGE_REQUEST     10
-#define DELAY_EXCHANGE_RESPONSE    13
-
-typedef enum msg_event{
-	MSG_CHECK_RECEIVED_LIST = 1,
-	MSG_INIT_TICK_ONCE_MORE,
-	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
-	MSG_RECEIVED_DELAY_EXCHANGE_REQUEST,
-	MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE,
-	MSG_CACULATE_DISTANCE,
-}msg_event;
-
-typedef struct g_air_para{
-	int                running;
-	g_msg_queue_para*  g_msg_queue;
-    ConfigureNode*     node;
-	para_thread*       para_t;
-	para_thread*       send_para_t;
-	zlog_category_t*   log_handler;
-}g_air_para;
-
-typedef struct retrans_air_t{
-	int32_t subtype;
-	g_msg_queue_para* g_msg_queue;
-}retrans_air_t;
-
-/* global variable */
-typedef struct global_var_t{
-	zlog_category_t*   log_handler;
-	int32_t program_run;
-	g_msg_queue_para* g_msg_queue;
-}global_var_t;
-
 global_var_t g_var_value;
 
 
