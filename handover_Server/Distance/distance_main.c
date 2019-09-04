@@ -71,6 +71,7 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
 	clientConfigure->system_info->other_initial = 0;
 	clientConfigure->system_info->have_my_initial    = 0;
 	clientConfigure->system_info->have_other_initial = 0;
+	clientConfigure->system_info->system_state = 0;
 
 	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
 	clientConfigure->system_info->received_air_state_list->received_delay_exchange_response = 0;
@@ -150,31 +151,31 @@ void self_test_send(g_air_para* g_air){
 	}	
 }
 
-void* periodic_distance_measure_send(void* arg){
-	g_air_para* g_air = (g_air_para*)arg;
-	system_info_para* g_system_info = g_air->node->system_info;
-	 // send DISTANC_MEASURE_REQUEST
-	zlog_info(g_air->log_handler,"send DISTANC_MEASURE_REQUEST periodic \n");
-	for(;;){
-		send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+// void* periodic_distance_measure_send(void* arg){
+// 	g_air_para* g_air = (g_air_para*)arg;
+// 	system_info_para* g_system_info = g_air->node->system_info;
+// 	 // send DISTANC_MEASURE_REQUEST
+// 	zlog_info(g_air->log_handler,"send DISTANC_MEASURE_REQUEST periodic \n");
+// 	for(;;){
+// 		send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 
-		struct msg_st data;
-		data.msg_len = 0;
-		data.msg_type = MSG_CACULATE_DISTANCE;
-		data.msg_number = MSG_CACULATE_DISTANCE;
-		postMsgQueue(&data,g_air->g_msg_queue);
+// 		struct msg_st data;
+// 		data.msg_len = 0;
+// 		data.msg_type = MSG_CACULATE_DISTANCE;
+// 		data.msg_number = MSG_CACULATE_DISTANCE;
+// 		postMsgQueue(&data,g_air->g_msg_queue);
 
-		//usleep(1000000);
+// 		//usleep(1000000);
 
-		for(int i = 0;i<g_air->node->measure_cnt_ms;i++){
-			usleep(1000);
-		}
-	}
-}
+// 		for(int i = 0;i<g_air->node->measure_cnt_ms;i++){
+// 			usleep(1000);
+// 		}
+// 	}
+// }
 
-void postDistanceMeasureWorkToThreadPool(g_air_para* g_air, ThreadPool* g_threadpool){
-	AddWorker(periodic_distance_measure_send,(void*)g_air,g_threadpool);
-} 
+// void postDistanceMeasureWorkToThreadPool(g_air_para* g_air, ThreadPool* g_threadpool){
+// 	AddWorker(periodic_distance_measure_send,(void*)g_air,g_threadpool);
+// } 
 
 /* receive thread */
 struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
@@ -246,7 +247,7 @@ void* process_air_test_thread(void* args){
 
 	pthread_mutex_lock(g_air->para_t->mutex_);
     while(1){
-		while (g_air->running == -1 )
+		while (g_air->systemIsReady == -1 )
 		{
 			zlog_info(g_air->log_handler,"process_air_thread() : wait for condition\n");
 			pthread_cond_wait(g_air->para_t->cond_, g_air->para_t->mutex_);
@@ -260,7 +261,7 @@ void* process_air_test_thread(void* args){
 
 void startReceviedAir(g_air_para* g_air){
 	zlog_info(g_air->log_handler,"startReceviedAir\n");
-	g_air->running = 1;
+	g_air->systemIsReady = 1;
 	pthread_cond_signal(g_air->para_t->cond_);
 }
 
@@ -270,7 +271,7 @@ int initTestAirThread(struct ConfigureNode* Node, g_air_para** g_air, g_msg_queu
 	(*g_air)->log_handler = handler;
 	(*g_air)->para_t = newThreadPara();
 	(*g_air)->send_para_t = newThreadPara();
-	(*g_air)->running = -1;
+	(*g_air)->systemIsReady = -1;
 	(*g_air)->node = Node;
 	(*g_air)->g_msg_queue = g_msg_queue;
 
@@ -324,30 +325,51 @@ void* retrans_air_process_thread(void* arg){
 	int32_t subtype = tmp->subtype;
 	if(subtype == DELAY_EXCHANGE_REQUEST)
 		sleep(2);
+	else if(subtype == DISTANC_MEASURE_REQUEST){
+		for(int i = 0;i<tmp->g_air->node->measure_cnt_ms;i++){
+			usleep(1000);
+		}
+	}
 	postCheckSendSignal(tmp->subtype, tmp->g_msg_queue);
 	free(tmp);
 }
 
-void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool){
+void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool, g_air_para* g_air){
 	retrans_air_t* tmp = (retrans_air_t*)malloc(sizeof(retrans_air_t));
 	tmp->subtype = subtype;
 	tmp->g_msg_queue = g_msg_queue;
+	tmp->g_air = g_air;
 	AddWorker(retrans_air_process_thread,(void*)tmp,g_threadpool);
 } 
 
 void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_queue_para* g_msg_queue, 
 					  g_air_para* g_air, ThreadPool* g_threadpool){
 	received_state_list* list = g_system_info->received_air_state_list;
+	if(g_system_info->system_state == 0)
+		return;
 	if(subtype == DELAY_EXCHANGE_REQUEST){
 		if(list->received_delay_exchange_response == 0){
 			char my_inital[6];
 			memset(my_inital,0x0,6);
 			memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
 			send_airSignal(DELAY_EXCHANGE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, my_inital, g_air);
-			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool);
+			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool, g_air);
+		}
+	}else if(subtype == DISTANC_MEASURE_REQUEST){
+		if(g_system_info->have_my_initial == 1){
+			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			
+			struct msg_st data;
+			data.msg_len = 0;
+			data.msg_type = MSG_CACULATE_DISTANCE;
+			data.msg_number = MSG_CACULATE_DISTANCE;
+			postMsgQueue(&data,g_air->g_msg_queue);
+			
+			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool, g_air);
 		}
 	}
 }
+
 
 /* ---------------------------------------------- */
 
@@ -378,7 +400,7 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 			//zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_DISTANC_MEASURE_REQUEST: msg_number = %d ", getData->msg_number);
 			break;
 		}
-		case MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE:
+		case MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE: // my_inital and other_inital exchange completed 
 		{
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE: msg_number = %d ", getData->msg_number);
 			
@@ -401,7 +423,10 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 
 			zlog_info(zlog_handler,"Start Send Distance Measure Air Frame .......................................... \n");
 
-			postDistanceMeasureWorkToThreadPool(g_air,g_threadpool); // test enterance !!!!!!!
+			/* test enterance !!!!!!! */
+			//postDistanceMeasureWorkToThreadPool(g_air,g_threadpool); 
+			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			postCheckWorkToThreadPool(DISTANC_MEASURE_REQUEST, g_msg_queue, g_threadpool, g_air);
 			break;
 		}
 		case MSG_RECEIVED_DELAY_EXCHANGE_REQUEST:
@@ -436,15 +461,43 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 			double distance = (current_tick - delay) * 0.149896229;
 
 			zlog_info(zlog_handler,"delay = %u, current_tick = %u , distance = %f " , delay, current_tick,distance);
-			//printf("delay = %u, current_tick = %u , distance = %f \n" , delay, current_tick,distance);
 
 			break;
 		}
-		case MSG_INIT_TICK_ONCE_MORE:
+		case MSG_SYSTEM_EXCEPTION:
 		{
-			zlog_info(zlog_handler," ---------------- EVENT : MSG_INIT_TICK_ONCE_MORE: msg_number = %d ", getData->msg_number);
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_SYSTEM_EXCEPTION: msg_number = %d ", getData->msg_number);
 
-			g_var_value.program_run = 0;
+			if(g_system_info->system_state == 1){
+				g_system_info->system_state = 0;
+				g_system_info->have_my_initial = 0;
+			}else{
+				zlog_info(zlog_handler," system state is already in 0 ! \n ");
+			}
+
+			break;
+		}
+		case MSG_SYSTEM_READY:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_SYSTEM_READY: msg_number = %d ", getData->msg_number);
+
+			if(g_system_info->system_state == 0){
+				Enter_self_test(g_air,g_RegDev);
+				g_system_info->system_state = 1;
+
+				received_state_list* list = g_system_info->received_air_state_list;
+				if(list->received_delay_exchange_response == 1)
+					list->received_delay_exchange_response = 0;
+
+				char my_inital[6];
+				memset(my_inital,0x0,6);
+				memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
+				send_airSignal(DELAY_EXCHANGE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, my_inital, g_air);
+				postCheckWorkToThreadPool(DELAY_EXCHANGE_REQUEST, g_msg_queue, g_threadpool, g_air);
+
+			}else{
+				zlog_info(zlog_handler," system state is already in 1 ! \n");
+			}
 
 			break;
 		}
@@ -458,11 +511,12 @@ void distance_eventLoop(g_air_para* g_air, g_msg_queue_para* g_msg_queue,
                g_RegDev_para* g_RegDev, ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_air->node->system_info;
+	g_system_info->system_state = 1;
 	char my_inital[6];
 	memset(my_inital,0x0,6);
 	memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
 	send_airSignal(DELAY_EXCHANGE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, my_inital, g_air);
-	postCheckWorkToThreadPool(DELAY_EXCHANGE_REQUEST, g_msg_queue, g_threadpool);
+	postCheckWorkToThreadPool(DELAY_EXCHANGE_REQUEST, g_msg_queue, g_threadpool, g_air);
 
 	zlog_info(zlog_handler," ------------------------------  start distance_eventLoop ----------------------------- \n");
 
@@ -472,7 +526,6 @@ void distance_eventLoop(g_air_para* g_air, g_msg_queue_para* g_msg_queue,
 			continue;
 
 		process_event(getData, g_air, g_RegDev, g_msg_queue, g_threadpool, zlog_handler);
-
 
 		free(getData);
 	}
@@ -489,12 +542,17 @@ int test_exception(char* buf, int buf_len, char *from, void* arg)
 	if(strcmp(from,"mon/all/pub/system_stat") == 0){
 		printf("system_stat is %s \n" , buf);
 		if(strcmp(item->valuestring,"0x20") == 0 || strcmp(item->valuestring,"0x80000020") == 0){
-			;
+			struct msg_st data;
+			data.msg_len = 0;
+			data.msg_type = MSG_SYSTEM_READY;
+			data.msg_number = MSG_SYSTEM_READY;
+			postMsgQueue(&data,g_var_value.g_msg_queue);
+
 		}else{
 			struct msg_st data;
 			data.msg_len = 0;
-			data.msg_type = MSG_INIT_TICK_ONCE_MORE;
-			data.msg_number = MSG_INIT_TICK_ONCE_MORE;
+			data.msg_type = MSG_SYSTEM_EXCEPTION;
+			data.msg_number = MSG_SYSTEM_EXCEPTION;
 			postMsgQueue(&data,g_var_value.g_msg_queue);
 		}
 	}
@@ -573,8 +631,7 @@ int main(int argc, char *argv[]){
 
 	distance_eventLoop(g_air, g_msg_queue, g_RegDev, g_threadpool, zlog_handler);
 
-	zlog_info(zlog_handler,"end send and receive air process for distance measure request \n");
-
+	zlog_info(zlog_handler,"Exit Distance Measure Process \n");
 
 }
 

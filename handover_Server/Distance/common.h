@@ -23,6 +23,7 @@ typedef struct system_info_para{
 	uint32_t other_initial;
 	int      have_my_initial;
 	int      have_other_initial;
+	int      system_state;
 // -------- check retransmit
 	received_state_list* received_air_state_list;
 }system_info_para;
@@ -50,7 +51,8 @@ typedef struct air_data{
 
 typedef enum msg_event{
 	MSG_CHECK_RECEIVED_LIST = 1,
-	MSG_INIT_TICK_ONCE_MORE,
+	MSG_SYSTEM_READY,
+	MSG_SYSTEM_EXCEPTION,   /* 204b failed in working mode */
 	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
 	MSG_RECEIVED_DELAY_EXCHANGE_REQUEST,
 	MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE,
@@ -58,7 +60,7 @@ typedef enum msg_event{
 }msg_event;
 
 typedef struct g_air_para{
-	int                running;
+	int                systemIsReady;
 	g_msg_queue_para*  g_msg_queue;
     ConfigureNode*     node;
 	para_thread*       para_t;
@@ -69,6 +71,7 @@ typedef struct g_air_para{
 typedef struct retrans_air_t{
 	int32_t subtype;
 	g_msg_queue_para* g_msg_queue;
+	g_air_para*       g_air;
 }retrans_air_t;
 
 /* global variable */

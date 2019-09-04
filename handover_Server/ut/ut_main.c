@@ -26,6 +26,7 @@
 
 typedef enum msg_event{
 	MSG_CHECK_RECEIVED_LIST = 1,
+	MSG_SYSTEM_READY,
 	MSG_INIT_TICK_ONCE_MORE,
 	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
 	MSG_RECEIVED_DELAY_EXCHANGE_REQUEST,
@@ -518,7 +519,11 @@ int test_exception(char* buf, int buf_len, char *from, void* arg)
 	if(strcmp(from,"mon/all/pub/system_stat") == 0){
 		printf("system_stat is %s \n" , buf);
 		if(strcmp(item->valuestring,"0x20") == 0 || strcmp(item->valuestring,"0x80000020") == 0){
-			;
+			struct msg_st data;
+			data.msg_len = 0;
+			data.msg_type = MSG_SYSTEM_READY;
+			data.msg_number = MSG_SYSTEM_READY;
+			postMsgQueue(&data,g_var_value.g_msg_queue);
 		}else{
 			struct msg_st data;
 			data.msg_len = 0;
