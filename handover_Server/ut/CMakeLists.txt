@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-option(PUBLIC "This is a default option for PUBLIC" ON)
+option(PUBLIC "This is a default option for PUBLIC" OFF)
 message(STATUS "build public platform switch:"${PUBLIC})
 project(ut_main)
 
@@ -43,7 +43,6 @@ add_executable(${PROJECT_NAME} ${ALL_EXECUTABLES} ${SOURCE_FILES})
 include_directories("${PROJECT_SOURCE_DIR}/../dependence/include")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-target_link_libraries(${PROJECT_NAME} cjson)
 target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
 target_link_libraries(${PROJECT_NAME} -lm)
@@ -58,9 +57,6 @@ if(${PUBLIC} STREQUAL "ON") # arm
 	target_link_libraries(${PROJECT_NAME} gw_msgQueue)
 endif(${PUBLIC} STREQUAL "ON")
 
-if(${PUBLIC} STREQUAL "OFF") # PC
-	target_link_libraries(${PROJECT_NAME} gw_tunnel)
-endif(${PUBLIC} STREQUAL "OFF")
 
 
 

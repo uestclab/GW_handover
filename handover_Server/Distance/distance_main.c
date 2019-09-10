@@ -121,6 +121,8 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
 void print_subtype(int32_t subtype, g_air_para* g_air){
 	if(subtype == 9)
 		zlog_info(g_air->log_handler,"send_airSignal :  subtype = DISTANC_MEASURE_REQUEST , send successful \n");
+	else if(subtype == 13)
+		zlog_info(g_air->log_handler,"send_airSignal :  subtype = DELAY_EXCHANGE_RESPONSE , send successful \n");
 }
 
 int send_airSignal(int32_t subtype, char* mac_buf, char* mac_buf_dest, char* mac_buf_next, g_air_para* g_air){
@@ -471,6 +473,7 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 			if(g_system_info->system_state == 1){
 				g_system_info->system_state = 0;
 				g_system_info->have_my_initial = 0;
+				zlog_info(zlog_handler," system state is set to 0 ! \n ");
 			}else{
 				zlog_info(zlog_handler," system state is already in 0 ! \n ");
 			}
@@ -494,6 +497,8 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 				memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
 				send_airSignal(DELAY_EXCHANGE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, my_inital, g_air);
 				postCheckWorkToThreadPool(DELAY_EXCHANGE_REQUEST, g_msg_queue, g_threadpool, g_air);
+
+				zlog_info(zlog_handler," system state is set to 1 ! \n ");
 
 			}else{
 				zlog_info(zlog_handler," system state is already in 1 ! \n");
