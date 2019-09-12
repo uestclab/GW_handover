@@ -8,10 +8,12 @@
 #include <ctype.h>
 #include <assert.h>
 #include "sds.h"
-//#include "sdsalloc.h"
-#define s_malloc malloc
-#define s_realloc realloc
-#define s_free free
+#include "xmalloc.h"
+#define s_malloc zmalloc
+#define s_realloc zrealloc
+#define s_free zfree
+
+//#define SDS_TEST_MAIN
 
 static inline int sdsHdrSize(char type) {
     switch(type&SDS_TYPE_MASK) {

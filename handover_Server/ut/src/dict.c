@@ -45,8 +45,8 @@
 
 #include "dict.h"
 
-#define DICT_BENCHMARK_MAIN
-//#include "zmalloc.h"
+//#define DICT_BENCHMARK_MAIN
+#include "xmalloc.h"
 #ifndef DICT_BENCHMARK_MAIN
 //#include "redisassert.h"
 #include <assert.h>
@@ -54,9 +54,9 @@
 #include <assert.h>
 #endif
 
-#define zmalloc malloc
-#define s_realloc realloc
-#define zfree free
+//#define zmalloc malloc
+//#define s_realloc realloc
+//#define zfree free
 
 /* Using dictEnableResize() / dictDisableResize() we make possible to
  * enable/disable resizing of the hash table as needed. This is very important
@@ -1220,7 +1220,7 @@ int main(int argc, char **argv) {
         sdsfree(key);
     }
     end_benchmark("Accessing missing");
-
+  
     start_benchmark();
     for (j = 0; j < count; j++) {
         sds key = sdsfromlonglong(j);
@@ -1231,5 +1231,6 @@ int main(int argc, char **argv) {
         assert(retval == DICT_OK);
     }
     end_benchmark("Removing and adding");
+
 }
 #endif
