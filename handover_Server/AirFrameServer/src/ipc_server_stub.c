@@ -22,17 +22,28 @@ int send_to_client(char* buf, int buf_len, char* proc_name, g_ipc_server_para* g
 }
 
 
+void* ipc_receive_thread(void* args){
+	g_IPC_para* g_ipc_client = (g_IPC_para*)args;
+	int ret;
+	while(1){  
+		ret = ipc_poll_receive(g_ipc_client,2); // 2 * 5ms  
+		if (ret < 0) {
+			zlog_info(g_ipc_client->log_handler,"ipc poll time out : ret = %d \n", ret); 
+		} else if(ret == 0) {  
+			zlog_info(g_ipc_client->log_handler,"ipc_poll_receive : ret = 0 \n");
+		}
+	}
+}
+
 void* process_thread(void* args){
 	g_IPC_para* g_ipc_broker = (g_IPC_para*)args;
 	int ret;
 	while(1){  
-		ret = ipc_receive(g_ipc_broker);  
+		ret = ipc_poll_receive(g_ipc_broker,2);// 2 * 5ms  
 		if (ret < 0) {  
-			zlog_error(g_ipc_broker->log_handler,"read error");  
-			break;  
+			//zlog_info(g_ipc_broker->log_handler,"ipc poll time out : ret = %d \n", ret); 
 		} else if(ret == 0) {  
-			;//("EOF\n");  
-			//break;
+			zlog_info(g_ipc_broker->log_handler,"ipc_poll_receive : ret = 0 \n");
 		}
 	}  
 }

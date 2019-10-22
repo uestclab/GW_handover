@@ -7,7 +7,7 @@
 #include "gw_macros_util.h"
 
 typedef struct g_air_frame_para{
-	g_args_frame*      g_frame;
+	//g_args_frame*      g_frame;
 	g_ipc_server_para  g_ipc_server; // use container_of ----- ! only one copy in all this program
 	ThreadPool*        g_threadpool;
 	uint16_t           send_id;

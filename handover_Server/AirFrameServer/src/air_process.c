@@ -85,7 +85,7 @@ void gw_poll_receive(g_air_frame_para* g_air_frame){
 	int status;
 	management_frame_Info* temp_Info = new_air_frame(-1,0,NULL,NULL,NULL,0);
 	while(1){ // wait for air_signal
-		int stat = gw_monitor_poll(temp_Info, 2, g_air_frame->g_frame,  g_air_frame->log_handler); // receive 2 * 5ms
+		int stat = gw_monitor_poll(temp_Info, 2, g_air_frame->log_handler); // receive 2 * 5ms
 		if(stat == 26){
 			zlog_info(g_air_frame->log_handler,"receive new air frame \n");
 			dispatch_recived_air_frame(temp_Info, g_air_frame);
@@ -120,7 +120,6 @@ int initProcessAirThread(g_air_frame_para** g_air_frame, ThreadPool* g_threadpoo
 	(*g_air_frame)->send_para_t = newThreadPara();
 	(*g_air_frame)->send_id = 0;
 	(*g_air_frame)->running = -1;
-	(*g_air_frame)->g_frame = (g_args_frame*)malloc(sizeof(struct g_args_frame));
 	(*g_air_frame)->g_threadpool = g_threadpool;
 
 	int ret = pthread_create((*g_air_frame)->para_t->thread_pid, NULL, process_air_thread, (void*)(*g_air_frame));
@@ -129,7 +128,7 @@ int initProcessAirThread(g_air_frame_para** g_air_frame, ThreadPool* g_threadpoo
 		return -1;
     }
 	
-	int fd = ManagementFrame_create_monitor_interface((*g_air_frame)->g_frame);
+	int fd = ManagementFrame_create_monitor_interface();
 	if(fd < 0){
 		zlog_error(handler,"error ! --- ManagementFrame_create_monitor_interface : fd = %d \n" , fd);
 		return fd;
@@ -184,7 +183,7 @@ int send_airFrame(char* buf, int buf_len, g_ipc_server_para* g_ipc_server_var){
 	assert(buf_len == sizeof(management_frame_Info));
 	management_frame_Info* frame_Info = (management_frame_Info*)buf;
 	int subtype = frame_Info->subtype;
-	status = handle_air_tx(frame_Info,g_air_frame->g_frame, g_air_frame->log_handler);
+	status = handle_air_tx(frame_Info,g_air_frame->log_handler);
 
 	pthread_mutex_unlock(g_air_frame->send_para_t->mutex_);
 

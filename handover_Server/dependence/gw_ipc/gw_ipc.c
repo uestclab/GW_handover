@@ -37,6 +37,31 @@ void NotifyMessageComing(char* start, int32_t length, g_IPC_para* g_IPC){
 }
 
 /* receive interface */
+int ipc_poll_receive(g_IPC_para* g_IPC, int time_cnt){
+	int loop = 0;
+	int rc = 0;
+	int ret = -1;
+	for(loop = 0; loop <time_cnt; loop++){
+		rc = poll(&(g_IPC->poll_fd),1,5); // ms
+		if(rc > 0){
+			if(POLLIN == g_IPC->poll_fd.revents){
+				rc = ipc_receive(g_IPC);
+				break;
+			}else{
+				ret = -2;
+			}
+		}else{
+			ret = -3;
+		}
+	}// for
+	if(loop == time_cnt)
+		return ret;
+	else
+		return rc;
+}
+
+
+
 int ipc_receive(g_IPC_para* g_IPC){
 	int n;
 	int size = 0;
@@ -129,6 +154,10 @@ g_IPC_para* init_ipc_broker(int connfd, zlog_category_t* handler){
 	g_IPC_para* g_IPC = NULL;
 	init_ipc(NULL,NULL,&g_IPC,handler);
 	g_IPC->sockfd = connfd;
+
+	g_IPC->poll_fd.fd = connfd;
+	g_IPC->poll_fd.events=POLLIN;
+
 	return g_IPC;
 }
 
@@ -165,6 +194,11 @@ int connect_server(g_IPC_para* g_IPC){
     }
 
 	// connect success , next start to receive and init link info
+
+	g_IPC->poll_fd.fd = g_IPC->sockfd;
+	g_IPC->poll_fd.events = POLLIN;
+
+
 	return 0;
 }
   

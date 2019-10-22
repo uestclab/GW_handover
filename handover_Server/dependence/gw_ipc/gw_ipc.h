@@ -3,6 +3,8 @@
 
 #include "zlog.h"
 #include <stdint.h>
+#include <poll.h>
+#include <sys/ioctl.h>
 
 typedef enum ipc_type{
 	SOURCE_PROCESS = 1, // client to server , distinguish different process
@@ -28,6 +30,7 @@ typedef struct g_IPC_para{
 	int          listenfd; // ipc_server listen use
 	int          num_process;
 	int          sockfd;   // ipc_server or ipc_client transfer data use
+	struct pollfd poll_fd;
 	int          gMoreData_;
 	char*        recvbuf;
 	char*        send_buf;
@@ -50,6 +53,8 @@ int wait_accept_loop(g_IPC_para* g_IPC);
 void close_ipc(g_IPC_para* g_IPC);
 
 // instead of gw_monitor_poll and add callback function
+int ipc_poll_receive(g_IPC_para* g_IPC, int time_cnt);
+
 int ipc_receive(g_IPC_para* g_IPC);
 
 // instead of handle_air_tx
