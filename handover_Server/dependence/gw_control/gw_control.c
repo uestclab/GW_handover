@@ -13,27 +13,6 @@
 #include <sys/types.h>
 
 
-char *get_prog_name(char *argv)
-{
-	int len = strlen(argv);
-	int i;
-	char *tmp = argv;
-	
-	for(i=len; i >=0; i--)
-	{
-		if(tmp[i] == '/'){
-			i++;
-			break;
-		}
-	}
-	
-	if(-1 == i){
-		i = 0;
-	}
-
-	return argv + i;
-}
-
 int initBroker(char *argv, recv_cb exception_cb){
 
 	int ret = init_broker(get_prog_name(argv), NULL, -1, NULL, NULL);

@@ -32,7 +32,7 @@ zlog_category_t * serverLog(const char* path){
 		return NULL;
 	}
 
-	zlog_handler = zlog_get_category("baseStation");
+	zlog_handler = zlog_get_category("distance");
 
 	if (!zlog_handler) {
 		zlog_fini();
@@ -46,7 +46,6 @@ void closeServerLog(){
 	zlog_fini();
 }
 
-
 /*  ----------------------------------------------------------------------------------  */
 struct ConfigureNode* init_node(zlog_category_t* log_handler){
 	struct ConfigureNode* clientConfigure = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
@@ -55,7 +54,6 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
 	clientConfigure->my_mac_str = (char*)malloc(32);
 	clientConfigure->my_Ethernet = (char*)malloc(32);
 	clientConfigure->measure_cnt_ms = 0;
-	
 
 //  init system global variable
 	clientConfigure->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
@@ -575,6 +573,7 @@ int init_program(){
 	return value;
 }
 
+
 int main(int argc, char *argv[]){
 
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
@@ -598,8 +597,9 @@ int main(int argc, char *argv[]){
 	}
 
 	/* msg_queue */
-	const char* pro_path = "../distance_measure.c";
-	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, zlog_handler);
+	const char* pro_path = "/tmp/handover_test/";
+	int proj_id = 'c';
+	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;

@@ -188,7 +188,7 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_catego
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
 			if(POLLIN == g_paramter->poll_fd.revents){
-				rc = read(g_paramter->fd, g_paramter->recv_buf, 1500); // g_parameter->buf ????
+				rc = read(g_paramter->fd, g_paramter->recv_buf, 1500);
 				if(rc){
 					// get management frame
 					int state = parse_buffer(frame_Info,g_paramter->recv_buf); // g_parameter->buf ????

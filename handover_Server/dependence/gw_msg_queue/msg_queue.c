@@ -29,7 +29,7 @@ int clearMsgQueue(g_msg_queue_para* g_msg_queue){
 	return 0;
 }
 
-g_msg_queue_para* createMsgQueue(const char *pathname, zlog_category_t* handler){
+g_msg_queue_para* createMsgQueue(const char *pathname, int proj_id, zlog_category_t* handler){
 	zlog_info(handler,"Enter createMsgQueue\n");
 	g_msg_queue_para* g_msg_queue = (g_msg_queue_para*)malloc(sizeof(struct g_msg_queue_para));
 	g_msg_queue->log_handler = handler;
@@ -37,7 +37,7 @@ g_msg_queue_para* createMsgQueue(const char *pathname, zlog_category_t* handler)
 	g_msg_queue->seq_id = 1;
 
 	key_t key;
-	key = ftok(pathname, 'a');
+	key = ftok(pathname, proj_id);
 
   	g_msg_queue->msgid = msgget(key, 0666 | IPC_CREAT);  
 	if(g_msg_queue->msgid == -1){

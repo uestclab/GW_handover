@@ -284,7 +284,7 @@ void sendSignal(signalType type, char* json, g_network_para* g_network){
 	// ---- sendMessage send ---- 
 	*((int32_t*)(g_network->sendMessage+sizeof(int32_t))) = htonl((int32_t)(message->signal)); 
 	int32_t buf_length = strlen(message->buf) + 1;
-	message->length = sizeof(int32_t) * 2 + buf_length;
+	message->length = sizeof(int32_t) * 2 + buf_length; // error?
 	*((int32_t*)(g_network->sendMessage)) = htonl(message->length);
 	memcpy(g_network->sendMessage + sizeof(int32_t) * 2, message->buf, buf_length);
 	int status = send(g_network->sock_cli, g_network->sendMessage, message->length + sizeof(int32_t), 0);

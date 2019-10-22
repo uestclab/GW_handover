@@ -372,7 +372,7 @@ void eventLoop(g_network_para* g_network, g_air_para* g_air, g_x2_para* g_x2, g_
 
 	init_state(g_network, g_RegDev,zlog_handler);
 
-	zlog_info(zlog_handler," ------------------------------  start baseStation event loop ----------------------------- \n");
+	zlog_info(zlog_handler," ------------------------------ start baseStation event loop ----------------------------- \n");
 
 	while(1){
 		struct msg_st* getData = getMsgQueue(g_msg_queue);

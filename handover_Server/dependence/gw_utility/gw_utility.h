@@ -27,6 +27,7 @@ void destoryThreadPara(para_thread* para_t);
 int32_t myNtohl(const char* buf);
 int filelength(FILE *fp);
 char* readfile(const char *path);
+char *get_prog_name(char *argv);
 int64_t now();
 
 void hexdump(const void* p, size_t size);

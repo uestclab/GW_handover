@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
-option(PUBLIC "This is a default option for PUBLIC" OFF)
+option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch:"${PUBLIC})
-project(ut_main)
+project(ipc_client)
 
 if(${PUBLIC} STREQUAL "ON")
 	message(STATUS "start to build ARM platform.")
@@ -21,6 +21,15 @@ if(${PUBLIC} STREQUAL "ON")
 	link_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/lib/")
 	include_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/include/")
 	# cross complie
+
+	# sqlite
+	link_directories("/home/gyl/liqingSpace/sqlite/sqlite-autoconf-3290000/install/lib/")
+	include_directories("/home/gyl/liqingSpace/sqlite/sqlite-autoconf-3290000/install/include/")
+
+	# cgic
+	link_directories("/home/gyl/liqingSpace/code/web_dev/code/cgic207/")
+	include_directories("/home/gyl/liqingSpace/code/web_dev/code/cgic207/")
+
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
 	message(STATUS "PROJECT_SOURCE_DIR": ${PROJECT_SOURCE_DIR})
@@ -35,7 +44,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 SET(CMAKE_VERBOSE_MAKEFILE ON)    
 SET(ROOT_PATH ".")  
 
-file(GLOB_RECURSE SOURCE_FILES "src/*.c")
+file(GLOB_RECURSE SOURCE_FILES "src/*.cc")
 file(GLOB_RECURSE ALL_EXECUTABLES "ut_main.c")
 
 add_executable(${PROJECT_NAME} ${ALL_EXECUTABLES} ${SOURCE_FILES})
@@ -47,14 +56,20 @@ target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lzlog)
 target_link_libraries(${PROJECT_NAME} -lm)
 if(${PUBLIC} STREQUAL "ON") # arm
-	target_link_libraries(${PROJECT_NAME} broker)
-	target_link_libraries(${PROJECT_NAME} mosquitto)
-	target_link_libraries(${PROJECT_NAME} gw_regdev)
+	#target_link_libraries(${PROJECT_NAME} broker)
+	#target_link_libraries(${PROJECT_NAME} mosquitto)
+	#target_link_libraries(${PROJECT_NAME} gw_regdev)
 	target_link_libraries(${PROJECT_NAME} gw_utility)
 	target_link_libraries(${PROJECT_NAME} gw_frame)
-	target_link_libraries(${PROJECT_NAME} gw_control)
-	target_link_libraries(${PROJECT_NAME} gw_threadpool)
+	#target_link_libraries(${PROJECT_NAME} gw_control)
+	#target_link_libraries(${PROJECT_NAME} gw_threadpool)
 	target_link_libraries(${PROJECT_NAME} gw_msgQueue)
+	target_link_libraries(${PROJECT_NAME} gw_ipc)
+	#sqlite
+	#target_link_libraries(${PROJECT_NAME} -lsqlite3)
+	#cgic
+	#target_link_libraries(${PROJECT_NAME} libcgic.a)
+
 endif(${PUBLIC} STREQUAL "ON")
 
 

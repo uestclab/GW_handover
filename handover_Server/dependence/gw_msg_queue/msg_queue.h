@@ -32,7 +32,7 @@ typedef struct g_msg_queue_para{
 }g_msg_queue_para;
 
 
-g_msg_queue_para* createMsgQueue(const char *pathname, zlog_category_t* handler);
+g_msg_queue_para* createMsgQueue(const char *pathname, int proj_id, zlog_category_t* handler);
 int delMsgQueue(g_msg_queue_para* g_msg_queue);
 
 void postMsgQueue(struct msg_st* data, g_msg_queue_para* g_msg_queue);

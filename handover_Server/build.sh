@@ -136,6 +136,19 @@ cd ./build
 cmake ..
 make && make install
 
+# gw_ipc
+cd ../../gw_ipc
+if [ -d $f ]
+then 
+    rm -rf $f
+	mkdir $f
+else
+    mkdir $f
+fi
+cd ./arm
+cmake ..
+make && make install
+
 
 cd ../../../BaseStation
 if [ -d $f ]

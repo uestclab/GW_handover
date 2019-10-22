@@ -150,8 +150,9 @@ int main(int argc, char *argv[]) // main thread
 	zlog_info(zlog_handler,"initBroker : ret = %d \n", ret);
 	
 	/* msg_queue */
-	const char* pro_path = "../vehicle_main.c";
-	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, zlog_handler);
+	const char* pro_path = "/tmp/handover_test/";
+	int proj_id = 'a';
+	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;

@@ -19,6 +19,9 @@ extern "C" {
 #define HANDOVER_START_REQUEST  5
 #define HANDOVER_START_RESPONSE 6
 
+#define DISTANC_MEASURE_REQUEST    9
+#define DELAY_EXCHANGE_REQUEST     10
+#define DELAY_EXCHANGE_RESPONSE    13
 
 typedef struct management_frame_Info{
 	int32_t type;

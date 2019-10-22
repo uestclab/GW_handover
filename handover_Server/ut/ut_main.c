@@ -1,27 +1,43 @@
 #define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <assert.h>
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <string.h>
+// #include <stdint.h>
+// #include <assert.h>
 
-#include <math.h>
+// #include <math.h>
 
+// #include <unistd.h>
+// #include <signal.h>
+// #include <sys/time.h>
+
+// #include "zlog.h"
+
+// #include <sched.h>
+// #include <pthread.h>
+// #include <sys/syscall.h>
+
+// #include <stddef.h>  
+// #include <sys/socket.h>  
+// #include <sys/un.h>  
+// #include <errno.h> 
+// #include <ctype.h>
+
+#include <stdlib.h>  
+#include <stdio.h>  
+#include <stddef.h>  
+#include <sys/socket.h>  
+#include <sys/un.h>  
+#include <errno.h>  
+#include <string.h>  
 #include <unistd.h>
-#include <signal.h>
-#include <sys/time.h>
-
-#include "zlog.h"
-#include "adlist.h"
-#include "sds.h"
-#include "dict.h"
-#include "xmalloc.h"
-
-#include "macros_util.h"
-
-#include <sched.h>
 #include <pthread.h>
-#include <sys/syscall.h>
+#include <assert.h>
+#include "zlog.h"
+#include "gw_ipc.h"
+#include "gw_frame.h"
+#include "gw_utility.h"
+#include "msg_queue.h"
 
 zlog_category_t * serverLog(const char* path){
 	int rc;
@@ -46,196 +62,170 @@ void closeServerLog(){
 	zlog_fini();
 }
 
-long long mytimeInMilliseconds(void) {
-    struct timeval tv;
+// char *client_path = "client.socket";  
+// char *server_path = "/tmp/air_test/server/bin/server.socket";
 
-    gettimeofday(&tv,NULL);
-    return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
-}
 
-/*  ----------------------------------------------------------------------------------  */
+// char proc_name_g[32];
 
-int set_cpu(pid_t tid)
+// /* ------------  ipc_client  ----------------  */
+
+// void* ipc_receive_thread(void* args){
+// 	g_IPC_para* g_ipc_client = (g_IPC_para*)args;
+// 	int ret;
+// 	while(1){  
+// 		ret = ipc_receive(g_ipc_client);  
+// 		if (ret < 0) {
+// 			break;  
+// 		} else if(ret == 0) {  
+// 			;//zlog_info(g_ipc_client->log_handler,"decode successful \n");
+// 		}
+// 	}
+// }
+
+// // receive air frame
+// int process_ipc_msg(char* buf, int buf_len, void* input, int type){
+// 	g_IPC_para* g_ipc_client = (g_IPC_para*)input;
+
+// 	assert(buf_len == sizeof(management_frame_Info));
+// 	management_frame_Info* frame_Info = (management_frame_Info*)buf;
+
+// 	zlog_info(g_ipc_client->log_handler,"receive air frame : subtype = %d , buf_len = %d , type = %d , t_id = %lu\n", 
+// 	frame_Info->subtype, buf_len, type, pthread_self());
+// 	// hexdump(frame_Info->source_mac_addr, 6);
+// 	// hexdump(frame_Info->dest_mac_addr, 6);
+// 	// hexdump(frame_Info->Next_dest_mac_addr, 6);
+
+// 	if(strcmp(proc_name_g,"baseStation") == 0){
+// 		char mac_buf[6] = {0};
+// 		char mac_buf_dest[6] = {0};
+// 		char mac_buf_next[6] = {0};
+// 		management_frame_Info* frame_Info = new_air_frame(DEASSOCIATION, 0,mac_buf,mac_buf_dest,mac_buf_next,1);   
+// 		int ret = ipc_send((char*)frame_Info, sizeof(management_frame_Info), RAW_FRAME_DATA, g_ipc_client->sockfd, g_ipc_client);
+// 		if(ret != sizeof(management_frame_Info) + 8){
+// 			zlog_error(g_ipc_client->log_handler,"ipc_send error \n");
+// 		}
+// 		free(frame_Info);
+// 	}
+
+// 	// post msg to queue
+
+// 	return 0;
+// }
+
+// /* notify process type to server */
+// int notify_to_server(char* proc_name, g_IPC_para* g_IPC){
+// 	int name_len = strlen(proc_name) + 1;
+// 	int ret = ipc_send(proc_name, name_len, SOURCE_PROCESS, g_IPC->sockfd, g_IPC);
+// 	if(ret != name_len + 8){
+// 		zlog_error(g_IPC->log_handler,"notify_to_server error \n");
+// 		return -1;
+// 	}else{
+// 		return 0;
+// 	}
+// }
+
+// int main(int argc, char *argv[]) // main thread
+// {
+// 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
+
+// 	zlog_info(zlog_handler,"start ipc client --- file : %s , proc_name : %s , main_tid = %lu \n", 
+// 	argv[1], argv[2], pthread_self());
+
+// 	g_IPC_para* g_ipc_client = NULL;
+// 	int ret = init_ipc(argv[1], server_path, &g_ipc_client, zlog_handler);
+// 	register_cb_para(process_ipc_msg, NULL, (void*)(g_ipc_client), g_ipc_client);
+
+// 	ret = connect_server(g_ipc_client);
+// 	if(ret != 0){
+// 		zlog_error(zlog_handler,"connect server error\n");
+// 		return 0;
+// 	}
+
+
+// 	char* proc_name = (char*)malloc(32); 
+// 	memcpy(proc_name,argv[2],strlen(argv[2])+1);//"baseStation";
+// 	memcpy(proc_name_g,proc_name,strlen(proc_name)+1);
+// 	ret = notify_to_server(proc_name, g_ipc_client);
+// 	if(ret != 0){
+// 		printf("... exit after notify_to_server \n");
+// 		return 0;
+// 	}
+
+// 	zlog_info(zlog_handler,"start to work ..... \n");
+
+// 	pthread_t thread_id;
+// 	ret = pthread_create(&thread_id, NULL, ipc_receive_thread, (void*)g_ipc_client);
+// 	uint16_t send_id = 0;
+// 	char mac_buf[6];
+// 	char mac_buf_dest[6];
+// 	char mac_buf_next[6];
+// 	memset(mac_buf,0,6);
+// 	memset(mac_buf_dest,0,6);
+// 	memset(mac_buf_next,0,6);
+// 	if(strcmp(proc_name,"baseStation") == 0){
+// 		mac_buf_next[2] = 14;
+// 	}else if(strcmp(proc_name,"vehicle") == 0){
+// 		mac_buf_next[2] = 22;
+// 	}
+// 	while(1){
+// 		// thread safe interface to call ipc_send
+// 		if(strcmp(proc_name,"baseStation") == 0){
+// 			sleep(10);
+// 		}else if(strcmp(proc_name,"vehicle") == 0){
+// 			management_frame_Info* frame_Info = new_air_frame(BEACON, 0,mac_buf,mac_buf_dest,mac_buf_next,send_id);   
+// 			ret = ipc_send((char*)frame_Info, sizeof(management_frame_Info), RAW_FRAME_DATA, g_ipc_client->sockfd, g_ipc_client);
+// 			if(ret != sizeof(management_frame_Info) + 8){
+// 				zlog_error(zlog_handler,"ipc_send error \n");
+// 			}
+// 			sleep(5);
+// 		}
+// 		send_id = send_id + 1;
+//     }
+
+//     return 0;  
+// }
+
+
+int main(int argc, char *argv[])
 {
-    cpu_set_t mask;
-
-    int NUM_PROCS = sysconf(_SC_NPROCESSORS_CONF);
-
-    int i = random() % NUM_PROCS;
-        
-    CPU_ZERO(&mask);
-
-    CPU_SET(i, &mask);
-
-    // if (-1 == sched_setaffinity(tid, sizeof(cpu_set_t), &mask))
-    // {
-    //     return -1;
-    // }
-	if (-1 == pthread_setaffinity_np(pthread_self(),sizeof(cpu_set_t),&mask))
-	{
-		return -1;
-	}
-    
-    return 0;
-}
- 
-int main(int argc, char *argv[]){
-
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
- 	int i, nrcpus;
-	unsigned long bitmask = 0;
-	cpu_set_t mask;
-
-	pid_t tid = syscall(__NR_gettid);
-	
-	int state = set_cpu(tid);
-	if(state == -1){
-		printf("set_cpu error !\n");
+	/* msg_queue 0*/
+	const char* pro_path = "/tmp/handover_test/";
+	int proj_id = 'a';
+	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
+	if(g_msg_queue == NULL){
+		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;
 	}
+	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
 
-	/* get logical cpu number */
-    nrcpus = sysconf(_SC_NPROCESSORS_CONF);
+	int state = clearMsgQueue(g_msg_queue);
 
-	state = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &mask);
-    if (state != 0)
-    {
-        printf("pthread_getaffinity_np : state = %d \n",state);
-    }
-    
-	while(1){
-		for (i = 0; i < nrcpus; i++)
-		{
-			if (CPU_ISSET(i, &mask))
-			{
-				bitmask |= (unsigned long)0x01 << i;
-				printf("processor #%d is set\n", i); 
-			}
-		}
-		printf("bitmask = %#lx\n", bitmask);
-		usleep(1000000);
+	/* 1 */
+	const char* pro_path_1 = "/tmp/handover_test/";
+	int proj_id_1 = 'b';
+	g_msg_queue_para* g_msg_queue_1 = createMsgQueue(pro_path_1, proj_id_1, zlog_handler);
+	if(g_msg_queue_1 == NULL){
+		zlog_info(zlog_handler,"No msg_queue created \n");
+		return 0;
 	}
+	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue_1->msgid);
 
-	return 0;
+	state = clearMsgQueue(g_msg_queue_1);
+
+	/* 2 */
+	const char* pro_path_2 = "/tmp/handover_test/";
+	int proj_id_2 = 'c';
+	g_msg_queue_para* g_msg_queue_2 = createMsgQueue(pro_path_2, proj_id_2, zlog_handler);
+	if(g_msg_queue_2 == NULL){
+		zlog_info(zlog_handler,"No msg_queue created \n");
+		return 0;
+	}
+	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue_2->msgid);
+
+	state = clearMsgQueue(g_msg_queue_2);
 
 
 }
-
-/* --------------------------------------------------------------------------------------- */
-
-// #include <stdio.h>
-// #include <pthread.h>
-// #include <sched.h>
-// #include <assert.h>
-
-// static int api_get_thread_policy (pthread_attr_t *attr)
-// {
-//     int policy;
-//     int rs = pthread_attr_getschedpolicy (attr, &policy);
-//     assert (rs == 0);
-
-//     switch (policy)
-//     {
-//         case SCHED_FIFO:
-//             printf ("policy = SCHED_FIFO\n");
-//             break;
-//         case SCHED_RR:
-//             printf ("policy = SCHED_RR");
-//             break;
-//         case SCHED_OTHER:
-//             printf ("policy = SCHED_OTHER\n");
-//             break;
-//         default:
-//             printf ("policy = UNKNOWN\n");
-//             break; 
-//     }
-//     return policy;
-// }
-
-// static void api_show_thread_priority (pthread_attr_t *attr,int policy)
-// {
-//     int priority = sched_get_priority_max (policy);
-//     assert (priority != -1);
-//     printf ("max_priority = %d\n", priority);
-//     priority = sched_get_priority_min (policy);
-//     assert (priority != -1);
-//     printf ("min_priority = %d\n", priority);
-// }
-
-// static int api_get_thread_priority (pthread_attr_t *attr)
-// {
-//     struct sched_param param;
-//     int rs = pthread_attr_getschedparam (attr, &param);
-//     assert (rs == 0);
-//     printf ("priority = %d\n", param.__sched_priority);
-//     return param.__sched_priority;
-// }
-
-// static void api_set_thread_policy (pthread_attr_t *attr,int policy)
-// {
-//     int rs = pthread_attr_setschedpolicy (attr, policy);
-//     assert (rs == 0);
-//     api_get_thread_policy (attr);
-// }
-    
-// int main(void)
-// {
-//     pthread_attr_t attr;       // 线程属性
-//     struct sched_param sched;  // 调度策略
-//     int rs;
-
-//     /* 
-//      * 对线程属性初始化
-//      * 初始化完成以后，pthread_attr_t 结构所包含的结构体
-//      * 就是操作系统实现支持的所有线程属性的默认值
-//      */
-//     rs = pthread_attr_init (&attr);
-//     assert (rs == 0);     // 如果 rs 不等于 0，程序 abort() 退出
-
-//     /* 获得当前调度策略 */
-//     int policy = api_get_thread_policy (&attr);
-
-//     /* 显示当前调度策略的线程优先级范围 */
-//     printf ("Show current configuration of priority\n");
-//     api_show_thread_priority(&attr, policy);
-
-//     /* 获取 SCHED_FIFO 策略下的线程优先级范围 */
-//     printf ("show SCHED_FIFO of priority\n");
-//     api_show_thread_priority(&attr, SCHED_FIFO);
-
-//     /* 获取 SCHED_RR 策略下的线程优先级范围 */
-//     printf ("show SCHED_RR of priority\n");
-//     api_show_thread_priority(&attr, SCHED_RR);
-
-//     /* 显示当前线程的优先级 */
-//     printf ("show priority of current thread\n");
-//     int priority = api_get_thread_priority (&attr);
-
-//     /* 手动设置调度策略 */
-//     printf ("Set thread policy\n");
-
-//     printf ("set SCHED_FIFO policy\n");
-//     api_set_thread_policy(&attr, SCHED_FIFO);
-
-//     printf ("set SCHED_RR policy\n");
-//     api_set_thread_policy(&attr, SCHED_RR);
-
-//     /* 还原之前的策略 */
-//     printf ("Restore current policy\n");
-//     api_set_thread_policy (&attr, policy);
-
-//     /* 
-//      * 反初始化 pthread_attr_t 结构
-//      * 如果 pthread_attr_init 的实现对属性对象的内存空间是动态分配的，
-//      * phread_attr_destory 就会释放该内存空间
-//      */
-//     rs = pthread_attr_destroy (&attr);
-//     assert (rs == 0);
-
-//     return 0;
-// }
-
-
-
-

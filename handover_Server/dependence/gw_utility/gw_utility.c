@@ -70,6 +70,27 @@ char* readfile(const char *path)
 	return ch;
 }
 
+char *get_prog_name(char *argv)
+{
+	int len = strlen(argv);
+	int i;
+	char *tmp = argv;
+	
+	for(i=len; i >=0; i--)
+	{
+		if(tmp[i] == '/'){
+			i++;
+			break;
+		}
+	}
+	
+	if(-1 == i){
+		i = 0;
+	}
+
+	return argv + i;
+}
+
 
 //	===========================
 	/*	
@@ -489,7 +510,6 @@ unsigned char cal_crc_table_by_init_crc(unsigned char *ptr, unsigned char len, u
     }
     return (crc);
 }
-
 
 
 

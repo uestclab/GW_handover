@@ -14,7 +14,6 @@ struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
 	return tmp_data;
 }
 
-
 void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // add parse seq_id ---- continue
 	struct msg_st data;
 	struct air_data* json_buf = bufTojson(Info,g_air);

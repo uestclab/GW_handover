@@ -45,9 +45,9 @@ typedef struct air_data{
 	uint16_t seq_id;
 }air_data;
 
-#define DISTANC_MEASURE_REQUEST    9
-#define DELAY_EXCHANGE_REQUEST     10
-#define DELAY_EXCHANGE_RESPONSE    13
+//#define DISTANC_MEASURE_REQUEST    9
+//#define DELAY_EXCHANGE_REQUEST     10
+//#define DELAY_EXCHANGE_RESPONSE    13
 
 typedef enum msg_event{
 	MSG_CHECK_RECEIVED_LIST = 1,

@@ -68,6 +68,13 @@ then
     rm -rf ./build
 fi
 
+# gw_ipc
+cd ../gw_ipc
+if [ -d $f ]
+then 
+    rm -rf $f
+fi
+
 cd ../../BaseStation
 if [ -d $f ]
 then 
@@ -86,12 +93,6 @@ then
     rm -rf ./build
 fi
 
-cd ../ut
-if [ -d "./build" ]
-then 
-    rm -rf ./build
-fi
-
 if [ -d $f ]
 then 
     rm -rf $f
@@ -99,7 +100,7 @@ fi
 
 # delete header and lib
 cd ../dependence/include
-find -L ./ -maxdepth 1 ! -name "broker.h" ! -wholename "./" -exec rm -rf {} \;
+find -L ./ -maxdepth 1 ! -name "broker.h" ! -name "gw_macros_util.h" ! -wholename "./" -exec rm -rf {} \;
 
 cd ../lib
 rm -rf *
