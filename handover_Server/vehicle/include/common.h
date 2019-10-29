@@ -21,7 +21,12 @@ typedef struct system_info_para{
 	uint16_t    send_id;
 	uint16_t    rcv_id;
 // -------- air_signal retransmit 
-	received_state_list* received_air_state_list;    
+	received_state_list* received_air_state_list;
+// -------- init tick distance measure
+	uint32_t my_initial;
+	uint32_t other_initial;
+	int      have_my_initial;
+	int      have_other_initial;    
 }system_info_para;
 
 
@@ -30,6 +35,9 @@ typedef struct ConfigureNode{
 	int32_t vehicle_id;
 	char* my_mac_str;
 	char* my_Ethernet;
+// ------ distance measure period
+	int32_t distance_measure_cnt_ms;
+	int     distance_threshold;
 }ConfigureNode;
 
 // system state 
@@ -48,8 +56,10 @@ typedef enum msg_event{
 	MSG_RECEIVED_ASSOCIATION_REQUEST,
     MSG_RECEIVED_DEASSOCIATION,
     MSG_RECEIVED_HANDOVER_START_REQUEST,
+	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
 	/* self event */
 	MSG_STARTUP,
+	MSG_CHECK_RECEIVED_LIST,
 }msg_event;
 
 

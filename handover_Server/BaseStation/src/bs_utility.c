@@ -120,14 +120,20 @@ void* retrans_air_process_thread(void* arg){
 		usleep(4000);
 	else if(subtype == DEASSOCIATION)
 		usleep(2000);
+	else if(subtype == DISTANC_MEASURE_REQUEST){
+		for(int i = 0;i<tmp->g_air->node->distance_measure_cnt_ms;i++){
+			usleep(1000);
+		}
+	}
 	postCheckSendSignal(tmp->subtype, tmp->g_msg_queue);
 	free(tmp);
 }
 
-void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool){
+void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, g_air_para* g_air, ThreadPool* g_threadpool){
 	retrans_air_t* tmp = (retrans_air_t*)malloc(sizeof(retrans_air_t));
 	tmp->subtype = subtype;
 	tmp->g_msg_queue = g_msg_queue;
+	tmp->g_air = g_air;
 	AddWorker(retrans_air_process_thread,(void*)tmp,g_threadpool);
 } 
 
@@ -136,23 +142,36 @@ void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_q
 	received_state_list* list = g_system_info->received_air_state_list;
 	if(subtype == ASSOCIATION_REQUEST){
 		if(list->received_association_response == 0){
-			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool);
+			char my_inital[6];
+			memset(my_inital,0x0,6);
+			memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t)); //20191024
+			send_airSignal(ASSOCIATION_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, my_inital, g_air);
+			postCheckWorkToThreadPool(subtype, g_msg_queue, g_air, g_threadpool);
 		}
 	}else if(subtype == HANDOVER_START_REQUEST){
 		if(list->received_handover_start_response == 0){
 			send_airSignal(HANDOVER_START_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->next_bs_mac, g_air);
-			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool);
+			postCheckWorkToThreadPool(subtype, g_msg_queue, g_air, g_threadpool);
 		}
 	}else if(subtype == DEASSOCIATION){
 		if(list->received_reassociation == 0){
 			send_airSignal(DEASSOCIATION, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool);
+			postCheckWorkToThreadPool(subtype, g_msg_queue, g_air, g_threadpool);
 		}else{
 			zlog_info(g_air->log_handler, "list : %d ,%d ,%d \n", 
 			list->received_association_response, list->received_handover_start_response, list->received_reassociation);
 			resetReceivedList(list);
 			zlog_info(g_air->log_handler,"resetReceivedList when received reassociation after send deassociation ");
+		}
+	}else if(subtype == DISTANC_MEASURE_REQUEST){
+		if(g_system_info->bs_state == STATE_WORKING){
+			char my_inital[6];
+			memset(my_inital,0x0,6);
+			memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
+			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, my_inital, g_air);
+			postCheckWorkToThreadPool(DISTANC_MEASURE_REQUEST, g_msg_queue, g_air, g_threadpool);
+		}else{
+			zlog_info(g_air->log_handler,"stop send air frame DISTANC_MEASURE_REQUEST !! \n ");
 		}
 	}
 }

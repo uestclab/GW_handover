@@ -39,11 +39,21 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			postMsgQueue(&data,g_air->g_msg_queue);
 			break;
 		}
+		case DISTANC_MEASURE_REQUEST:
+		{
+			data.msg_type = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
+			data.msg_number = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
+			postMsgQueue(&data,g_air->g_msg_queue);
+			break;
+		}
 		default:
 		{
 			zlog_info(g_air->log_handler,"error subtype : Info->subtype = %d !!!!!!!!!!!!!!!!!!!!!!!\n", Info->subtype);
 			break;
 		}
+	}
+	if(Info->subtype!=DISTANC_MEASURE_REQUEST){
+		zlog_info(g_air->log_handler,"receive new air frame \n");
 	}
 }
 
@@ -55,7 +65,7 @@ void gw_poll_receive(g_air_para* g_air){
 	while(1){ // wait for air_signal
 		int stat = gw_monitor_poll(temp_Info, 3, g_air->log_handler); // receive 3 * 5ms
 		if(stat == 26){
-			zlog_info(g_air->log_handler,"receive new air frame \n");
+			//zlog_info(g_air->log_handler,"receive new air frame \n");
 			process_recived_signal(temp_Info, g_air);
 		}else if(stat < 26){
 			//zlog_info(g_air->log_handler,"poll timeout , stat = %d \n" , stat);

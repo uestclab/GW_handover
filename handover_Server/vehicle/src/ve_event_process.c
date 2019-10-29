@@ -2,6 +2,36 @@
 #include "zlog.h"
 #include "cJSON.h"
 #include "gw_frame.h"
+#include "ve_utility.h"
+
+// distance measure related function
+void self_test_send(g_air_para* g_air){
+	system_info_para* g_system_info = g_air->node->system_info;
+	 // send DISTANC_MEASURE_REQUEST
+	zlog_info(g_air->log_handler,"send DISTANC_MEASURE_REQUEST self_test_send \n");
+	for(int i = 0; i < 10 ; i++){
+		send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_air);
+		usleep(100000);
+	}	
+}
+
+void Enter_self_test(g_air_para* g_air , g_RegDev_para* g_RegDev){
+	system("sh ../conf/open_self.sh");
+
+	zlog_info(g_air->log_handler,"open_self");
+
+	self_test_send(g_air);
+
+	g_air->node->system_info->my_initial = get_delay_tick(g_RegDev);
+	g_air->node->system_info->have_my_initial = 1;
+
+	system("sh ../conf/close_self.sh");
+
+	zlog_info(g_air->log_handler,"close_self, my_initial = %u", g_air->node->system_info->my_initial);
+}
+
+
+
 /* ----------------------------------------------------------------- */
 
 int checkAirFrameDuplicate(msg_event receivedAirEvent, system_info_para* g_system_info){
@@ -84,7 +114,7 @@ void printMsgType(long int type, uint16_t seq_id){
 
 
 void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_para* g_periodic, g_RegDev_para* g_RegDev, 
-					zlog_category_t* zlog_handler)
+					ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_periodic->node->system_info;
 
@@ -106,9 +136,25 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			}
 			
 			stopPeriodic(g_periodic); // stop transmit both BEACON and REASSOCIATION
+
+			// association_request carry initial value -- 20191024
+			if(g_system_info->have_other_initial == 0){
+				uint32_t other_inital = 0;
+				memcpy((char*)(&other_inital), msgJsonNextDstMac(getData->msg_json), sizeof(uint32_t));
+				g_system_info->other_initial = other_inital;
+				g_system_info->have_other_initial = 1;
+			}
+			// when to start to send DISTANC_MEASURE_REQUEST in vehicle proc? -- 20191024
+			char my_inital[6];
+			memset(my_inital,0x0,6);
+			memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
+			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->ve_mac, g_system_info->link_bs_mac, my_inital, g_air);
+			postCheckWorkToThreadPool(DISTANC_MEASURE_REQUEST, g_air->g_msg_queue, g_air, g_threadpool);
+			uint32_t delay =(g_system_info->my_initial + g_system_info->other_initial)/2+32;
+			set_delay_tick(g_RegDev,delay);
 			
 			/* configure link_bs_mac to BB */
-			memcpy(g_system_info->link_bs_mac,msgJsonNextDstMac(getData->msg_json), 6);
+			memcpy(g_system_info->link_bs_mac,msgJsonSourceMac(getData->msg_json), 6); // 20191024 for initial value transfer 
 			configureDstMacToBB(g_system_info->link_bs_mac,g_RegDev,zlog_handler);
 			g_system_info->isLinked = 1;
 			g_system_info->ve_state = STATE_WORKING;
@@ -133,6 +179,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 
 			startPeriodic(g_periodic,REASSOCIATION);// --------------------------------------- second periodic action
 
+			g_system_info->have_other_initial = 0;
 			g_system_info->isLinked = 0;
 			g_system_info->ve_state = STATE_SYSTEM_READY;			
 			
@@ -173,16 +220,30 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
 			break;
 		}
+		case MSG_RECEIVED_DISTANC_MEASURE_REQUEST:
+		{
+			//zlog_info(zlog_handler," -------- EVENT : MSG_RECEIVED_DISTANC_MEASURE_REQUEST: msg_number = %d ", getData->msg_number);
+
+			break;
+		}
 		default:
 			break;
 	}
 }
 
 void process_self_event(struct msg_st* getData, g_air_para* g_air, g_periodic_para* g_periodic, 
-			g_RegDev_para* g_RegDev, zlog_category_t* zlog_handler)
+			g_RegDev_para* g_RegDev, ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 	system_info_para* g_system_info = g_periodic->node->system_info;
 	switch(getData->msg_type){
+		case MSG_CHECK_RECEIVED_LIST:
+		{
+			int32_t subtype = -1;
+			memcpy((char*)(&subtype), getData->msg_json, getData->msg_len);
+			// check receive list according to subtype
+			checkReceivedList(subtype, g_system_info, g_air->g_msg_queue, g_air, g_threadpool);
+			break;
+		}
 		default:
 			break;
 	}
@@ -197,15 +258,17 @@ void init_state(g_air_para* g_air, g_periodic_para* g_periodic, g_RegDev_para* g
 	close_ddr(g_RegDev);
 	release_bb(g_RegDev);
 	enable_dac(g_RegDev);
+
+	startProcessAir(g_air, 1);
+	Enter_self_test(g_air,g_RegDev);
 	g_system_info->ve_state = STATE_SYSTEM_READY;
 	zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_SYSTEM_READY");
-
-	startProcessAir(g_air, 1); 
+ 
 	startPeriodic(g_periodic,BEACON); // --------------------------------------- first periodic action
 }
 
 void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para* g_msg_queue, g_RegDev_para* g_RegDev, 
-		zlog_category_t* zlog_handler)
+		ThreadPool* g_threadpool, zlog_category_t* zlog_handler)
 {
 
 	init_state(g_air, g_periodic, g_RegDev, zlog_handler);
@@ -218,9 +281,9 @@ void eventLoop(g_air_para* g_air, g_periodic_para* g_periodic, g_msg_queue_para*
 			continue;
 
 		if(getData->msg_type < MSG_STARTUP)
-			process_air_event(getData, g_air, g_periodic, g_RegDev, zlog_handler);
+			process_air_event(getData, g_air, g_periodic, g_RegDev, g_threadpool, zlog_handler);
 		else if(getData->msg_type >= MSG_STARTUP)
-			process_self_event(getData, g_air, g_periodic, g_RegDev, zlog_handler);
+			process_self_event(getData, g_air, g_periodic, g_RegDev, g_threadpool, zlog_handler);
 
 		free(getData);
 	}

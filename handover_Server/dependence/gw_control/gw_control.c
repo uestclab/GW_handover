@@ -481,7 +481,7 @@ int release_bb(g_RegDev_para* g_RegDev){
 
 // delay tick for distance measure
 uint32_t get_delay_tick(g_RegDev_para* g_RegDev){
-	zlog_info(g_RegDev->log_handler,"get_delay_tick\n");
+	//zlog_info(g_RegDev->log_handler,"get_delay_tick\n");
 	uint32_t delay_tick = 0x00000000;
 	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x864, &delay_tick);
 	if(rc < 0){

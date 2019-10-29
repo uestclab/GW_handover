@@ -16,12 +16,16 @@ int getRunningState(g_periodic_para* g_periodic, int value){
 }
 
 void send_air_frame(g_periodic_para* g_periodic){
+	system_info_para* g_system_info = g_periodic->node->system_info;
+	char my_inital[6];
+	memset(my_inital,0x0,6);
+	memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
+
 	{
-		system_info_para* g_system_info = g_periodic->node->system_info;
 		if(g_periodic->running == BEACON){ // send BEACON
 			zlog_info(g_periodic->log_handler,"send BEACON periodic \n");
 			for(;;){
-				send_airSignal(BEACON, g_system_info->ve_mac, g_system_info->link_bs_mac, g_system_info->ve_mac, g_periodic->g_air);	
+				send_airSignal(BEACON, g_system_info->ve_mac, g_system_info->link_bs_mac, my_inital, g_periodic->g_air);	
 				gw_sleep();
 				int ret = getRunningState(g_periodic, 0);
 				if(ret == -1)
@@ -30,7 +34,7 @@ void send_air_frame(g_periodic_para* g_periodic){
 		}else if(g_periodic->running == REASSOCIATION){ // send REASSOCIATION
 			int send_reassociation_cnt = 0;
 			for(;;){ // next_bs_mac
-				send_airSignal(REASSOCIATION, g_system_info->ve_mac, g_system_info->next_bs_mac, g_system_info->ve_mac, g_periodic->g_air);
+				send_airSignal(REASSOCIATION, g_system_info->ve_mac, g_system_info->next_bs_mac, my_inital, g_periodic->g_air);
 				//gw_sleep();
 				usleep(2000);
 				send_reassociation_cnt ++;

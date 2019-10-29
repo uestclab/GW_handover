@@ -362,7 +362,7 @@ void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_q
 			struct msg_st data;
 			data.msg_len = 0;
 			data.msg_type = MSG_CACULATE_DISTANCE;
-			data.msg_number = MSG_CACULATE_DISTANCE;
+			data.msg_number = MSG_CACULATE_DISTANCE; // who send DISTANC_MEASURE_REQUEST, and recv ack , then who caculate distance
 			postMsgQueue(&data,g_air->g_msg_queue);
 			
 			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool, g_air);
@@ -568,6 +568,7 @@ int init_program(){
 	g_var_value.program_run = 0;
 	int value = gpio_read(973);
 	while(value != 1){
+		sleep(2);
 		value = gpio_read(973);
 	}
 	return value;

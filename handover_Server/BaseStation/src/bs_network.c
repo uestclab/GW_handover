@@ -253,7 +253,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			printcjson(message->buf,g_network);
 			break;
 		}
-		case SERVER_RECALL_MONITOR:
+		case SERVER_RECALL_MONITOR: // server control with source bs distance monitor msg -- 20191023
 		{
 			printcjson(message->buf,g_network);
 			struct msg_st data;
