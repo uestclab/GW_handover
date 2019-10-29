@@ -26,6 +26,7 @@ typedef struct retrans_network_t{
 typedef struct retrans_air_t{
 	int32_t subtype;
 	g_msg_queue_para* g_msg_queue;
+	g_air_para*       g_air;
 }retrans_air_t;
 
 typedef struct g_test_para{
@@ -55,7 +56,7 @@ void resetReceivedList(received_state_list* list);
 void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_queue_para* g_msg_queue, 
 					  g_air_para* g_air, ThreadPool* g_threadpool);
 
-void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool);
+void postCheckWorkToThreadPool(int32_t subtype, g_msg_queue_para* g_msg_queue, g_air_para* g_air, ThreadPool* g_threadpool);
 
 
 void postCheckTxBufferWorkToThreadPool(struct ConfigureNode* Node, g_msg_queue_para* g_msg_queue, 

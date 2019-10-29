@@ -38,6 +38,14 @@ typedef struct system_info_para{
 	received_state_list* received_air_state_list;
 // -------- network signal retransmit
 	received_network_list* received_network_state_list;
+// -------- init tick distance measure
+	uint32_t my_initial;
+	uint32_t other_initial;
+	int      have_my_initial;
+	int      have_other_initial;
+// -------- handover start confirm
+	int      distance_near_confirm;
+	int      received_handover_start_confirm;
 }system_info_para;
 
 typedef struct ConfigureNode{
@@ -58,6 +66,10 @@ typedef struct ConfigureNode{
 	// threadpool parameter
 	int32_t task_queue_size;
 	int32_t threads_num;
+	// ------ distance measure period
+	int32_t distance_measure_cnt_ms;
+	int     distance_threshold;
+	int     snr_threshold;
 }ConfigureNode;
 
 typedef enum signalType{
@@ -91,6 +103,7 @@ typedef enum msg_event{
     MSG_RECEIVED_ASSOCIATION_RESPONSE,
     MSG_RECEIVED_HANDOVER_START_RESPONSE,
     MSG_RECEIVED_REASSOCIATION,
+	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
 	/* receive network signal , network event */
     MSG_START_MONITOR, // boundary
     MSG_INIT_SELECTED, 
@@ -105,6 +118,8 @@ typedef enum msg_event{
 	MSG_CHECK_RECEIVED_LIST,
 	MSG_MONITOR_READY_HANDOVER,
 	MSG_CHECK_RECEIVED_NETWORK_LIST,
+	MSG_SOURCE_BS_DISTANCE_NEAR,
+	MSG_CONFIRM_START_HANDOVER,
 }msg_event;
 
 // used in msg_json

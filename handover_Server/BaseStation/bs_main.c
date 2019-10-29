@@ -49,56 +49,69 @@ void closeServerLog(){
 }
 
 struct ConfigureNode* configure(zlog_category_t* log_handler){
-	struct ConfigureNode* clientConfigure = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
+	struct ConfigureNode* Node = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
 	const char* configure_ip = "127.0.0.1";
-	clientConfigure->server_ip = (char*)malloc(16);
-	memcpy(clientConfigure->server_ip, configure_ip, strlen(configure_ip)+1);
-	clientConfigure->server_port = 44445;
-	clientConfigure->my_id = 0;
-	clientConfigure->my_mac_str = (char*)malloc(32);
-	clientConfigure->my_Ethernet = (char*)malloc(32);
-	clientConfigure->enable_user_wait = 0; //
-	clientConfigure->sleep_cnt_second = 0;
-	clientConfigure->check_eth_rx_cnt = 0;
-	clientConfigure->delay_mon_cnt_second = 0;
+	Node->server_ip = (char*)malloc(16);
+	memcpy(Node->server_ip, configure_ip, strlen(configure_ip)+1);
+	Node->server_port = 44445;
+	Node->my_id = 0;
+	Node->my_mac_str = (char*)malloc(32);
+	Node->my_Ethernet = (char*)malloc(32);
+	Node->enable_user_wait = 0; //
+	Node->sleep_cnt_second = 0;
+	Node->check_eth_rx_cnt = 0;
+	Node->delay_mon_cnt_second = 0;
 	// x2 interface 
-	clientConfigure->udp_server_ip    = (char*)malloc(32);
-	clientConfigure->udp_server_port  = 60000;
+	Node->udp_server_ip    = (char*)malloc(32);
+	Node->udp_server_port  = 60000;
 	// thread pool
-	clientConfigure->task_queue_size = 0;
-	clientConfigure->threads_num = 0;
+	Node->task_queue_size = 0;
+	Node->threads_num = 0;
 	
 
 //  init system global variable
-	clientConfigure->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
-	clientConfigure->system_info->bs_state = STATE_STARTUP;
-	clientConfigure->system_info->have_ve_mac = 0;
-	memset(clientConfigure->system_info->ve_mac,0,6);
-	memset(clientConfigure->system_info->bs_mac,0,6);
-	memset(clientConfigure->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR
-	clientConfigure->system_info->monitored = 0;
-	clientConfigure->system_info->handover_cnt = 0;
-	clientConfigure->system_info->sourceBs_dac_disabled = 0;
-	clientConfigure->system_info->received_reassociation = 0;
+	Node->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
+	Node->system_info->bs_state = STATE_STARTUP;
+	Node->system_info->have_ve_mac = 0;
+	memset(Node->system_info->ve_mac,0,6);
+	memset(Node->system_info->bs_mac,0,6);
+	memset(Node->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR
+	Node->system_info->monitored = 0;
+	Node->system_info->handover_cnt = 0;
+	Node->system_info->sourceBs_dac_disabled = 0;
+	Node->system_info->received_reassociation = 0;
 
-	clientConfigure->system_info->send_id = 0;
-	clientConfigure->system_info->rcv_id = 0;
+	Node->system_info->send_id = 0;
+	Node->system_info->rcv_id = 0;
 
-	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
-	clientConfigure->system_info->received_air_state_list->received_association_response = 0;
-	clientConfigure->system_info->received_air_state_list->received_handover_start_response = 0;
-	clientConfigure->system_info->received_air_state_list->received_reassociation = 0;
+	Node->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	Node->system_info->received_air_state_list->received_association_response = 0;
+	Node->system_info->received_air_state_list->received_handover_start_response = 0;
+	Node->system_info->received_air_state_list->received_reassociation = 0;
 
-	clientConfigure->system_info->received_network_state_list = (struct received_network_list*)malloc(sizeof(struct received_network_list));
-	clientConfigure->system_info->received_network_state_list->received_dac_closed_x2_ack = 0;
-	clientConfigure->system_info->received_network_state_list->received_dac_closed_x2 = 0;
+	Node->system_info->received_network_state_list = (struct received_network_list*)malloc(sizeof(struct received_network_list));
+	Node->system_info->received_network_state_list->received_dac_closed_x2_ack = 0;
+	Node->system_info->received_network_state_list->received_dac_closed_x2 = 0;
+
+	// // -------- init tick
+	Node->system_info->my_initial = 0;
+	Node->system_info->other_initial = 0;
+	Node->system_info->have_my_initial = 0;
+	Node->system_info->have_other_initial = 0;
+	Node->distance_measure_cnt_ms = 0;
+	Node->distance_threshold = 0;
+	Node->snr_threshold = 0;
+
+	// -------- handover start confirm
+	Node->system_info->distance_near_confirm = 0;
+	Node->system_info->received_handover_start_confirm = 0;
 
 // 
 	const char* configure_path = "../conf/bs_conf.json";
 	char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
 		zlog_error(log_handler,"open file %s error.\n",configure_path);
-		return clientConfigure;
+		return Node;
 	}
 	cJSON * root = NULL;
     cJSON * item = NULL;
@@ -108,58 +121,76 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
         zlog_error(log_handler,"Error before: [%s]",cJSON_GetErrorPtr());
     }else{
         item = cJSON_GetObjectItem(root, "server_ip");
-		memcpy(clientConfigure->server_ip,item->valuestring,strlen(item->valuestring)+1);
+		memcpy(Node->server_ip,item->valuestring,strlen(item->valuestring)+1);
         item = cJSON_GetObjectItem(root, "server_port");
-		clientConfigure->server_port = item->valueint;
+		Node->server_port = item->valueint;
 		item = cJSON_GetObjectItem(root,"my_id");
-		clientConfigure->my_id = item->valueint;
+		Node->my_id = item->valueint;
 		item = cJSON_GetObjectItem(root, "my_Ethernet");
-		memcpy(clientConfigure->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
+		memcpy(Node->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
 		
 		item = cJSON_GetObjectItem(root, "enable_user_wait");
-		clientConfigure->enable_user_wait = item->valueint;
+		Node->enable_user_wait = item->valueint;
 		item = cJSON_GetObjectItem(root, "sleep_cnt_second");
-		clientConfigure->sleep_cnt_second = item->valueint;
+		Node->sleep_cnt_second = item->valueint;
         item = cJSON_GetObjectItem(root, "check_eth_rx_cnt");
-		clientConfigure->check_eth_rx_cnt = item->valueint;
+		Node->check_eth_rx_cnt = item->valueint;
 
 		item = cJSON_GetObjectItem(root, "delay_mon_cnt_second");
-		clientConfigure->delay_mon_cnt_second = item->valueint;
+		Node->delay_mon_cnt_second = item->valueint;
 
         item = cJSON_GetObjectItem(root, "udp_server_port");
-		clientConfigure->udp_server_port = item->valueint;
+		Node->udp_server_port = item->valueint;
 
 		item = cJSON_GetObjectItem(root, "task_queue_size");
-		clientConfigure->task_queue_size = item->valueint;
+		Node->task_queue_size = item->valueint;
 
         item = cJSON_GetObjectItem(root, "threads_num");
-		clientConfigure->threads_num = item->valueint;
+		Node->threads_num = item->valueint;
+
+		item = cJSON_GetObjectItem(root, "distance_measure_cnt_ms");
+		Node->distance_measure_cnt_ms = item->valueint;
+
+		item = cJSON_GetObjectItem(root, "distance_threshold");
+		Node->distance_threshold = item->valueint;
+
+		item = cJSON_GetObjectItem(root, "snr_threshold");
+		Node->snr_threshold = item->valueint;
 
 		cJSON_Delete(root);
     }
 
 	//get mac addr
-	int	nRtn = get_mac(clientConfigure->my_mac_str, 32, clientConfigure->my_Ethernet);
+	int	nRtn = get_mac(Node->my_mac_str, 32, Node->my_Ethernet);
     if(nRtn > 0) // nRtn = 12
     {	
-        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac_str);
-		change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac); // 0408 ---- bug
+        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,Node->my_mac_str);
+		change_mac_buf(Node->my_mac_str,Node->system_info->bs_mac); // 0408 ---- bug
     }else{
 		printf("get mac address failed!\n");
 	}
 
-	int ret = get_ip(clientConfigure->udp_server_ip, clientConfigure->my_Ethernet);
+	int ret = get_ip(Node->udp_server_ip, Node->my_Ethernet);
 	if(ret == 0)
     {	
-		printf("x2 interface : udp_server_ip = %s , udp_server_port = %d \n", clientConfigure->udp_server_ip, clientConfigure->udp_server_port);
+		printf("x2 interface : udp_server_ip = %s , udp_server_port = %d \n", Node->udp_server_ip, Node->udp_server_port);
     }else{
 		printf("get mac address failed!\n");
 	}
 
 
-	zlog_info(log_handler," configure : enable_user_wait = %d , sleep_cnt_second = %d , check_eth_rx_cnt = %d " , clientConfigure->enable_user_wait , clientConfigure->sleep_cnt_second , clientConfigure->check_eth_rx_cnt);
+	zlog_info(log_handler," configure : enable_user_wait = %d , sleep_cnt_second = %d , check_eth_rx_cnt = %d " , Node->enable_user_wait , Node->sleep_cnt_second , Node->check_eth_rx_cnt);
 
-	return clientConfigure;
+	return Node;
+}
+
+int init_program(){
+	int value = gpio_read(973);
+	while(value != 1){
+		sleep(2);
+		value = gpio_read(973);
+	}
+	return value;
 }
 
 // broker callback interface
@@ -186,17 +217,18 @@ int main(int argc, char *argv[]) // main thread
 
 	fflush(stdout);
     setvbuf(stdout, NULL, _IONBF, 0);
-
-	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
+	
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
-	struct ConfigureNode* configureNode_ = configure(zlog_handler);
-	if(configureNode_ == NULL){
-		printf("configureNode_ == NULL \n");
+	//init_program();
+	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start baseStation ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+
+
+	struct ConfigureNode* Node = configure(zlog_handler);
+	if(Node == NULL){
+		printf("Node == NULL \n");
 		return 0;
 	}
-
-	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start baseStation ++++++++++++++++++++++++++++++++++++++++++++++ \n");
 
 	/* reg dev */
 	g_RegDev_para* g_RegDev = NULL;
@@ -211,8 +243,9 @@ int main(int argc, char *argv[]) // main thread
 	zlog_info(zlog_handler,"initBroker : ret = %d \n", ret);
 	
 	/* msg_queue */
-	const char* pro_path = "../bs_main.c";
-	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, zlog_handler);
+	const char* pro_path = "/tmp/handover_test/";
+	int proj_id = 'b';
+	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;
@@ -223,14 +256,14 @@ int main(int argc, char *argv[]) // main thread
 	
 	/* network thread */
 	g_network_para* g_network = NULL;
-	state = initNetworkThread(configureNode_, &g_network, g_msg_queue, zlog_handler);
+	state = initNetworkThread(Node, &g_network, g_msg_queue, zlog_handler);
 	if(state == 1 || state == 2){
 		return 0;
 	}
 
 	/* air process thread */
 	g_air_para* g_air = NULL;
-	state = initProcessAirThread(configureNode_, &g_air, g_msg_queue, zlog_handler);
+	state = initProcessAirThread(Node, &g_air, g_msg_queue, zlog_handler);
 	if(state != 0){
 		printf("initProcessAirThread : state = %d \n", state);
 		return 0;
@@ -239,11 +272,11 @@ int main(int argc, char *argv[]) // main thread
 
 	/* monitor thread */
 	//g_monitor_para* g_monitor = NULL;
-	//state = initMonitorThread(configureNode_, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
+	//state = initMonitorThread(Node, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
 
 	/* x2 interface thread */
 	g_x2_para* g_x2 = NULL;
-	state = initX2Thread(configureNode_, &g_x2, g_msg_queue, zlog_handler);
+	state = initX2Thread(Node, &g_x2, g_msg_queue, zlog_handler);
 	if(state < 0){
 		printf("initX2Thread : state = %d \n", state);
 		return 0;
@@ -251,8 +284,8 @@ int main(int argc, char *argv[]) // main thread
 
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
-	printf("Thread pool parameter : task_queue_size = %d , threads_num = %d \n", configureNode_->task_queue_size, configureNode_->threads_num);
-	createThreadPool(configureNode_->task_queue_size, configureNode_->threads_num, &g_threadpool); // 4096 , 8
+	printf("Thread pool parameter : task_queue_size = %d , threads_num = %d \n", Node->task_queue_size, Node->threads_num);
+	createThreadPool(Node->task_queue_size, Node->threads_num, &g_threadpool); // 4096 , 8
 
 	gw_sleep();
 

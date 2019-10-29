@@ -9,5 +9,8 @@
 	"delay_mon_cnt_second": 5,
 	"check_eth_rx_cnt": 2,
 	"task_queue_size":  4096,
-	"threads_num":      8
+	"threads_num":      8,
+	"distance_measure_cnt_ms":   1000,
+	"distance_threshold":    20,
+	"snr_threshold":         9 
 }

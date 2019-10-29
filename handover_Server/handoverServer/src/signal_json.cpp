@@ -52,10 +52,11 @@ void send_change_tunnel_ack_signal(BaseStation* bs, int bs_id){
 	cJSON_Delete(root);
 }
 
-void send_server_recall_monitor_signal(BaseStation* bs, int bs_id){
+void send_server_recall_monitor_signal(BaseStation* bs, int bs_id/*int punish_time */){
 	cJSON* root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "signal", "server_recall_monitor_signal");
     cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	//cJSON_AddNumberToObject(root, "punish_time", punish_time);
 	char* json_buf = cJSON_Print(root);
 	bs->sendSignal(glory::SERVER_RECALL_MONITOR,json_buf);
 	cJSON_Delete(root);

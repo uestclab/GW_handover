@@ -57,30 +57,6 @@ int ManagementFrame_create_monitor_interface(){
 	return fd;
 }
 
-/* crc 8 */
-unsigned char crc_high_first(unsigned char *ptr, unsigned char len, unsigned char crc)
-{
-    unsigned char i;
-    //unsigned char crc=0x00;
- 
-    while(len--)
-    {
-		/* 每次先与需要计算的数据异或,计算完指向下一数据 */ 
-        crc ^= *ptr++;
-        for (i=8; i>0; --i) 
-        { 
-            if (crc & 0x80)
-                crc = (crc << 1) ^ 0x31;
-            else
-                crc = (crc << 1);
-        }
-    }
- 
-    return (crc);
-}
-
-
-
 // bit26 ~ bit29
 void bits_set_subtype(unsigned int* frame_control, unsigned int subtype){
 	(*frame_control) &= (~(0xf<<26));
@@ -139,9 +115,25 @@ void fill_buffer(management_frame_Info* frame_Info, char* buf){
 	memcpy(seq_id_buf,(char*)(&frame_Info->seq_id),2);
 	reverseBuf(seq_id_buf,reverse_seq_id,2); /// note that !!!!!!!!!!!!!
 	memcpy(buf + 24, reverse_seq_id, 2);
+
+	// caculate crc and set into last byte of reverse_buf
+	unsigned char crc = cal_crc_table_by_init_crc(reverse_buf, 3, 0x00);
+	crc = cal_crc_table_by_init_crc(buf + 6, 20, crc);
+	memcpy(buf+2+3,&crc,1);
 }
 
-void parse_buffer(management_frame_Info* frame_Info , char* buf){
+int parse_buffer(management_frame_Info* frame_Info , char* buf){
+
+	// check crc
+	unsigned char crc = cal_crc_table_by_init_crc(buf+2, 3, 0x00);
+	crc = cal_crc_table_by_init_crc(buf + 6, 20, crc);
+	unsigned char get_crc = 0x00;
+	memcpy(&get_crc, buf+2+3,1);
+	//printf("get_crc = 0x%.2x, crc = 0x%.2x \n", get_crc, crc);
+	if(get_crc != crc){
+		return -1;
+	}
+
 	
 	// parse Frame_control
 	char tmp_buf[4];
@@ -164,19 +156,25 @@ void parse_buffer(management_frame_Info* frame_Info , char* buf){
 	reverseBuf(reveses_seq_buf,seq_buf,2);
 	
 	memcpy((char*)(&frame_Info->seq_id),seq_buf,2);
+	return 0;
 }
 
 int handle_air_tx(management_frame_Info* frame_Info, zlog_category_t *zlog_handler){
 	if(frame_Info == NULL)
 		return -1;
 	int rc = 0;
-
+	if(frame_Info->subtype != DISTANC_MEASURE_REQUEST)
+		zlog_info(zlog_handler,"air_tx : send_id = %d ", frame_Info->seq_id);
 	fill_buffer(frame_Info, g_paramter->send_buf); // g_parameter->buf ??? 
 	int fill_len = frame_Info->length;
+	int64_t start = now();
 	rc = write(g_paramter->fd,g_paramter->send_buf,fill_len);
-	// debug	
-	//zlog_info(zlog_handler,"handle_monitor_tx_with_response->write : rc = %d , g_paramter->fd = %d , fill_len = %d \n" ,
-	//			rc , g_paramter->fd , fill_len);
+	int64_t end = now();
+	double msec = (end-start)/1000.0;
+	if(frame_Info->subtype != DISTANC_MEASURE_REQUEST)
+		zlog_info(zlog_handler,"msec = %f ", msec);
+	if(msec > 1.0)
+		zlog_info(zlog_handler," ***** handle_air_tx : write is too long ---- msec = %f",msec);
 	if(rc < 0)
 		return rc;
 
@@ -192,10 +190,14 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_catego
 		rc = poll(&(g_paramter->poll_fd),1,5); // ms
 		if(rc > 0){
 			if(POLLIN == g_paramter->poll_fd.revents){
-				rc = read(g_paramter->fd, g_paramter->recv_buf, 1500); // g_parameter->buf ????
+				rc = read(g_paramter->fd, g_paramter->recv_buf, 1500);
 				if(rc){
 					// get management frame
-					parse_buffer(frame_Info,g_paramter->recv_buf); // g_parameter->buf ????
+					int state = parse_buffer(frame_Info,g_paramter->recv_buf); // g_parameter->buf ????
+					if(state == -1){
+						zlog_info(zlog_handler,"received air signal crc error ! ! ! ");
+						return -11;
+					}
 					//hexdump_zlog(g_paramter->buf,28,zlog_handler);
 					break;
 				}else{

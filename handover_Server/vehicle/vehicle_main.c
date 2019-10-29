@@ -20,6 +20,7 @@
 #include "gw_utility.h"
 #include "gw_frame.h"
 #include "gw_control.h"
+#include "ThreadPool.h"
 
 zlog_category_t * serverLog(const char* path){
 	int rc;
@@ -45,34 +46,44 @@ void closeServerLog(){
 }
 
 struct ConfigureNode* configure(zlog_category_t* log_handler){
-	struct ConfigureNode* clientConfigure = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
+	struct ConfigureNode* Node = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
 
-	clientConfigure->vehicle_id = 0;
-	clientConfigure->my_mac_str = (char*)malloc(32);
-	clientConfigure->my_Ethernet = (char*)malloc(32);
+	Node->vehicle_id = 0;
+	Node->my_mac_str = (char*)malloc(32);
+	Node->my_Ethernet = (char*)malloc(32);
 
 
 //  init system global variable
-	clientConfigure->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
-	clientConfigure->system_info->ve_state = STATE_STARTUP;
-	clientConfigure->system_info->isLinked = 0;
-	memset(clientConfigure->system_info->ve_mac,0,6);
-	memset(clientConfigure->system_info->link_bs_mac,0,6);
-	memset(clientConfigure->system_info->next_bs_mac,0,6);
+	Node->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
+	Node->system_info->ve_state = STATE_STARTUP;
+	Node->system_info->isLinked = 0;
+	memset(Node->system_info->ve_mac,0,6);
+	memset(Node->system_info->link_bs_mac,0,6);
+	memset(Node->system_info->next_bs_mac,0,6);
 
-	clientConfigure->system_info->send_id = 0;
-	clientConfigure->system_info->rcv_id = 0;
+	Node->system_info->send_id = 0;
+	Node->system_info->rcv_id = 0;
 
-	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
-	clientConfigure->system_info->received_air_state_list->received_association_request = 0;
-	clientConfigure->system_info->received_air_state_list->received_handover_start_request = 0;
-	clientConfigure->system_info->received_air_state_list->received_deassociation = 0;
+	Node->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	Node->system_info->received_air_state_list->received_association_request = 0;
+	Node->system_info->received_air_state_list->received_handover_start_request = 0;
+	Node->system_info->received_air_state_list->received_deassociation = 0;
+
+	// // -------- init tick
+	Node->system_info->my_initial = 0;
+	Node->system_info->other_initial = 0;
+	Node->system_info->have_my_initial = 0;
+	Node->system_info->have_other_initial = 0;
+	Node->distance_measure_cnt_ms = 0;
+	Node->distance_threshold = 0;
+
+
 // 
 	const char* configure_path = "../conf/ve_conf.json";
 	char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
 		zlog_error(log_handler,"open file %s error.\n",configure_path);
-		return clientConfigure;
+		return Node;
 	}
 	cJSON * root = NULL;
     cJSON * item = NULL;
@@ -82,23 +93,39 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
         zlog_error(log_handler,"Error before: [%s]",cJSON_GetErrorPtr());
     }else{
 		item = cJSON_GetObjectItem(root,"vehicle_id");
-		clientConfigure->vehicle_id = item->valueint;
+		Node->vehicle_id = item->valueint;
 		item = cJSON_GetObjectItem(root, "my_Ethernet");
-		memcpy(clientConfigure->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
+		memcpy(Node->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
+
+		item = cJSON_GetObjectItem(root, "distance_measure_cnt_ms");
+		Node->distance_measure_cnt_ms = item->valueint;
+
+		item = cJSON_GetObjectItem(root, "distance_threshold");
+		Node->distance_threshold = item->valueint;
+
 		cJSON_Delete(root);
     }
 
 	//get mac addr
-	int	nRtn = get_mac(clientConfigure->my_mac_str, 32, clientConfigure->my_Ethernet);
+	int	nRtn = get_mac(Node->my_mac_str, 32, Node->my_Ethernet);
     if(nRtn > 0) // nRtn = 12
     {	
-        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac_str);
-		change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->ve_mac); // // 0408 ---- bug
+        printf("nRtn = %d , MAC ADDR : %s\n", nRtn,Node->my_mac_str);
+		change_mac_buf(Node->my_mac_str,Node->system_info->ve_mac); // // 0408 ---- bug
     }else{
 		printf("get mac address failed!\n");
 	}
 
-	return clientConfigure;
+	return Node;
+}
+
+int init_program(){
+	int value = gpio_read(973);
+	while(value != 1){
+		sleep(2);
+		value = gpio_read(973);
+	}
+	return value;
 }
 
 // broker callback interface
@@ -129,13 +156,14 @@ int main(int argc, char *argv[]) // main thread
 	//zlog_category_t *zlog_handler = serverLog("/run/media/mmcblk1p1/etc/zlog_default.conf"); // on board
 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
 
-	struct ConfigureNode* configureNode_ = configure(zlog_handler);
-	if(configureNode_ == NULL){
-		printf("configureNode_ == NULL \n");
+	//init_program();
+	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start vehicle ++++++++++++++++++++++++++++++++++++++++++++++ \n");
+
+	struct ConfigureNode* Node = configure(zlog_handler);
+	if(Node == NULL){
+		printf("Node == NULL \n");
 		return 0;
 	}
-
-	zlog_info(zlog_handler," +++++++++++++++++++++++++++++ start vehicle ++++++++++++++++++++++++++++++++++++++++++++++ \n");
 
 	/* reg dev */
 	g_RegDev_para* g_RegDev = NULL;
@@ -150,8 +178,9 @@ int main(int argc, char *argv[]) // main thread
 	zlog_info(zlog_handler,"initBroker : ret = %d \n", ret);
 	
 	/* msg_queue */
-	const char* pro_path = "../vehicle_main.c";
-	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, zlog_handler);
+	const char* pro_path = "/tmp/handover_test/";
+	int proj_id = 'a';
+	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;
@@ -162,18 +191,22 @@ int main(int argc, char *argv[]) // main thread
 
 	/* air process thread */
 	g_air_para* g_air = NULL;
-	state = initProcessAirThread(configureNode_, &g_air, g_msg_queue, zlog_handler);
+	state = initProcessAirThread(Node, &g_air, g_msg_queue, zlog_handler);
 
 	/* send periodic thread */
 	g_periodic_para* g_periodic = NULL;
-    state = initPeriodicThread(configureNode_, &g_periodic, g_air, g_msg_queue, zlog_handler);
+    state = initPeriodicThread(Node, &g_periodic, g_air, g_msg_queue, zlog_handler);
 
-	gw_sleep(); // need count down wait all thread in startup 
+	gw_sleep(); // need count down wait all thread in startup
+
+	/* ThreadPool handler */
+	ThreadPool* g_threadpool = NULL;
+	createThreadPool(1024, 4, &g_threadpool); // 4096 , 8 
 
 // ------------------------
 
 	/* msg loop */ /* state machine */
-	eventLoop(g_air, g_periodic, g_msg_queue, g_RegDev, zlog_handler);
+	eventLoop(g_air, g_periodic, g_msg_queue, g_RegDev, g_threadpool,zlog_handler);
 
 	closeServerLog();
 	

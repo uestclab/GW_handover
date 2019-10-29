@@ -70,6 +70,27 @@ char* readfile(const char *path)
 	return ch;
 }
 
+char *get_prog_name(char *argv)
+{
+	int len = strlen(argv);
+	int i;
+	char *tmp = argv;
+	
+	for(i=len; i >=0; i--)
+	{
+		if(tmp[i] == '/'){
+			i++;
+			break;
+		}
+	}
+	
+	if(-1 == i){
+		i = 0;
+	}
+
+	return argv + i;
+}
+
 
 //	===========================
 	/*	
@@ -349,12 +370,8 @@ void reverseBuf(char* in_buf, char* out_buf, int number){
 }
 
 
-/* 
-	---------------------- timer -------------------------------------
-*/
 
-
-
+/* ---------------------- timer ------------------------------------- */
 
 /* ==== temp */
 
@@ -374,7 +391,125 @@ void gw_sleep(){
 }
 
 
+/* ---------------------------- crc caculate ------------------------------------------ */
 
+/* calculate crc via one byte */
+unsigned char cal_table_high_first(unsigned char value)
+{
+    unsigned char i, crc;
+ 
+    crc = value;
+    /* 数据往左移了8位，需要计算8次 */
+    for (i=8; i>0; --i)
+    { 
+        if (crc & 0x80)  /* 判断最高位是否为1 */
+        {
+        /* 最高位为1，不需要异或，往左移一位，然后与0x31异或 */
+        /* 0x31(多项式：x8+x5+x4+1，100110001)，最高位不需要异或，直接去掉 */
+            crc = (crc << 1) ^ 0x31;        }
+        else
+        {
+            /* 最高位为0时，不需要异或，整体数据往左移一位 */
+            crc = (crc << 1);
+        }
+    }
+ 
+    return crc;
+}
+
+/* create lookup table */
+void  create_crc_table(void)
+{
+    unsigned short i;
+    unsigned char j;
+ 
+    for (i=0; i<=0xFF; i++)
+    {
+        if (0 == (i%16))
+            printf("\n");
+ 
+        j = i&0xFF;
+            printf("0x%.2x, ", cal_table_high_first (j));  /*依次计算每个字节的crc校验值*/
+    }
+}
+
+
+/* crc 8 */
+unsigned char crc_high_first(unsigned char *ptr, unsigned char len)
+{
+    unsigned char i;
+    unsigned char crc=0x00;
+ 
+    while(len--)
+    {
+		/* 每次先与需要计算的数据异或,计算完指向下一数据 */ 
+        crc ^= *ptr++;
+        for (i=8; i>0; --i) 
+        { 
+            if (crc & 0x80)
+                crc = (crc << 1) ^ 0x31;
+            else
+                crc = (crc << 1);
+        }
+    }
+ 
+    return (crc);
+}
+
+
+unsigned char cal_crc_table(unsigned char *ptr, unsigned char len) 
+{
+    unsigned char  crc = 0x00;
+ 
+    while (len--)
+    {
+        crc = crc_table[crc ^ *ptr++];
+    }
+    return (crc);
+}
+
+void print_buf(char* buf, int length){
+	printf("buf: \n");
+	for(int i = 0 ;i < length ;i++){
+		printf("0x%.2x,",buf[i]);
+	}
+	printf("\n");
+}
+
+unsigned char crc_high_first_by_init_crc(unsigned char *ptr, unsigned char len, unsigned char init_crc)
+{
+    unsigned char i;
+    //unsigned char crc=0x00;
+	unsigned char crc = init_crc;
+ 
+    while(len--)
+    {
+		/* 每次先与需要计算的数据异或,计算完指向下一数据 */ 
+        crc ^= *ptr++;
+        for (i=8; i>0; --i) 
+        { 
+            if (crc & 0x80)
+                crc = (crc << 1) ^ 0x31;
+            else
+                crc = (crc << 1);
+        }
+    }
+ 
+    return (crc);
+}
+
+
+unsigned char cal_crc_table_by_init_crc(unsigned char *ptr, unsigned char len, unsigned char init_crc) 
+{
+    //unsigned char  crc = 0x00;
+	unsigned char crc = init_crc;
+
+    while (len--)
+    {
+        crc = crc_table[crc ^ *ptr++];
+    }
+    return (crc);
+}
 
 
 

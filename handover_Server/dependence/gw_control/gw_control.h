@@ -33,6 +33,8 @@ typedef struct g_RegDev_para{
 	zlog_category_t*   log_handler;
 }g_RegDev_para;
 
+int gpio_read(int pin);
+
  /* ----------------------- new interface to read and write register ---------------------------- */
 int initRegdev(g_RegDev_para** g_RegDev, zlog_category_t* handler);
 int disable_dac(g_RegDev_para* g_RegDev);
@@ -64,5 +66,15 @@ uint32_t rx_byte_filter_ether_high32(g_RegDev_para* g_RegDev);
 /* ------------------------------ reset bb ------------------------------------ */
 int reset_bb(g_RegDev_para* g_RegDev);
 int release_bb(g_RegDev_para* g_RegDev);
+
+/* ----------------------------- ready handover related (snr , rx mcs ,) ---------------------------- */
+double get_rx_snr(g_RegDev_para* g_RegDev);
+uint32_t get_rx_mcs(g_RegDev_para* g_RegDev);
+
+/* ----------------------------- distance measure --------------------------------------------------- */
+uint32_t get_delay_tick(g_RegDev_para* g_RegDev);
+int set_delay_tick(g_RegDev_para* g_RegDev, uint32_t delay);
+
+
 
 #endif//GW_CONTROL_H
