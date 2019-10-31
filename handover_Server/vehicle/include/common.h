@@ -26,7 +26,8 @@ typedef struct system_info_para{
 	uint32_t my_initial;
 	uint32_t other_initial;
 	int      have_my_initial;
-	int      have_other_initial;    
+	int      have_other_initial;
+	int		 new_distance_test_id;   
 }system_info_para;
 
 

@@ -143,6 +143,8 @@ void print_subtype(int32_t subtype, g_air_para* g_air){
 		zlog_info(g_air->log_handler,"send_airSignal :  subtype = HANDOVER_START_REQUEST , send successful \n");
 	else if(subtype == 6)
 		zlog_info(g_air->log_handler,"send_airSignal :  subtype = HANDOVER_START_RESPONSE , send successful \n");
+	//else if(subtype == DISTANC_MEASURE_REQUEST)
+		//zlog_info(g_air->log_handler,"send_airSignal :  subtype = DISTANC_MEASURE_REQUEST , send successful \n");
 }
 
 int send_airSignal(int32_t subtype, char* mac_buf, char* mac_buf_dest, char* mac_buf_next, g_air_para* g_air){

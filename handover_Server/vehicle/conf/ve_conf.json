@@ -1,5 +1,5 @@
 {
-	"my_Ethernet": "ens33",
+	"my_Ethernet": "eth1",
 	"vehicle_id": 321,
 	"distance_measure_cnt_ms":   1000,
 	"distance_threshold":    20
