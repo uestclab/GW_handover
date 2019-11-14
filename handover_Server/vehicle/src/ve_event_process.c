@@ -222,7 +222,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
 			break;
 		}
-		case MSG_RECEIVED_DISTANC_MEASURE_REQUEST:
+		case MSG_RECEIVED_DISTANC_MEASURE_REQUEST: // cause : discontinue msg_number 
 		{
 			//zlog_info(zlog_handler," -------- EVENT : MSG_RECEIVED_DISTANC_MEASURE_REQUEST: msg_number = %d ", getData->msg_number);
 

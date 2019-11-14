@@ -54,12 +54,11 @@ g_msg_queue_para* createMsgQueue(const char *pathname, int proj_id, zlog_categor
 
 void postMsgQueue(struct msg_st* data, g_msg_queue_para* g_msg_queue){
 
-	data->msg_number = g_msg_queue->seq_id;
-	g_msg_queue->seq_id = g_msg_queue->seq_id + 1;
-
 	int send_len = sizeof(struct msg_st) - sizeof(long);
 
 	pthread_mutex_lock(g_msg_queue->para_t->mutex_);
+	data->msg_number = g_msg_queue->seq_id;
+	g_msg_queue->seq_id = g_msg_queue->seq_id + 1;
 	if(msgsnd(g_msg_queue->msgid, (void*)data, send_len, 0) == -1){  
 		zlog_info(g_msg_queue->log_handler,"postMsgQueue : msgsnd failed\n"); 
 	}
