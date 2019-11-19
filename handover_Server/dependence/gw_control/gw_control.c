@@ -503,6 +503,226 @@ int set_delay_tick(g_RegDev_para* g_RegDev, uint32_t delay){
 }
 
 
+/* for webapp use */
+// getPowerLatch -- 0x124
+
+// fpga_version -- 0x8
+uint32_t get_fpga_version(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x8, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_fpga_version failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// sync_failed_stastic -- 0x12c
+uint32_t get_sync_failed_stastic(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x12c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_sync_failed_stastic failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// freq_offset -- 0x138
+uint32_t get_freq_offset(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x138, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_freq_offset failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// pac_txc_misc -- 0x80c
+uint32_t get_pac_txc_misc(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x80c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_pac_txc_misc failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// pac_txc_re_trans_cnt -- 0x810
+uint32_t get_pac_txc_re_trans_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x810, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_pac_txc_re_trans_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// pac_txc_expect_seq_id -- 0x814
+uint32_t get_pac_txc_expect_seq_id(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x814, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_pac_txc_expect_seq_id failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// rxc_miscs -- 0x820
+uint32_t get_rxc_miscs(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x820, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_rxc_miscs failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// rx_sync -- 0x120
+uint32_t get_rx_sync(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x120, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_rx_sync failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// ctrl_frame_crc_correct_cnt -- 0x850
+uint32_t get_ctrl_frame_crc_correct_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x850, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_ctrl_frame_crc_correct_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// ctrl_frame_crc_error_cnt -- 0x854
+uint32_t get_ctrl_frame_crc_error_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x854, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_ctrl_frame_crc_error_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// manage_frame_crc_correct_cnt -- 0x858
+uint32_t get_manage_frame_crc_correct_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x858, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_manage_frame_crc_correct_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// manage_frame_crc_error_cnt -- 0x85c
+uint32_t get_manage_frame_crc_error_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x85c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_manage_frame_crc_error_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// bb_send_cnt -- 0x13c
+uint32_t get_bb_send_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x13c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_bb_send_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// rx_vector -- 0x84c
+uint32_t get_rx_vector(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x84c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_rx_vector failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// pac_soft_rst -- 0x82c -- ddr
+uint32_t get_pac_soft_rst(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x82c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_pac_soft_rst failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// sw_fifo_data_cnt -- 0x81c
+uint32_t get_sw_fifo_data_cnt(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x81c, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_sw_fifo_data_cnt failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+// snr -- 0x140
+
+// delay_RW -- 0x868
+uint32_t get_delay_RW(g_RegDev_para* g_RegDev){
+	uint32_t value = 0x00000000;
+	int	rc = regdev_read(g_RegDev->mem_dev_phy, 0x868, &value);
+	if(rc < 0){
+		zlog_info(g_RegDev->log_handler,"get_delay_RW failed !!! \n");
+		return rc;
+	}
+	return value;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
