@@ -512,7 +512,18 @@ unsigned char cal_crc_table_by_init_crc(unsigned char *ptr, unsigned char len, u
 }
 
 
+/* -------------------------------- aligned memory allocate ------------------------------------------- */
+void* aligned32_malloc(size_t size){
+	void *original = malloc(size + 32);
+	unsigned int aligned_address = ( (unsigned int)original & ~((unsigned int)31) ) + 32;
+	void *aligned = (void*)aligned_address;
+	*((void**)aligned - 1) = original;
+	return aligned;
+}
 
+void aligned32_free(void* ptr){
+	free(*((void**)ptr - 1));
+}
 
 
 

@@ -100,13 +100,13 @@ fi
 
 # delete header and lib
 cd ../dependence/include
-find -L ./ -maxdepth 1 ! -name "broker.h" ! -name "gw_macros_util.h" ! -wholename "./" -exec rm -rf {} \;
+find -L ./ -maxdepth 1 ! -name "broker.h" ! -name "gw_macros_util.h" ! -name "cst_net.h" ! -wholename "./" -exec rm -rf {} \;
 
 cd ../lib
 rm -rf *
 
 cd ../lib_arm
-find -L ./ -maxdepth 1 ! -name "libbroker.so" ! -name "libmosquitto.so" ! -wholename "./" -exec rm -rf {} \;
+find -L ./ -maxdepth 1 ! -name "libbroker.so" ! -name "libmosquitto.so" ! -name "libcst.so" ! -wholename "./" -exec rm -rf {} \;
 
 
 

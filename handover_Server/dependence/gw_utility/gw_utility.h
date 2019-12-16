@@ -87,6 +87,11 @@ unsigned char crc_high_first_by_init_crc(unsigned char *ptr, unsigned char len, 
 
 unsigned char cal_crc_table_by_init_crc(unsigned char *ptr, unsigned char len, unsigned char init_crc);
 
+/* -------------------------------- aligned memory allocate ------------------------------------------- */
+
+void* aligned32_malloc(size_t size);
+
+void aligned32_free(void* ptr);
 
 #ifdef __cplusplus
 }
