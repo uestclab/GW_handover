@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
+#include <sys/time.h>
 #include <dirent.h>
 
 
@@ -45,15 +46,21 @@ typedef struct g_gpio_fd_set{
 	int fpga_done;
 }g_gpio_fd_set;
 
-void user_wait()
+
+//	===========================
+	/*	
+	int64_t start = now();
+	.....
+	int64_t end = now();
+	double sec = (end-start)/1000000.0;
+	printf("%f sec %f ms \n", sec, 1000*sec);
+	*/
+//  ===========================
+int64_t now()
 {
-	int c;
-	printf("user_wait... \n");
-	do
-	{
-		c = getchar();
-		if(c == 'g') break;
-	} while(c != '\n');
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 int gpio_read(int pin);
@@ -99,7 +106,7 @@ int set_fpga_done(g_gpio_fd_set* g_gpio_fd, char* value){
 
 int gpio_read(int pin)
 {  
-    char path[64];  
+    char path[128];  
 
     char value_str[3];  
 
@@ -161,8 +168,6 @@ int is_dir_exist(const char* dir_path){
 }
 
 void init_gpio_script(){
-	printf("\n init_gpio_script() \n");
-
 	char * Path_990="/sys/class/gpio/gpio990/";   // init_b
 	char * Path_991="/sys/class/gpio/gpio991/";   // done
 	char * Path_1023="/sys/class/gpio/gpio1023/"; // prog_b
@@ -224,7 +229,7 @@ static uint32_t mode;
 static uint8_t bits = 8;
 static char *input_file;
 static char *output_file;
-static uint32_t speed = 15000000;//500000;
+static uint32_t speed = 24000000;
 static uint16_t delay;
 static int verbose;
 
@@ -258,32 +263,17 @@ static void hex_dump(const void *src, size_t length, size_t line_size,
 	}
 }
 
-static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len, int cmd)
+static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
 {
 	int ret;
 	struct spi_ioc_transfer tr = {
 		.tx_buf = (unsigned long)tx,
 		.rx_buf = (unsigned long)rx,
 		.len = len,
-		.delay_usecs = 10,//delay,
+		.delay_usecs = 5,//delay,
 		.speed_hz = speed,
 		.bits_per_word = bits,
 	};
-
-	// if (mode & SPI_TX_QUAD)
-	// 	tr.tx_nbits = 4;
-	// else if (mode & SPI_TX_DUAL)
-	// 	tr.tx_nbits = 2;
-	// if (mode & SPI_RX_QUAD)
-	// 	tr.rx_nbits = 4;
-	// else if (mode & SPI_RX_DUAL)
-	// 	tr.rx_nbits = 2;
-	// if (!(mode & SPI_LOOP)) {
-	// 	if (mode & (SPI_TX_QUAD | SPI_TX_DUAL))
-	// 		tr.rx_buf = 0;
-	// 	else if (mode & (SPI_RX_QUAD | SPI_RX_DUAL))
-	// 		tr.tx_buf = 0;
-	// }
 
 	if (mode & SPI_TX_QUAD){
 		printf("mode & SPI_TX_QUAD \n");
@@ -316,8 +306,6 @@ static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len, i
 	if (ret < 1)
 		pabort("can't send spi message");
 
-	if(cmd == 1 && len != 2048)
-		hex_dump(tx, len, 32, "TX");
 }
 
 int main(int argc, char *argv[])
@@ -371,14 +359,9 @@ int main(int argc, char *argv[])
 		}
 	}
 	/* end pre process */
-	printf("start_bitfile_pos = %d \n", start_bitfile_pos);
 
-	hex_dump(start_bitfile, 256, 32, "START_BIT_FILE");
+	//hex_dump(start_bitfile, 1024, 32, "START_BIT_FILE");
 
-	hex_dump(fpga_file, 256, 32, "FPGA_FILE");
-
-	user_wait();
- 
 	g_gpio_fd_set* g_gpio_fd = NULL;
 
 	int state = init_gpio_fd(&g_gpio_fd);
@@ -388,9 +371,9 @@ int main(int argc, char *argv[])
 	}
 
 	// reset fpga_prog_b
+	set_fpga_prog_b(g_gpio_fd, SYSFS_GPIO_RST_VAL_L);
+	usleep(1000);
 	set_fpga_prog_b(g_gpio_fd, SYSFS_GPIO_RST_VAL_H);
-	print_status(g_gpio_fd);
-
 
 	/* spi init */
 
@@ -401,7 +384,7 @@ int main(int argc, char *argv[])
 	if (fd < 0)
 		pabort("can't open device");
 
-	mode = mode | SPI_MODE_0;
+	mode = mode | SPI_MODE_3;
 	printf("spi mode: 0x%x\n", mode);
 	/*
 	 * spi mode
@@ -440,56 +423,84 @@ int main(int argc, char *argv[])
 	printf("bits per word: %d\n", bits);
 	printf("max speed: %d Hz (%d KHz)\n", speed, speed/1000);
 
-	uint8_t default_rx[2048] = {0, };
-	uint8_t padd_tx[32] = {0, };
 
 	// start fpga configuration
 	set_fpga_prog_b(g_gpio_fd, SYSFS_GPIO_RST_VAL_L);
-	usleep(100);
+	// wait INIT_B_GPIO go down ?
+	for(;;){
+		int state = -1;
+		state = gpio_read(INIT_B_GPIO);
+		if(state == 0){
+			usleep(1000);
+			printf("wati init_b goes down \n");
+			break;
+		}
+	}
+
 	set_fpga_prog_b(g_gpio_fd, SYSFS_GPIO_RST_VAL_H);
 	
-	print_status(g_gpio_fd);
-	printf("\n --- before transfer fpga --- \n");
-
 	for(;;){
 		int state = -1;
 		state = gpio_read(INIT_B_GPIO);
 		if(state == 1){
+			usleep(1000);
+			printf("wait init_b goes up \n");
 			break;
-		}else{
-			printf("INIT_B_GPIO == %d\n",state);
 		}
-		
 	}
 
 	printf("\n --- transfer fpga configuration --- \n");
 
+	int64_t start = now();
+
+
+#define BUFF_LEN 256
+
+	uint8_t default_rx[BUFF_LEN] = {0, };
+	uint8_t padd_tx[BUFF_LEN] = {0, };
+
 	while(1){
-		int transfered_len = 2048;
+		int transfered_len = BUFF_LEN;
 		int sum_transfer_len = 0;
 		uint8_t* fpga_file_tmp = (uint8_t*)start_bitfile;
 
 		for(;;){
-			if(start_bitfile_len - sum_transfer_len > 2048){
-				transfered_len = 2048;
+			if(start_bitfile_len - sum_transfer_len > BUFF_LEN){
+				transfered_len = BUFF_LEN;
 			}else{
 				transfered_len = start_bitfile_len - sum_transfer_len;
-				printf("\n transfered_len = %d ", transfered_len);
+				printf("\n transfered_len = %d , BUFF_LEN = %d \n", transfered_len,BUFF_LEN);
 			}
-			transfer(fd, fpga_file_tmp, default_rx, transfered_len, 1);
-			//user_wait();
+			transfer(fd, fpga_file_tmp, default_rx, transfered_len);
 			sum_transfer_len = sum_transfer_len + transfered_len;
 			fpga_file_tmp = fpga_file_tmp + transfered_len;
 			if(sum_transfer_len == start_bitfile_len){
-				for(int i=0;i<1024;i++)
-					transfer(fd, padd_tx, default_rx, 32, 0);
 				break;
 			}
 		}
 
-		while(gpio_read(FPGA_DONE_GPIO) == 0){
+		int cnt_done = 0;
+		int cont_conf = 0;
+		for(;;){
+			cnt_done = cnt_done + 1;
+			if(gpio_read(FPGA_DONE_GPIO) == 1){
+				printf(" fpga_done == 1 \n");
+				cont_conf = 0;
+				break;
+			}
 			printf("check fpga_done \n");
 			sleep(1);
+			if(cnt_done == 120){
+				cont_conf = 1;
+				break;
+			}
+		}
+
+		if(cont_conf == 0){
+			printf("\n tranfer more clock \n");
+			for(int i=0;i<1024;i++)
+				transfer(fd, padd_tx, default_rx, 32);
+			break;
 		}
 
 		// ..................
@@ -497,6 +508,9 @@ int main(int argc, char *argv[])
 	}
 
 	close(fd);
+
+	double sec = (now()-start)/1000000.0;
+	printf("%f sec %f ms \n", sec, 1000*sec);
 
 	printf("\n ---- completed fpga configuration ---- \n");
 

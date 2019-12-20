@@ -1,268 +1,403 @@
-#define _GNU_SOURCE
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-// #include <stdint.h>
-// #include <assert.h>
+/*
+ * SPI testing utility (using spidev driver)
+ *
+ * Copyright (c) 2007  MontaVista Software, Inc.
+ * Copyright (c) 2007  Anton Vorontsov <avorontsov@ru.mvista.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License.
+ *
+ * Cross-compile with cross-gcc -I/path/to/cross-kernel/include
+ */
 
-// #include <math.h>
-
-// #include <unistd.h>
-// #include <signal.h>
-// #include <sys/time.h>
-
-// #include "zlog.h"
-
-// #include <sched.h>
-// #include <pthread.h>
-// #include <sys/syscall.h>
-
-// #include <stddef.h>  
-// #include <sys/socket.h>  
-// #include <sys/un.h>  
-// #include <errno.h> 
-// #include <ctype.h>
-
-#include <stdlib.h>  
-#include <stdio.h>  
-#include <stddef.h>  
-#include <sys/socket.h>  
-#include <sys/un.h>  
-#include <errno.h>  
-#include <string.h>  
+#include <stdint.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <assert.h>
-#include "zlog.h"
-#include "gw_ipc.h"
-#include "gw_frame.h"
-#include "gw_utility.h"
-#include "msg_queue.h"
-#include "ThreadPool.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <getopt.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/ioctl.h>
+#include <sys/stat.h>
+#include <linux/types.h>
+#include <linux/spi/spidev.h>
 
-zlog_category_t * serverLog(const char* path){
-	int rc;
-	zlog_category_t *zlog_handler = NULL;
-	rc = zlog_init(path);
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-	if (rc) {
-		return NULL;
-	}
-
-	zlog_handler = zlog_get_category("baseStation");
-
-	if (!zlog_handler) {
-		zlog_fini();
-		return NULL;
-	}
-
-	return zlog_handler;
+static void pabort(const char *s)
+{
+	perror(s);
+	abort();
 }
 
-void closeServerLog(){
-	zlog_fini();
+static const char *device = "/dev/spidev1.0";
+static uint32_t mode;
+static uint8_t bits = 8;
+static char *input_file;
+static char *output_file;
+static uint32_t speed = 24000000;
+static uint16_t delay;
+static int verbose;
+
+uint8_t default_tx[] = {
+	0xAA, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+	0x40, 0x00, 0x00, 0x00, 0x00, 0x95,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	0xF0, 0x0D,
+};
+
+uint8_t default_rx[ARRAY_SIZE(default_tx)] = {0, };
+char *input_tx;
+
+static void hex_dump(const void *src, size_t length, size_t line_size,
+		     char *prefix)
+{
+	int i = 0;
+	const unsigned char *address = src;
+	const unsigned char *line = address;
+	unsigned char c;
+
+	printf("%s | ", prefix);
+	while (length-- > 0) {
+		printf("%02X ", *address++);
+		if (!(++i % line_size) || (length == 0 && i % line_size)) {
+			if (length == 0) {
+				while (i++ % line_size)
+					printf("__ ");
+			}
+			printf(" | ");  /* right close */
+			while (line < address) {
+				c = *line++;
+				printf("%c", (c < 33 || c == 255) ? 0x2E : c);
+			}
+			printf("\n");
+			if (length > 0)
+				printf("%s | ", prefix);
+		}
+	}
 }
 
-char *client_path = "client.socket";  
-char *server_path = "/tmp/air_test/server/bin/server.socket";
+/*
+ *  Unescape - process hexadecimal escape character
+ *      converts shell input "\x23" -> 0x23
+ */
+static int unescape(char *_dst, char *_src, size_t len)
+{
+	int ret = 0;
+	int match;
+	char *src = _src;
+	char *dst = _dst;
+	unsigned int ch;
 
+	while (*src) {
+		if (*src == '\\' && *(src+1) == 'x') {
+			match = sscanf(src + 2, "%2x", &ch);
+			if (!match)
+				pabort("malformed input string");
 
-char proc_name_g[32];
-
-/* ------------  ipc_client  ----------------  */
-
-int send_air_frame(char* buf, int buf_len, int msg_type, g_IPC_para* g_IPC){
-	int ret = ipc_send(buf, buf_len, msg_type, g_IPC->sockfd, g_IPC);
+			src += 4;
+			*dst++ = (unsigned char)ch;
+		} else {
+			*dst++ = *src++;
+		}
+		ret++;
+	}
 	return ret;
 }
 
-void* ipc_receive_thread(void* args){
-	g_IPC_para* g_ipc_client = (g_IPC_para*)args;
-	int ret;
-	while(1){  
-		ret = ipc_poll_receive(g_ipc_client,2); // 2 * 5ms  
-		if (ret < 0) {
-			//zlog_info(g_ipc_client->log_handler,"ipc poll time out : ret = %d \n", ret); 
-		} else if(ret == 0) {  
-			zlog_info(g_ipc_client->log_handler,"ipc_poll_receive : ret = 0 \n");
-		}
-	}
-}
-
-// receive air frame
-int process_recv_air_msg(char* buf, int buf_len, void* input, int type){
-	g_IPC_para* g_ipc_client = (g_IPC_para*)input;
-
-	assert(buf_len == sizeof(management_frame_Info));
-	management_frame_Info* frame_Info = (management_frame_Info*)buf;
-
-	zlog_info(g_ipc_client->log_handler,"receive air frame : subtype = %d , buf_len = %d \n", frame_Info->subtype, buf_len);
-
-	if(strcmp(proc_name_g,"baseStation") == 0){
-		char mac_buf[6] = {0};
-		char mac_buf_dest[6] = {0};
-		char mac_buf_next[6] = {0};
-		management_frame_Info* frame_Info = new_air_frame(DEASSOCIATION, 0,mac_buf,mac_buf_dest,mac_buf_next,1);   
-		//int ret = ipc_send((char*)frame_Info, sizeof(management_frame_Info), RAW_FRAME_DATA, g_ipc_client->sockfd, g_ipc_client);
-		int ret = send_air_frame((char*)frame_Info, sizeof(management_frame_Info), RAW_FRAME_DATA, g_ipc_client);
-		if(ret != sizeof(management_frame_Info) + 8){
-			zlog_error(g_ipc_client->log_handler,"ipc_send error \n");
-		}
-		free(frame_Info);
-	}
-
-	// post msg to queue
-
-	return 0;
-}
-
-/* notify process type to server */
-int notify_to_server(char* proc_name, g_IPC_para* g_IPC){
-	int name_len = strlen(proc_name) + 1;
-	int ret = ipc_send(proc_name, name_len, SOURCE_PROCESS, g_IPC->sockfd, g_IPC);
-	if(ret != name_len + 8){
-		zlog_error(g_IPC->log_handler,"notify_to_server error \n");
-		return -1;
-	}else{
-		return 0;
-	}
-}
-
-int main(int argc, char *argv[]) // main thread
+static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
 {
-	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
+	int ret;
+	int out_fd;
+	struct spi_ioc_transfer tr = {
+		.tx_buf = (unsigned long)tx,
+		.rx_buf = (unsigned long)rx,
+		.len = len,
+		.delay_usecs = delay,
+		.speed_hz = speed,
+		.bits_per_word = bits,
+	};
 
-	zlog_info(zlog_handler,"start ipc client --- file : %s , proc_name : %s , main_tid = %lu \n", 
-	argv[1], argv[2], pthread_self());
-
-	g_IPC_para* g_ipc_client = NULL;
-	int ret = init_ipc(argv[1], server_path, &g_ipc_client, zlog_handler);
-	register_cb_para(process_recv_air_msg, NULL, (void*)(g_ipc_client), g_ipc_client);
-
-	ret = connect_server(g_ipc_client);
-	if(ret != 0){
-		zlog_error(zlog_handler,"connect server error\n");
-		return 0;
+	if (mode & SPI_TX_QUAD)
+		tr.tx_nbits = 4;
+	else if (mode & SPI_TX_DUAL)
+		tr.tx_nbits = 2;
+	if (mode & SPI_RX_QUAD)
+		tr.rx_nbits = 4;
+	else if (mode & SPI_RX_DUAL)
+		tr.rx_nbits = 2;
+	if (!(mode & SPI_LOOP)) {
+		if (mode & (SPI_TX_QUAD | SPI_TX_DUAL))
+			tr.rx_buf = 0;
+		else if (mode & (SPI_RX_QUAD | SPI_RX_DUAL))
+			tr.tx_buf = 0;
 	}
 
+	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
+	if (ret < 1)
+		pabort("can't send spi message");
 
-	char* proc_name = (char*)malloc(32); 
-	memcpy(proc_name,argv[2],strlen(argv[2])+1);//"baseStation";
-	memcpy(proc_name_g,proc_name,strlen(proc_name)+1);
-	ret = notify_to_server(proc_name, g_ipc_client);
-	if(ret != 0){
-		printf("... exit after notify_to_server \n");
-		return 0;
+	if (verbose)
+		hex_dump(tx, len, 32, "TX");
+	hex_dump(tx, len, 32, "TX");
+	if (output_file) {
+		out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if (out_fd < 0)
+			pabort("could not open output file");
+
+		ret = write(out_fd, rx, len);
+		if (ret != len)
+			pabort("not all bytes written to output file");
+
+		close(out_fd);
 	}
 
-	zlog_info(zlog_handler,"start to work ..... \n");
-
-	pthread_t thread_id;
-	ret = pthread_create(&thread_id, NULL, ipc_receive_thread, (void*)g_ipc_client);
-	uint16_t send_id = 0;
-	char mac_buf[6];
-	char mac_buf_dest[6];
-	char mac_buf_next[6];
-	memset(mac_buf,0,6);
-	memset(mac_buf_dest,0,6);
-	memset(mac_buf_next,0,6);
-	if(strcmp(proc_name,"baseStation") == 0){
-		mac_buf_next[2] = 14;
-	}else if(strcmp(proc_name,"vehicle") == 0){
-		mac_buf_next[2] = 22;
-	}
-	while(1){
-		// thread safe interface to call ipc_send
-		if(strcmp(proc_name,"baseStation") == 0){
-			sleep(10);
-		}else if(strcmp(proc_name,"vehicle") == 0){
-			management_frame_Info* frame_Info = new_air_frame(BEACON, 0,mac_buf,mac_buf_dest,mac_buf_next,send_id);   
-			//ret = ipc_send((char*)frame_Info, sizeof(management_frame_Info), RAW_FRAME_DATA, g_ipc_client->sockfd, g_ipc_client);
-			ret = send_air_frame((char*)frame_Info, sizeof(management_frame_Info), RAW_FRAME_DATA, g_ipc_client);
-			if(ret != sizeof(management_frame_Info) + 8){
-				zlog_error(zlog_handler,"ipc_send error \n");
-			}
-			sleep(5);
-		}
-		send_id = send_id + 1;
-    }
-
-    return 0;  
+	if (verbose || !output_file)
+		hex_dump(rx, len, 32, "RX");
 }
 
+static void print_usage(const char *prog)
+{
+	printf("Usage: %s [-DsbdlHOLC3]\n", prog);
+	puts("  -D --device   device to use (default /dev/spidev1.1)\n"
+	     "  -s --speed    max speed (Hz)\n"
+	     "  -d --delay    delay (usec)\n"
+	     "  -b --bpw      bits per word\n"
+	     "  -i --input    input data from a file (e.g. \"test.bin\")\n"
+	     "  -o --output   output data to a file (e.g. \"results.bin\")\n"
+	     "  -l --loop     loopback\n"
+	     "  -H --cpha     clock phase\n"
+	     "  -O --cpol     clock polarity\n"
+	     "  -L --lsb      least significant bit first\n"
+	     "  -C --cs-high  chip select active high\n"
+	     "  -3 --3wire    SI/SO signals shared\n"
+	     "  -v --verbose  Verbose (show tx buffer)\n"
+	     "  -p            Send data (e.g. \"1234\\xde\\xad\")\n"
+	     "  -N --no-cs    no chip select\n"
+	     "  -R --ready    slave pulls low to pause\n"
+	     "  -2 --dual     dual transfer\n"
+	     "  -4 --quad     quad transfer\n");
+	exit(1);
+}
 
+static void parse_opts(int argc, char *argv[])
+{
+	while (1) {
+		static const struct option lopts[] = {
+			{ "device",  1, 0, 'D' },
+			{ "speed",   1, 0, 's' },
+			{ "delay",   1, 0, 'd' },
+			{ "bpw",     1, 0, 'b' },
+			{ "input",   1, 0, 'i' },
+			{ "output",  1, 0, 'o' },
+			{ "loop",    0, 0, 'l' },
+			{ "cpha",    0, 0, 'H' },
+			{ "cpol",    0, 0, 'O' },
+			{ "lsb",     0, 0, 'L' },
+			{ "cs-high", 0, 0, 'C' },
+			{ "3wire",   0, 0, '3' },
+			{ "no-cs",   0, 0, 'N' },
+			{ "ready",   0, 0, 'R' },
+			{ "dual",    0, 0, '2' },
+			{ "verbose", 0, 0, 'v' },
+			{ "quad",    0, 0, '4' },
+			{ NULL, 0, 0, 0 },
+		};
+		int c;
 
+		c = getopt_long(argc, argv, "D:s:d:b:i:o:lHOLC3NR24p:v",
+				lopts, NULL);
 
-// /* ------------------- 2019_10_22 test ----------------------------*/
-// void* receive_msg_thread(void* arg){
-// 	g_msg_queue_para* g_msg_queue_r = (g_msg_queue_para*)arg;
-// 	zlog_info(g_msg_queue_r->log_handler," msg_id = %d  \n", g_msg_queue_r->msgid);
+		if (c == -1)
+			break;
 
-// 	while(1){
-// 		struct msg_st* getData = getMsgQueue(g_msg_queue_r);
-// 		if(getData == NULL)
-// 			continue;
+		switch (c) {
+		case 'D':
+			device = optarg;
+			break;
+		case 's':
+			speed = atoi(optarg);
+			break;
+		case 'd':
+			delay = atoi(optarg);
+			break;
+		case 'b':
+			bits = atoi(optarg);
+			break;
+		case 'i':
+			input_file = optarg;
+			break;
+		case 'o':
+			output_file = optarg;
+			break;
+		case 'l':
+			mode |= SPI_LOOP;
+			break;
+		case 'H':
+			mode |= SPI_CPHA;
+			break;
+		case 'O':
+			mode |= SPI_CPOL;
+			break;
+		case 'L':
+			mode |= SPI_LSB_FIRST;
+			break;
+		case 'C':
+			mode |= SPI_CS_HIGH;
+			break;
+		case '3':
+			mode |= SPI_3WIRE;
+			break;
+		case 'N':
+			mode |= SPI_NO_CS;
+			break;
+		case 'v':
+			verbose = 1;
+			break;
+		case 'R':
+			mode |= SPI_READY;
+			break;
+		case 'p':
+			input_tx = optarg;
+			break;
+		case '2':
+			mode |= SPI_TX_DUAL;
+			break;
+		case '4':
+			mode |= SPI_TX_QUAD;
+			break;
+		default:
+			print_usage(argv[0]);
+			break;
+		}
+	}
+	if (mode & SPI_LOOP) {
+		if (mode & SPI_TX_DUAL)
+			mode |= SPI_RX_DUAL;
+		if (mode & SPI_TX_QUAD)
+			mode |= SPI_RX_QUAD;
+	}
+}
 
-// 		zlog_info(g_msg_queue_r->log_handler,"msg_type = %ld, msg_num = %d, msg_len = %d, msg_str = %s .... msg_id = %d\n",
-// 					getData->msg_type,getData->msg_number,getData->msg_len,getData->msg_json,g_msg_queue_r->msgid);
+static void transfer_escaped_string(int fd, char *str)
+{
+	size_t size = strlen(str);
+	uint8_t *tx;
+	uint8_t *rx;
 
-// 		free(getData);
-// 	}
-// }
+	tx = malloc(size);
+	if (!tx)
+		pabort("can't allocate tx buffer");
 
+	rx = malloc(size);
+	if (!rx)
+		pabort("can't allocate rx buffer");
 
-// void postMsgRecvWorkToThreadPool(g_msg_queue_para* g_msg_queue, ThreadPool* g_threadpool)
-// {
-// 	AddWorker(receive_msg_thread,(void*)g_msg_queue,g_threadpool);
-// }
+	size = unescape((char *)tx, str, size);
+	transfer(fd, tx, rx, size);
+	free(rx);
+	free(tx);
+}
 
-// int main(int argc, char *argv[])
-// {
-// 	zlog_category_t *zlog_handler = serverLog("../conf/zlog_default.conf");
+static void transfer_file(int fd, char *filename)
+{
+	ssize_t bytes;
+	struct stat sb;
+	int tx_fd;
+	uint8_t *tx;
+	uint8_t *rx;
 
-// 	/* msg_queue 0*/
-// 	const char* pro_path = "/tmp/handover_test/";
-// 	int proj_id = 'r';
-// 	g_msg_queue_para* g_msg_queue_r = createMsgQueue(pro_path, proj_id, zlog_handler);
-// 	if(g_msg_queue_r == NULL){
-// 		zlog_info(zlog_handler,"No msg_queue created \n");
-// 		return 0;
-// 	}
-// 	zlog_info(zlog_handler, "g_msg_queue_r->msgid = %d \n", g_msg_queue_r->msgid);
+	if (stat(filename, &sb) == -1)
+		pabort("can't stat input file");
 
-// 	int state = clearMsgQueue(g_msg_queue_r);
+	tx_fd = open(filename, O_RDONLY);
+	if (fd < 0)
+		pabort("can't open input file");
 
+	tx = malloc(sb.st_size);
+	if (!tx)
+		pabort("can't allocate tx buffer");
 
-// 	/* send queue */
-// 	int proj_id_w = 'w';
-// 	g_msg_queue_para* g_msg_queue_w = createMsgQueue(pro_path, proj_id_w, zlog_handler);
-// 	if(g_msg_queue_w == NULL){
-// 		zlog_info(zlog_handler,"No msg_queue created \n");
-// 		return 0;
-// 	}
-// 	zlog_info(zlog_handler, "g_msg_queue_w->msgid = %d \n", g_msg_queue_w->msgid);
+	rx = malloc(sb.st_size);
+	if (!rx)
+		pabort("can't allocate rx buffer");
 
-// 	//state = clearMsgQueue(g_msg_queue_w);
+	bytes = read(tx_fd, tx, sb.st_size);
+	if (bytes != sb.st_size)
+		pabort("failed to read input file");
 
-// 	sleep(5);
+	transfer(fd, tx, rx, sb.st_size);
+	free(rx);
+	free(tx);
+	close(tx_fd);
+}
 
-// 	/* ThreadPool handler */
-// 	ThreadPool* g_threadpool = NULL;
-// 	createThreadPool(1024, 8, &g_threadpool); // 4096 , 8
+int main(int argc, char *argv[])
+{
+	int ret = 0;
+	int fd;
 
-// 	postMsgRecvWorkToThreadPool(g_msg_queue_r,g_threadpool);
+	parse_opts(argc, argv);
 
-// 	char* post_str = "I am ipc client";
-// 	while(1){
-// 		sleep(5);
-// 		struct msg_st data;
-// 		data.msg_type = 11;
-// 		data.msg_number = 111;
-// 		data.msg_len = strlen(post_str) + 1;
-// 		memcpy(data.msg_json, post_str, data.msg_len);
-// 		postMsgQueue(&data,g_msg_queue_w);
-// 		zlog_info(zlog_handler,"ipc client send ....\n");
-// 	}
+	fd = open(device, O_RDWR);
+	if (fd < 0)
+		pabort("can't open device");
 
+	/*
+	 * spi mode
+	 */
+	ret = ioctl(fd, SPI_IOC_WR_MODE32, &mode);
+	if (ret == -1)
+		pabort("can't set spi mode");
 
-// }
+	ret = ioctl(fd, SPI_IOC_RD_MODE32, &mode);
+	if (ret == -1)
+		pabort("can't get spi mode");
+
+	/*
+	 * bits per word
+	 */
+	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+	if (ret == -1)
+		pabort("can't set bits per word");
+
+	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
+	if (ret == -1)
+		pabort("can't get bits per word");
+
+	/*
+	 * max speed hz
+	 */
+	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+	if (ret == -1)
+		pabort("can't set max speed hz");
+
+	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
+	if (ret == -1)
+		pabort("can't get max speed hz");
+
+	printf("spi mode: 0x%x\n", mode);
+	printf("bits per word: %d\n", bits);
+	printf("max speed: %d Hz (%d KHz)\n", speed, speed/1000);
+
+	if (input_tx && input_file)
+		pabort("only one of -p and --input may be selected");
+
+	if (input_tx)
+		transfer_escaped_string(fd, input_tx);
+	else if (input_file)
+		transfer_file(fd, input_file);
+	//else
+		//transfer(fd, default_tx, default_rx, sizeof(default_tx));
+
+	transfer(fd, default_tx, default_rx, sizeof(default_tx));
+
+	close(fd);
+
+	return ret;
+}
+
