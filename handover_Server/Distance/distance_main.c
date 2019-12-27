@@ -414,7 +414,6 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 			memcpy((char*)(&other_inital), air_msg->Next_dest_mac_addr, sizeof(uint32_t));
 			g_system_info->other_initial = other_inital;
 			g_system_info->have_other_initial = 1;
-			printf("other_inital = %d \n", g_system_info->other_initial);
 			free(air_msg);
 
 			uint32_t delay =(g_system_info->my_initial + g_system_info->other_initial)/2+32;
@@ -598,8 +597,8 @@ int main(int argc, char *argv[]){
 	}
 
 	/* msg_queue */
-	const char* pro_path = "/tmp/handover_test/";
-	int proj_id = 'c';
+	const char* pro_path = "/tmp/gw_app/distance/";
+	int proj_id = 0x3;
 	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
@@ -625,7 +624,7 @@ int main(int argc, char *argv[]){
 
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
-	createThreadPool(4096, 8, &g_threadpool); // 4096 , 8
+	createThreadPool(4096, 8, &g_threadpool, zlog_handler); // 4096 , 8
 
 	gw_sleep();
 
