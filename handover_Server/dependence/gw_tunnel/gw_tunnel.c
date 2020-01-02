@@ -99,7 +99,7 @@ int tnl_add_ioctl(int cmd, const char *basedev, const char *name, void *p)
 	return err;
 }
 
-static int parse_args(char* daddr, char* saddr, char* dual_daddr, int cmd, struct ip_tunnel_parm *p) // dual_daddr == NULL -- single;  dual_daddr!=NULL -- dual 
+static int parse_args(char* daddr, char* saddr, char* dual_daddr, char* tun_name, int cmd, struct ip_tunnel_parm *p) // dual_daddr == NULL -- single;  dual_daddr!=NULL -- dual 
 {
 	char medium[IFNAMSIZ] = {};
 	memset(p, 0, sizeof(*p));
@@ -130,9 +130,11 @@ static int parse_args(char* daddr, char* saddr, char* dual_daddr, int cmd, struc
 	printf("get_addr32(daddr) = %u \n", p->iph.daddr);
 
 	//strncpy(medium, *argv, IFNAMSIZ - 1); // (strcmp(*argv, "dev") == 0)
-	strncpy(medium, "iptun", IFNAMSIZ - 1); // ethn 0415
+	//strncpy(medium, "iptun", IFNAMSIZ - 1); // ethn 0415
+	strncpy(medium, tun_name, IFNAMSIZ - 1); // ethn 0415
 	//strncpy(p->name, *argv, IFNAMSIZ - 1);
-	strncpy(p->name, "iptun", IFNAMSIZ - 1); // ethn 0415
+	//strncpy(p->name, "iptun", IFNAMSIZ - 1); // ethn 0415
+	strncpy(p->name, tun_name, IFNAMSIZ - 1); // ethn 0415
 /*
 	if (medium[0]) {
 		p->link = 3;//ll_name_to_index(medium); // ????
@@ -158,12 +160,12 @@ static int parse_args(char* daddr, char* saddr, char* dual_daddr, int cmd, struc
 	return 0;
 }
 
-int do_add(int cmd, char* daddr, char* saddr,char* dual_daddr) // SIOCADDTUNNEL or SIOCCHGTUNNEL
+int do_add(int cmd, char* daddr, char* saddr,char* dual_daddr, char* tun_name) // SIOCADDTUNNEL or SIOCCHGTUNNEL
 {
 	struct ip_tunnel_parm p;
 	const char *basedev;
 
-	if (parse_args(daddr, saddr, dual_daddr, cmd, &p) < 0)
+	if (parse_args(daddr, saddr, dual_daddr, tun_name, cmd, &p) < 0)
 		return -1;
 
 	if (p.iph.ttl && p.iph.frag_off == 0) {
@@ -181,8 +183,8 @@ int do_add(int cmd, char* daddr, char* saddr,char* dual_daddr) // SIOCADDTUNNEL 
 	return tnl_add_ioctl(cmd, basedev, p.name, &p);
 }
 
-int change_tunnel(char* daddr, char* saddr,char* dual_daddr){
-	int status = do_add(SIOCCHGTUNNEL,daddr,saddr,dual_daddr);
+int change_tunnel(char* daddr, char* saddr,char* dual_daddr,char* tun_name){
+	int status = do_add(SIOCCHGTUNNEL,daddr,saddr,dual_daddr,tun_name);
 	return status;
 }
 

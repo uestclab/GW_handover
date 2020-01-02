@@ -150,7 +150,7 @@ char* Manager::getLocalIp(){
 int Manager::changeTunnel(BaseStation* bs){
 	char* remote = bs->getBsIP();
 	char* local = getLocalIp();
-	change_tunnel(remote,local,NULL);
+	//change_tunnel(remote,local,NULL);
 	delete remote;
 	free(local);
 }
