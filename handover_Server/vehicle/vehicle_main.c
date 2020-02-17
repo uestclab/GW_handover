@@ -74,6 +74,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	Node->system_info->other_initial = 0;
 	Node->system_info->have_my_initial = 0;
 	Node->system_info->have_other_initial = 0;
+	Node->system_info->new_distance_test_id = 0;
 	Node->distance_measure_cnt_ms = 0;
 	Node->distance_threshold = 0;
 
@@ -201,7 +202,7 @@ int main(int argc, char *argv[]) // main thread
 
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
-	createThreadPool(1024, 4, &g_threadpool); // 4096 , 8 
+	createThreadPool(64, 4, &g_threadpool, zlog_handler); // 4096 , 8 
 
 // ------------------------
 

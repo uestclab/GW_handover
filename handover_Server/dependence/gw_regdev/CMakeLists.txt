@@ -10,7 +10,7 @@ if(${PUBLIC} STREQUAL "ON")
 	# cross complie
 	SET(CMAKE_SYSTEM_NAME Linux)
 	SET(CMAKE_SYSTEM_PROCESSOR arm) 
-	SET(TOOLCHAIN_DIR "/home/gyl/petalinux/tools/linux-i386/gcc-arm-linux-gnueabi")
+	SET(TOOLCHAIN_DIR "/home/dpdk/liqing/petalinux/gcc-arm-linux-gnueabi")
 	SET(CMAKE_FIND_ROOT_PATH ${TOOLCHAIN_DIR})
 	SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
@@ -21,8 +21,8 @@ if(${PUBLIC} STREQUAL "ON")
 	# cross complie
 	link_directories("${PROJECT_SOURCE_DIR}/../lib_arm")
 	# zlog
-	link_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/lib/")
-	include_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/include/")
+	link_directories("/home/dpdk/liqing/common/lib/")
+	include_directories("/home/dpdk/liqing/common/include/")
 
 elseif(${PUBLIC} STREQUAL "OFF") # stub test on pc
     message(STATUS "start to build PC platform.")

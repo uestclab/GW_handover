@@ -12,7 +12,7 @@ extern "C" {
 #include <stdint.h>
 #include <pthread.h>
 #include <sys/time.h>
-#include "zlog.h"
+//#include "zlog.h"
 
 
 typedef struct para_thread{
@@ -31,7 +31,7 @@ char *get_prog_name(char *argv);
 int64_t now();
 
 void hexdump(const void* p, size_t size);
-void hexdump_zlog(const void* p, size_t size, zlog_category_t *zlog_handler);
+//void hexdump_zlog(const void* p, size_t size, zlog_category_t *zlog_handler);
 int get_mac(char * mac, int len_limit, char *arg);
 int get_ip(char* ip, char* arg);
 
@@ -87,6 +87,11 @@ unsigned char crc_high_first_by_init_crc(unsigned char *ptr, unsigned char len, 
 
 unsigned char cal_crc_table_by_init_crc(unsigned char *ptr, unsigned char len, unsigned char init_crc);
 
+/* -------------------------------- aligned memory allocate ------------------------------------------- */
+
+void* aligned32_malloc(size_t size);
+
+void aligned32_free(void* ptr);
 
 #ifdef __cplusplus
 }

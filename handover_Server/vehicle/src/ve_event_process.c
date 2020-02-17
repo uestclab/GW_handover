@@ -143,13 +143,15 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 				memcpy((char*)(&other_inital), msgJsonNextDstMac(getData->msg_json), sizeof(uint32_t));
 				g_system_info->other_initial = other_inital;
 				g_system_info->have_other_initial = 1;
+				zlog_error(zlog_handler, " ve get other initial value \n");
 			}
 			// when to start to send DISTANC_MEASURE_REQUEST in vehicle proc? -- 20191024
+			g_system_info->new_distance_test_id = g_system_info->new_distance_test_id + 1;
 			char my_inital[6];
 			memset(my_inital,0x0,6);
 			memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
 			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->ve_mac, g_system_info->link_bs_mac, my_inital, g_air);
-			postCheckWorkToThreadPool(DISTANC_MEASURE_REQUEST, g_air->g_msg_queue, g_air, g_threadpool);
+			postCheckWorkToThreadPool(DISTANC_MEASURE_REQUEST, g_system_info->new_distance_test_id ,g_air->g_msg_queue, g_air, g_threadpool);
 			uint32_t delay =(g_system_info->my_initial + g_system_info->other_initial)/2+32;
 			set_delay_tick(g_RegDev,delay);
 			
@@ -220,7 +222,7 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			zlog_info(zlog_handler,"  SYSTEM STATE CHANGE : ve state STATE_WORKING -> STATE_HANDOVER");
 			break;
 		}
-		case MSG_RECEIVED_DISTANC_MEASURE_REQUEST:
+		case MSG_RECEIVED_DISTANC_MEASURE_REQUEST: // cause : discontinue msg_number 
 		{
 			//zlog_info(zlog_handler," -------- EVENT : MSG_RECEIVED_DISTANC_MEASURE_REQUEST: msg_number = %d ", getData->msg_number);
 
@@ -238,10 +240,18 @@ void process_self_event(struct msg_st* getData, g_air_para* g_air, g_periodic_pa
 	switch(getData->msg_type){
 		case MSG_CHECK_RECEIVED_LIST:
 		{
-			int32_t subtype = -1;
-			memcpy((char*)(&subtype), getData->msg_json, getData->msg_len);
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_CHECK_RECEIVED_LIST: msg_number = %d",getData->msg_number);
+			//int32_t subtype = -1;
+			//memcpy((char*)(&subtype), getData->msg_json, getData->msg_len);
+			retrans_air_t tmp;
+			memcpy((char*)(&tmp),getData->msg_json,getData->msg_len);
 			// check receive list according to subtype
-			checkReceivedList(subtype, g_system_info, g_air->g_msg_queue, g_air, g_threadpool);
+			if(g_system_info->new_distance_test_id != tmp.id){
+				zlog_info(zlog_handler," cancel one distance test : new_id = %d , my_id = %d \n",
+							g_system_info->new_distance_test_id, tmp.id);
+				break;
+			}
+			checkReceivedList(tmp.subtype, tmp.id, g_system_info, g_air->g_msg_queue, g_air, g_threadpool);
 			break;
 		}
 		default:

@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) // main thread
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
 	printf("Thread pool parameter : task_queue_size = %d , threads_num = %d \n", Node->task_queue_size, Node->threads_num);
-	createThreadPool(Node->task_queue_size, Node->threads_num, &g_threadpool); // 4096 , 8
+	createThreadPool(Node->task_queue_size, Node->threads_num, &g_threadpool,zlog_handler); // 4096 , 8
 
 	gw_sleep();
 

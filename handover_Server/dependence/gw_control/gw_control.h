@@ -20,9 +20,9 @@
 #define SYSFS_GPIO_RST_VAL_H        "1"
 #define SYSFS_GPIO_RST_VAL_L        "0"
 
-typedef int (*recv_cb)(char* buf, int buf_len, char *from, void* arg);
+typedef int (*gw_recv_cb)(char* buf, int buf_len, char *from, void* arg);
 
-int initBroker(char *argv, recv_cb exception_cb);
+int initBroker(char *argv, gw_recv_cb exception_cb);
 
 typedef struct g_RegDev_para{
 	//void*  			   mem_dev_phy;
@@ -75,6 +75,26 @@ uint32_t get_rx_mcs(g_RegDev_para* g_RegDev);
 uint32_t get_delay_tick(g_RegDev_para* g_RegDev);
 int set_delay_tick(g_RegDev_para* g_RegDev, uint32_t delay);
 
-
+/* ----------------------------- webapp use ----------------------------------------------------------*/
+// getPowerLatch -- 0x124
+uint32_t get_fpga_version(g_RegDev_para* g_RegDev);
+uint32_t get_sync_failed_stastic(g_RegDev_para* g_RegDev);
+uint32_t get_freq_offset(g_RegDev_para* g_RegDev);
+uint32_t get_pac_txc_misc(g_RegDev_para* g_RegDev);
+uint32_t get_pac_txc_re_trans_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_pac_txc_expect_seq_id(g_RegDev_para* g_RegDev);
+uint32_t get_rxc_miscs(g_RegDev_para* g_RegDev);
+uint32_t get_rx_sync(g_RegDev_para* g_RegDev);
+uint32_t get_ctrl_frame_crc_correct_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_ctrl_frame_crc_error_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_manage_frame_crc_correct_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_manage_frame_crc_error_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_bb_send_cnt(g_RegDev_para* g_RegDev);
+uint32_t get_rx_vector(g_RegDev_para* g_RegDev);
+uint32_t get_pac_soft_rst(g_RegDev_para* g_RegDev);
+uint32_t get_sw_fifo_data_cnt(g_RegDev_para* g_RegDev);
+// snr -- 0x140
+uint32_t get_delay_RW(g_RegDev_para* g_RegDev);
+// get_delay_tick -- 0x864
 
 #endif//GW_CONTROL_H

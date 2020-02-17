@@ -20,6 +20,8 @@ struct msg_st
 {  
     long int msg_type;
 	int      msg_number;
+	void*    tmp_data;
+	int      tmp_data_len;
 	int      msg_len;  
     char     msg_json[MAX_TEXT];  
 };

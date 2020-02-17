@@ -10,7 +10,7 @@ if(${PUBLIC} STREQUAL "ON")
 	# cross complie
 	SET(CMAKE_SYSTEM_NAME Linux)
 	SET(CMAKE_SYSTEM_PROCESSOR arm) 
-	SET(TOOLCHAIN_DIR "/home/gyl/petalinux/tools/linux-i386/gcc-arm-linux-gnueabi")
+	SET(TOOLCHAIN_DIR "/home/dpdk/liqing/petalinux/gcc-arm-linux-gnueabi")
 	SET(CMAKE_FIND_ROOT_PATH ${TOOLCHAIN_DIR})
 	SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
@@ -20,8 +20,8 @@ if(${PUBLIC} STREQUAL "ON")
 	SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-gnueabihf-g++)
 	# cross complie
 	# zlog
-	link_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/lib/")
-	include_directories("/home/gyl/liqingSpace/code/GW_arm_server/temp/include/")
+	link_directories("/home/dpdk/liqing/common/lib/")
+	include_directories("/home/dpdk/liqing/common/include/")
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
 endif(${PUBLIC} STREQUAL "ON")
@@ -39,7 +39,7 @@ SET(ROOT_PATH ".")
 SET(ALL_LIBRARY_SRCS gw_utility.c)
 
 add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
-target_link_libraries(${LIB_NAME} -lzlog)
+#target_link_libraries(${LIB_NAME} -lzlog)
 
 
 if(${PUBLIC} STREQUAL "ON")

@@ -143,39 +143,39 @@ void hexdump(const void* p, size_t size) {
 	}
 }
 
-void hexdump_zlog(const void* p, size_t size, zlog_category_t *zlog_handler) {
-	const uint8_t *c = p;
-	assert(p);
+// void hexdump_zlog(const void* p, size_t size, zlog_category_t *zlog_handler) {
+// 	const uint8_t *c = p;
+// 	assert(p);
 
-	zlog_info(zlog_handler,"Dumping %u bytes from %p:\n", (unsigned int)size, p);
+// 	zlog_info(zlog_handler,"Dumping %u bytes from %p:\n", (unsigned int)size, p);
 
-	while (size > 0) {
-		unsigned i;
+// 	while (size > 0) {
+// 		unsigned i;
 
-		for (i = 0; i < 16; i++) {
-			if (i < size)
-				zlog_info(zlog_handler,"%02x ", c[i]);
-			else
-				zlog_info(zlog_handler,"  ");
-		}
+// 		for (i = 0; i < 16; i++) {
+// 			if (i < size)
+// 				zlog_info(zlog_handler,"%02x ", c[i]);
+// 			else
+// 				zlog_info(zlog_handler,"  ");
+// 		}
 
-		for (i = 0; i < 16; i++) {
-			if (i < size)
-				zlog_info(zlog_handler,"%c", c[i] >= 32 && c[i] < 127 ? c[i] : '.');
-			else
-				zlog_info(zlog_handler," ");
-		}
+// 		for (i = 0; i < 16; i++) {
+// 			if (i < size)
+// 				zlog_info(zlog_handler,"%c", c[i] >= 32 && c[i] < 127 ? c[i] : '.');
+// 			else
+// 				zlog_info(zlog_handler," ");
+// 		}
 
-		zlog_info(zlog_handler,"\n");
+// 		zlog_info(zlog_handler,"\n");
 
-		c += 16;
+// 		c += 16;
 
-		if (size <= 16)
-		break;
+// 		if (size <= 16)
+// 		break;
 
-		size -= 16;
-	}
-}  
+// 		size -= 16;
+// 	}
+// }  
 
 
 int get_mac(char * mac, int len_limit, char *arg)
@@ -512,7 +512,18 @@ unsigned char cal_crc_table_by_init_crc(unsigned char *ptr, unsigned char len, u
 }
 
 
+/* -------------------------------- aligned memory allocate ------------------------------------------- */
+void* aligned32_malloc(size_t size){
+	void *original = malloc(size + 32);
+	unsigned int aligned_address = ( (unsigned int)original & ~((unsigned int)31) ) + 32;
+	void *aligned = (void*)aligned_address;
+	*((void**)aligned - 1) = original;
+	return aligned;
+}
 
+void aligned32_free(void* ptr){
+	free(*((void**)ptr - 1));
+}
 
 
 

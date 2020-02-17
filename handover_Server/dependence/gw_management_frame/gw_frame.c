@@ -207,7 +207,7 @@ int gw_monitor_poll(management_frame_Info* frame_Info, int time_cnt, zlog_catego
 				ret = -3;
 			}
 		}else{
-				ret = -4;
+			ret = -4;
 		}
 	}
 	if(loop == time_cnt)
