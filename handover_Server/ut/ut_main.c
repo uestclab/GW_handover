@@ -24,6 +24,5 @@ int main() {
 	FILE* pFile = fopen("123.txt", "a");
 	write_log(pFile, "%s %d %f\n", "is running", 10, 55.55);
 	fclose(pFile);
-
 	return 0;
 }
