@@ -108,6 +108,13 @@ rm -rf *
 cd ../lib_arm
 find -L ./ -maxdepth 1 ! -name "libbroker.so" ! -name "libmosquitto.so" ! -name "libcst.so" ! -wholename "./" -exec rm -rf {} \;
 
+# gwapplib
+cd ..
+if [ -d $f ]
+then 
+    rm -rf $f
+fi
+
 
 
 

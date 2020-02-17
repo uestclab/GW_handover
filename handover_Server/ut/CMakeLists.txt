@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-option(PUBLIC "This is a default option for PUBLIC" OFF)
+option(PUBLIC "This is a default option for PUBLIC" ON)
 message(STATUS "build public platform switch:"${PUBLIC})
 project(ut_main)
 
@@ -58,7 +58,7 @@ target_link_libraries(${PROJECT_NAME} -pthread)
 target_link_libraries(${PROJECT_NAME} -lm)
 target_link_libraries(${PROJECT_NAME} -ldl)
 if(${PUBLIC} STREQUAL "ON") # arm
-	target_link_libraries(${PROJECT_NAME} gw_tunnel)
+	#target_link_libraries(${PROJECT_NAME} gw_tunnel)
 
 endif(${PUBLIC} STREQUAL "ON")
 

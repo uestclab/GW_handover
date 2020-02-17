@@ -20,9 +20,9 @@
 #define SYSFS_GPIO_RST_VAL_H        "1"
 #define SYSFS_GPIO_RST_VAL_L        "0"
 
-typedef int (*recv_cb)(char* buf, int buf_len, char *from, void* arg);
+typedef int (*gw_recv_cb)(char* buf, int buf_len, char *from, void* arg);
 
-int initBroker(char *argv, recv_cb exception_cb);
+int initBroker(char *argv, gw_recv_cb exception_cb);
 
 typedef struct g_RegDev_para{
 	//void*  			   mem_dev_phy;

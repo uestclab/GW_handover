@@ -13,7 +13,7 @@
 #include <sys/types.h>
 
 
-int initBroker(char *argv, recv_cb exception_cb){
+int initBroker(char *argv, gw_recv_cb exception_cb){
 
 	int ret = init_broker(get_prog_name(argv), NULL, -1, NULL, NULL);
 	printf("get_prog_name(argv) = %s , ret = %d \n",get_prog_name(argv),ret);
