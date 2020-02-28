@@ -38,7 +38,7 @@ SET(LIB_NAME gw_msgQueue)
 SET(CMAKE_VERBOSE_MAKEFILE ON)    
 SET(ROOT_PATH ".")  
 
-SET(ALL_LIBRARY_SRCS msg_queue.c)
+SET(ALL_LIBRARY_SRCS msg_queue.c priorityQueue.c)
 
 add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
 
@@ -56,6 +56,6 @@ elseif(${PUBLIC} STREQUAL "OFF")
 	install(TARGETS ${LIB_NAME} LIBRARY DESTINATION lib/)
 endif(${PUBLIC} STREQUAL "ON")
 
-install(FILES ${PROJECT_SOURCE_DIR}/msg_queue.h DESTINATION include/)
+install(FILES ${PROJECT_SOURCE_DIR}/msg_queue.h ${PROJECT_SOURCE_DIR}/priorityQueue.h DESTINATION include/)
 
 

@@ -49,6 +49,7 @@ make
 cp ../gw_control/gw_control.h ../include
 cp ../gw_management_frame/gw_frame.h ../include
 cp ../gw_msg_queue/msg_queue.h ../include
+cp ../gw_msg_queue/priorityQueue.h ../include
 cp ../gw_regdev/regdev_common.h ../include
 cp ../gw_threadpool/SimpleQueue.h ../include
 cp ../gw_threadpool/ThreadPool.h ../include
