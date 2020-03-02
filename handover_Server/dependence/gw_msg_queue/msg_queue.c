@@ -27,6 +27,22 @@ int clearMsgQueue(g_msg_queue_para* g_msg_queue){// bug?
 	// 	msg_qnum = msg_show_attr(g_msg_queue);
 	// 	zlog_info(g_msg_queue->log_handler," msg_qnum = %d ", msg_qnum);
 	// }
+
+	/* debug info in monitor_conf_thread */
+
+	return 0;
+}
+
+int debugMsgQueue(g_msg_queue_para* g_msg_queue){
+	print_array(g_msg_queue->queue,2);
+	return 0;
+}
+
+int debugMsgDeQueue(g_msg_queue_para* g_msg_queue){
+	print_array(g_msg_queue->queue,2);
+	zlog_info(g_msg_queue->log_handler," try run dePriorityQueue for debug \n");
+	struct msg_st* out_data = dePriorityQueue(g_msg_queue->queue);
+
 	return 0;
 }
 
@@ -36,7 +52,7 @@ g_msg_queue_para* createMsgQueue(const char *pathname, int proj_id, zlog_categor
 	g_msg_queue->log_handler = handler;
 	g_msg_queue->msgid = -1;
 	g_msg_queue->seq_id = 1;
-	g_msg_queue->queue = init_queue(QUEUE_SIZE);
+	g_msg_queue->queue = init_queue(QUEUE_SIZE,handler);
 	if(g_msg_queue->queue == NULL){
 		free(g_msg_queue);
 		return NULL;
@@ -62,6 +78,8 @@ void postMsgQueue(struct msg_st* data, int level, g_msg_queue_para* g_msg_queue)
 	pthread_mutex_lock(g_msg_queue->para_t->mutex_);
 	if(level == 1){
 		data->msg_number = 0;
+	}else if(-1 == level){
+		data->msg_number = -1;
 	}else{
 		data->msg_number = g_msg_queue->seq_id;
 		g_msg_queue->seq_id = g_msg_queue->seq_id + 1;
