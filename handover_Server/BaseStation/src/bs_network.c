@@ -12,6 +12,7 @@
 
 #include "bs_network.h"
 #include "bs_network_json.h"
+#include "bs_utility.h"
 
 #include "cJSON.h"
 
@@ -206,25 +207,13 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         case INIT_LOCATION:
         {
 			printcjson(message->buf,g_network);
-
-			struct msg_st data;
-			data.msg_type = MSG_START_MONITOR;
-			data.msg_number = MSG_START_MONITOR;
-			data.msg_len = 0;
-			postMsgQueue(&data,g_network->g_msg_queue);
-
+			postMsgWrapper(MSG_START_MONITOR, NULL, 0, g_network->g_msg_queue);
             break;
         }
         case INIT_LINK:
         {
 			printcjson(message->buf,g_network);
-			
-			struct msg_st data;
-			data.msg_type = MSG_INIT_SELECTED;
-			data.msg_number = MSG_INIT_SELECTED;
-			data.msg_len = 0;
-			postMsgQueue(&data,g_network->g_msg_queue);
-
+			postMsgWrapper(MSG_INIT_SELECTED, NULL, 0, g_network->g_msg_queue);
             break;
         }
         case START_HANDOVER:
@@ -235,16 +224,9 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			//char target_mac_buf[6];
 			//change_mac_buf(item->valuestring,target_mac_buf);
 
-			
-
-			struct msg_st data;
-			data.msg_type = MSG_START_HANDOVER;
-			data.msg_number = MSG_START_HANDOVER;
-			data.msg_len = strlen(message->buf) + 1;
-			memcpy(data.msg_json,message->buf,data.msg_len);
 			//memcpy(data.msg_json,target_mac_buf,6); // Note : !! 
-			
-			postMsgQueue(&data,g_network->g_msg_queue);
+			int msg_len = strlen(message->buf) + 1;
+			postMsgWrapper(MSG_START_HANDOVER, message->buf, msg_len, g_network->g_msg_queue);
 
             break;
         }
@@ -256,11 +238,7 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 		case SERVER_RECALL_MONITOR: // server control with source bs distance monitor msg -- 20191023
 		{
 			printcjson(message->buf,g_network);
-			struct msg_st data;
-			data.msg_type = MSG_SERVER_RECALL_MONITOR;
-			data.msg_number = MSG_SERVER_RECALL_MONITOR;
-			data.msg_len = 0;
-			postMsgQueue(&data,g_network->g_msg_queue);
+			postMsgWrapper(MSG_SERVER_RECALL_MONITOR, NULL, 0, g_network->g_msg_queue);
 			break;
 		}
         default:

@@ -1,13 +1,21 @@
 #include "ve_utility.h"
 
+void postMsgWrapper(long int msg_type, char *buf, int buf_len, g_msg_queue_para* g_msg_queue){
+	struct msg_st* data = (struct msg_st*)malloc(sizeof(struct msg_st));
+	data->msg_type = msg_type;
+	data->msg_number = msg_type;
+
+	data->msg_len = buf_len;
+	if(buf != NULL && buf_len != 0)
+		memcpy(data->msg_json,buf,buf_len);
+	
+	int level = 0;
+	postMsgQueue(data,level,g_msg_queue);
+}
 
 void postCheckSendSignal(retrans_air_t* tmp, g_msg_queue_para* g_msg_queue){
-	struct msg_st data;
-	data.msg_type = MSG_CHECK_RECEIVED_LIST;
-	data.msg_number = MSG_CHECK_RECEIVED_LIST;
-	data.msg_len = sizeof(retrans_air_t);
-	memcpy(data.msg_json, (char*)tmp, data.msg_len);
-	postMsgQueue(&data,g_msg_queue);
+	int msg_len = sizeof(retrans_air_t);
+	postMsgWrapper(MSG_CHECK_RECEIVED_LIST, (char*)tmp, msg_len, g_msg_queue);
 }
 
 void* retrans_air_process_thread(void* arg){

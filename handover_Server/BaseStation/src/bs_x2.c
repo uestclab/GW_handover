@@ -12,6 +12,7 @@
 
 #include "bs_x2.h"
 #include "bs_network_json.h"
+#include "bs_utility.h"
 
 #include "cJSON.h"
 
@@ -29,21 +30,15 @@ void processX2Signal(char* buf, int32_t length, struct sockaddr_in remote_addr, 
     item = cJSON_GetObjectItem(root, "x2signal");
 	if(strcmp(item->valuestring,"dac_closed") == 0){
 		printcx2json(buf,g_x2);
-		struct msg_st data;
-		data.msg_type = MSG_SOURCE_BS_DAC_CLOSED;
-		data.msg_number = MSG_SOURCE_BS_DAC_CLOSED;
-		data.msg_len = 0;
-		postMsgQueue(&data,g_x2->g_msg_queue);
+
+		postMsgWrapper(MSG_SOURCE_BS_DAC_CLOSED, NULL, 0, g_x2->g_msg_queue);
+
 		item = cJSON_GetObjectItem(root,"own_ip");
 		memcpy(g_x2->remote_ip, item->valuestring, strlen(item->valuestring)+1);
 		send_dac_closed_x2_ack_signal(g_x2->node->my_id, g_x2);
 	}else if(strcmp(item->valuestring,"dac_closed_ack") == 0){
 		printcx2json(buf,g_x2);
-		struct msg_st data;
-		data.msg_type = MSG_RECEIVED_DAC_CLOSED_ACK;
-		data.msg_number = MSG_RECEIVED_DAC_CLOSED_ACK;
-		data.msg_len = 0;
-		postMsgQueue(&data,g_x2->g_msg_queue);
+		postMsgWrapper(MSG_RECEIVED_DAC_CLOSED_ACK, NULL, 0, g_x2->g_msg_queue);
 	}
 	
 	cJSON_Delete(root);

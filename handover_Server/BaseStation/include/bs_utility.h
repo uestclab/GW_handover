@@ -35,6 +35,8 @@ typedef struct g_test_para{
 	g_msg_queue_para* 	g_msg_queue;
 }g_test_para;
 
+void postMsgWrapper(long int msg_type, char *buf, int buf_len, g_msg_queue_para* g_msg_queue);
+
 void timer_cb(void* in_data, g_msg_queue_para* g_msg_queue);
 
 int is_my_air_frame(char* src, char* dest);

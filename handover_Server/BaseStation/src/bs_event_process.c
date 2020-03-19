@@ -84,12 +84,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			}
 
 			// start handover progress .....
-			struct msg_st data;
-			data.msg_type = MSG_CONFIRM_START_HANDOVER;
-			data.msg_number = MSG_CONFIRM_START_HANDOVER;
-			data.msg_len = 0;
-			postMsgQueue(&data,g_network->g_msg_queue);
-
+			postMsgWrapper(MSG_CONFIRM_START_HANDOVER, NULL, 0, g_network->g_msg_queue);
 			break;
 		}
 		case MSG_SERVER_RECALL_MONITOR:
@@ -97,7 +92,6 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			zlog_info(zlog_handler," ---------------- EVENT : MSG_SERVER_RECALL_MONITOR: msg_number = %d",getData->msg_number);
 			if(g_system_info->monitored == 0 && g_system_info->bs_state == STATE_WAIT_MONITOR){
 				g_system_info->monitored = 1;
-				//startMonitor(g_monitor,3);
 				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 3);
 			}else{
 				zlog_info(zlog_handler," already in monitor or STATE_WORKING %d , %d ",g_system_info->monitored, g_system_info->bs_state);
@@ -116,11 +110,7 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			}
 
 			// for target bs
-			struct msg_st data;
-			data.msg_type = MSG_TARGET_BS_START_WORKING;
-			data.msg_number = MSG_TARGET_BS_START_WORKING;
-			data.msg_len = 0;
-			postMsgQueue(&data,g_x2->g_msg_queue);
+			postMsgWrapper(MSG_TARGET_BS_START_WORKING, NULL, 0, g_x2->g_msg_queue);
 			break;
 		}
 		case MSG_RECEIVED_DAC_CLOSED_ACK:
@@ -175,7 +165,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 			}
 			
 			if(g_network->node->my_id == 11){
-				//startMonitor(g_monitor,1); // ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
+				// ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
 				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 1);			
 			}	
 			break;
@@ -304,11 +294,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				}
 
 				// for target bs
-				struct msg_st data;
-				data.msg_type = MSG_TARGET_BS_START_WORKING;
-				data.msg_number = MSG_TARGET_BS_START_WORKING;
-				data.msg_len = 0;
-				postMsgQueue(&data,g_x2->g_msg_queue);
+				postMsgWrapper(MSG_TARGET_BS_START_WORKING, NULL, 0, g_x2->g_msg_queue);
 
 				
 			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
@@ -432,11 +418,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air
 			}
 
 			// start handover progress .....
-			struct msg_st data;
-			data.msg_type = MSG_CONFIRM_START_HANDOVER;
-			data.msg_number = MSG_CONFIRM_START_HANDOVER;
-			data.msg_len = 0;
-			postMsgQueue(&data,g_network->g_msg_queue);
+			postMsgWrapper(MSG_CONFIRM_START_HANDOVER, NULL, 0, g_network->g_msg_queue);
 
 			break;
 		}

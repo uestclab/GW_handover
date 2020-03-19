@@ -1,49 +1,47 @@
 #include <pthread.h>
 #include "ve_air.h"
 #include "gw_frame.h"
+#include "ve_utility.h"
 #include "cJSON.h"
 
 void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
-	struct msg_st data;
 	switch(Info->subtype){
 		case ASSOCIATION_REQUEST:
 		{
-			data.msg_type = MSG_RECEIVED_ASSOCIATION_REQUEST;
-			data.msg_number = MSG_RECEIVED_ASSOCIATION_REQUEST;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
-			postMsgQueue(&data,g_air->g_msg_queue);
+			char msg_json[64];
+			memcpy(msg_json,Info->source_mac_addr,6);
+			memcpy(msg_json+6,Info->dest_mac_addr,6);
+			memcpy(msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(msg_json+18,((char*)&Info->seq_id),2);
+			int buf_len = 24;
+			postMsgWrapper(MSG_RECEIVED_ASSOCIATION_REQUEST, msg_json, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case DEASSOCIATION:
 		{
-			data.msg_type = MSG_RECEIVED_DEASSOCIATION;
-			data.msg_number = MSG_RECEIVED_DEASSOCIATION;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
-			postMsgQueue(&data,g_air->g_msg_queue);
+			char msg_json[64];
+			memcpy(msg_json,Info->source_mac_addr,6);
+			memcpy(msg_json+6,Info->dest_mac_addr,6);
+			memcpy(msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(msg_json+18,((char*)&Info->seq_id),2);
+			int buf_len = 24;
+			postMsgWrapper(MSG_RECEIVED_DEASSOCIATION, msg_json, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case HANDOVER_START_REQUEST:
 		{
-			data.msg_type = MSG_RECEIVED_HANDOVER_START_REQUEST;
-			data.msg_number = MSG_RECEIVED_HANDOVER_START_REQUEST;
-			memcpy(data.msg_json,Info->source_mac_addr,6);
-			memcpy(data.msg_json+6,Info->dest_mac_addr,6);
-			memcpy(data.msg_json+12,Info->Next_dest_mac_addr,6);
-			memcpy(data.msg_json+18,((char*)&Info->seq_id),2);
-			postMsgQueue(&data,g_air->g_msg_queue);
+			char msg_json[64];
+			memcpy(msg_json,Info->source_mac_addr,6);
+			memcpy(msg_json+6,Info->dest_mac_addr,6);
+			memcpy(msg_json+12,Info->Next_dest_mac_addr,6);
+			memcpy(msg_json+18,((char*)&Info->seq_id),2);
+			int buf_len = 24;
+			postMsgWrapper(MSG_RECEIVED_HANDOVER_START_REQUEST, msg_json, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case DISTANC_MEASURE_REQUEST:
 		{
-			data.msg_type = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
-			data.msg_number = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, NULL, 0, g_air->g_msg_queue);
 			break;
 		}
 		default:

@@ -269,11 +269,6 @@ int main(int argc, char *argv[]) // main thread
 		return 0;
 	}
 
-
-	/* monitor thread */
-	//g_monitor_para* g_monitor = NULL;
-	//state = initMonitorThread(Node, &g_monitor, g_msg_queue, g_network, g_RegDev, zlog_handler);
-
 	/* x2 interface thread */
 	g_x2_para* g_x2 = NULL;
 	state = initX2Thread(Node, &g_x2, g_msg_queue, zlog_handler);

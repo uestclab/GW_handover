@@ -23,6 +23,8 @@ typedef struct retrans_air_t{
 	g_air_para*       g_air;
 }retrans_air_t;
 
+void postMsgWrapper(long int msg_type, char *buf, int buf_len, g_msg_queue_para* g_msg_queue);
+
 void checkReceivedList(int32_t subtype, int id, system_info_para* g_system_info, g_msg_queue_para* g_msg_queue, 
 					  g_air_para* g_air, ThreadPool* g_threadpool);
 

@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include "bs_air.h"
 #include "gw_frame.h"
+#include "bs_utility.h"
 #include "cJSON.h"
 
 struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
@@ -15,44 +16,32 @@ struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
 }
 
 void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // add parse seq_id ---- continue
-	struct msg_st data;
 	struct air_data* json_buf = bufTojson(Info,g_air);
-	data.msg_len = sizeof(struct air_data);
-	memcpy(data.msg_json, (char*)json_buf, data.msg_len);
+	int buf_len = sizeof(struct air_data);
 	switch(Info->subtype){
 		case BEACON:
 		{
-			data.msg_type = MSG_RECEIVED_BEACON;
-			data.msg_number = MSG_RECEIVED_BEACON;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_BEACON, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case ASSOCIATION_RESPONSE:
 		{
-			data.msg_type = MSG_RECEIVED_ASSOCIATION_RESPONSE;
-			data.msg_number = MSG_RECEIVED_ASSOCIATION_RESPONSE;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_ASSOCIATION_RESPONSE, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case HANDOVER_START_RESPONSE:
 		{
-			data.msg_type = MSG_RECEIVED_HANDOVER_START_RESPONSE;
-			data.msg_number = MSG_RECEIVED_HANDOVER_START_RESPONSE;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_HANDOVER_START_RESPONSE, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case REASSOCIATION:
 		{
-			data.msg_type = MSG_RECEIVED_REASSOCIATION;
-			data.msg_number = MSG_RECEIVED_REASSOCIATION;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_REASSOCIATION, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		case DISTANC_MEASURE_REQUEST:
 		{
-			data.msg_type = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
-			data.msg_number = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		default:
