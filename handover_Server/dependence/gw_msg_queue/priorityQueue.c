@@ -10,7 +10,7 @@ priorityQueue* init_queue(int size,zlog_category_t* log_handler){
         return NULL;
     }
     queue->log_handler = log_handler;
-    queue->data = (Queue_item*)malloc(sizeof(Queue_item)*size);
+    queue->data = (Queue_item**)malloc(sizeof(Queue_item*)*size);
     if(queue->data == NULL){
         return NULL;
     }
@@ -46,13 +46,12 @@ int queue_destory(priorityQueue* queue){
  */
 int resize(priorityQueue* queue){
     int new_size = queue->size * 2;
-    Queue_item* new_data = (Queue_item*)malloc(sizeof(Queue_item)*new_size);
+    Queue_item** new_data = (Queue_item**)malloc(sizeof(Queue_item*)*new_size);
     if(new_data == NULL){
         return -1;
     }
     for(int i=0;i<queue->len;i++){
-        new_data[i].data = queue->data[i].data;
-        new_data[i].level = queue->data[i].level;
+        new_data[i] = queue->data[i];
     }
 
     free(queue->data);
@@ -77,8 +76,8 @@ void print_array(priorityQueue* queue, int flag){
         zlog_info(queue->log_handler,"debug ????????? length = %d ", queue->len);
     }
     for(int i=queue->start;i<queue->len;i++){
-        if(queue->data[i].level == -1){
-            zlog_info(queue->log_handler, "item(level, data address): %d, 0x%x",queue->data[i].level,queue->data[i].data);
+        if(queue->data[i]->level == -1){
+            zlog_info(queue->log_handler, "item(level, data address): %d, 0x%x",queue->data[i]->level,queue->data[i]->data);
         }
     }
     zlog_info(queue->log_handler,"tail of queue \n");
@@ -93,23 +92,16 @@ void upAdjust(priorityQueue* queue){
     int childIndex = queue->len - 1;
     int parentIndex = (childIndex-1)/2;
 
-    //int temp = queue->data[childIndex];
-    Queue_item temp;
-    temp.data = queue->data[childIndex].data;
-    temp.level = queue->data[childIndex].level;
+    Queue_item* temp;
+    temp = queue->data[childIndex];
     
-
-    while(childIndex > 0 && temp.level < queue->data[parentIndex].level){
-        //queue->data[childIndex] = queue->data[parentIndex];
-        queue->data[childIndex].data = queue->data[parentIndex].data;
-        queue->data[childIndex].level = queue->data[parentIndex].level;
+    while(childIndex > 0 && temp->level < queue->data[parentIndex]->level){
+        queue->data[childIndex] = queue->data[parentIndex];
         childIndex = parentIndex;
         parentIndex = (childIndex-1)/2;
     }
 
-    //queue->data[childIndex] = temp;
-    queue->data[childIndex].data = temp.data;
-    queue->data[childIndex].level = temp.level;
+    queue->data[childIndex] = temp;
 }
 /**
  * downAdjust
@@ -121,34 +113,27 @@ void downAdjust(priorityQueue* queue, int parentIndex){
         return;
     }
 
-    //int temp = queue->data[parentIndex];
-    Queue_item temp;
-    temp.data = queue->data[parentIndex].data;
-    temp.level = queue->data[parentIndex].level;
-
+    Queue_item* temp;
+    temp = queue->data[parentIndex];
     int childIndex = 2*parentIndex+1;
 
     // printf("parentIndex = %d , childIndex = %d , temp = %d \n", parentIndex, childIndex, temp);
 
     while(childIndex < queue->len){
-        if(childIndex+1<queue->len && queue->data[childIndex+1].level<queue->data[childIndex].level){
+        if(childIndex+1<queue->len && queue->data[childIndex+1]->level<queue->data[childIndex]->level){
             childIndex = childIndex+1;
         }
 
-        if(temp.level<=queue->data[childIndex].level){
+        if(temp->level<=queue->data[childIndex]->level){
             break;
         }
 
-        //queue->data[parentIndex] = queue->data[childIndex];
-        queue->data[parentIndex].data = queue->data[childIndex].data;
-        queue->data[parentIndex].level = queue->data[childIndex].level;
+        queue->data[parentIndex] = queue->data[childIndex];
         parentIndex = childIndex;
         childIndex = 2*parentIndex +1;
     }
 
-    //queue->data[parentIndex] =temp;
-    queue->data[parentIndex].data = temp.data;
-    queue->data[parentIndex].level = temp.level;
+    queue->data[parentIndex] = temp;
 }
 
 /**
@@ -165,8 +150,11 @@ int enPriorityQueue(void* newData, int level, priorityQueue* queue){
             return -1;
         }
     }
-    queue->data[queue->len].level = level;
-    queue->data[queue->len].data = newData;
+
+    Queue_item* temp = (Queue_item*)malloc(sizeof(Queue_item));
+    temp->data = newData;
+    temp->level = level;
+    queue->data[queue->len] = temp;
     queue->len++;
 
     if(level == -1){
@@ -190,14 +178,8 @@ int enPriorityQueue(void* newData, int level, priorityQueue* queue){
  * @return  dequeue element : min element in queue
  */
 void* dePriorityQueue(priorityQueue* queue){
-    if(-1 == queue->data[0].level){
-        zlog_error(queue->log_handler, "dePriorityQueue run !\n");
-    }
     pthread_mutex_lock(&queue->mutex);
     while(queue->len == 0){
-        if(-1 == queue->data[0].level){
-            zlog_error(queue->log_handler, "dePriorityQueue wait pthread_cond_wait() !\n");
-        }
         pthread_cond_wait(&queue->wakeup,&queue->mutex);
     }
 
@@ -205,14 +187,13 @@ void* dePriorityQueue(priorityQueue* queue){
         return NULL;
     }
 
-    void* head = queue->data[0].data;
-    int head_level = queue->data[0].level;
-    // zlog_info(queue->log_handler,"de queue in dePriorityQueue!!!! item(level, data address): %d, 0x%x",queue->data[0].level,queue->data[0].data);
+    void* head = queue->data[0]->data;
+    int head_level = queue->data[0]->level;
+    free(queue->data[0]);
     /* move tail item to head */
-    //queue->data[0] = queue->data[queue->len-1];
-    queue->data[0].data = queue->data[queue->len-1].data;
-    queue->data[0].level = queue->data[queue->len-1].level;
+    queue->data[0] = queue->data[queue->len-1];
     queue->len = queue->len - 1;
+
     int level = head_level;
     if(level == -1){
         zlog_error(queue->log_handler, "start downAdjust() !\n");

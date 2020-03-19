@@ -46,40 +46,53 @@ void closeServerLog(){
 	zlog_fini();
 }
 
+void postMsgWrapper(long int msg_type, char *buf, int buf_len, g_msg_queue_para* g_msg_queue){
+	struct msg_st* data = (struct msg_st*)malloc(sizeof(struct msg_st));
+	data->msg_type = msg_type;
+	data->msg_number = msg_type;
+
+	data->msg_len = buf_len;
+	if(buf != NULL && buf_len != 0)
+		memcpy(data->msg_json,buf,buf_len);
+	
+	int level = 0;
+	postMsgQueue(data,level,g_msg_queue);
+}
+
 /*  ----------------------------------------------------------------------------------  */
 struct ConfigureNode* init_node(zlog_category_t* log_handler){
-	struct ConfigureNode* clientConfigure = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
+	struct ConfigureNode* Node_ = (struct ConfigureNode*)malloc(sizeof(struct ConfigureNode));
 
-	clientConfigure->my_id = 0;
-	clientConfigure->my_mac_str = (char*)malloc(32);
-	clientConfigure->my_Ethernet = (char*)malloc(32);
-	clientConfigure->measure_cnt_ms = 0;
+	Node_->my_id = 0;
+	Node_->my_mac_str = (char*)malloc(32);
+	Node_->my_Ethernet = (char*)malloc(32);
+	Node_->measure_cnt_ms = 0;
 
 //  init system global variable
-	clientConfigure->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
-	clientConfigure->system_info->have_ve_mac = 0;
-	memset(clientConfigure->system_info->ve_mac,0,6);
-	memset(clientConfigure->system_info->bs_mac,0,6);
-	memset(clientConfigure->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR
+	Node_->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
+	Node_->system_info->have_ve_mac = 0;
+	memset(Node_->system_info->ve_mac,0,6);
+	memset(Node_->system_info->bs_mac,0,6);
+	memset(Node_->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR
 
-	clientConfigure->system_info->send_id = 0;
-	clientConfigure->system_info->rcv_id = 0;
+	Node_->system_info->send_id = 0;
+	Node_->system_info->rcv_id = 0;
 
-	clientConfigure->system_info->my_initial    = 0;
-	clientConfigure->system_info->other_initial = 0;
-	clientConfigure->system_info->have_my_initial    = 0;
-	clientConfigure->system_info->have_other_initial = 0;
-	clientConfigure->system_info->system_state = 0;
+	Node_->system_info->my_initial    = 0;
+	Node_->system_info->other_initial = 0;
+	Node_->system_info->have_my_initial    = 0;
+	Node_->system_info->have_other_initial = 0;
+	Node_->system_info->system_state = 0;
 
-	clientConfigure->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
-	clientConfigure->system_info->received_air_state_list->received_delay_exchange_response = 0;
+	Node_->system_info->received_air_state_list = (struct received_state_list*)malloc(sizeof(struct received_state_list));
+	Node_->system_info->received_air_state_list->received_delay_exchange_response = 0;
 
 
 	const char* configure_path = "../conf/test_conf.json";
 	char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
 		zlog_error(log_handler,"open file %s error.\n",configure_path);
-		return clientConfigure;
+		return Node_;
 	}
 	cJSON * root = NULL;
     cJSON * item = NULL;
@@ -89,29 +102,19 @@ struct ConfigureNode* init_node(zlog_category_t* log_handler){
         zlog_error(log_handler,"Error before: [%s]",cJSON_GetErrorPtr());
     }else{
 		item = cJSON_GetObjectItem(root,"my_id");
-		clientConfigure->my_id = item->valueint;
+		Node_->my_id = item->valueint;
 		item = cJSON_GetObjectItem(root, "my_Ethernet");
-		memcpy(clientConfigure->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
+		memcpy(Node_->my_Ethernet,item->valuestring,strlen(item->valuestring)+1);
 		
 		item = cJSON_GetObjectItem(root, "measure_cnt_ms");
-		clientConfigure->measure_cnt_ms = item->valueint;
+		Node_->measure_cnt_ms = item->valueint;
 
 		cJSON_Delete(root);
     }
 
-	//get mac addr
-	// int	nRtn = get_mac(clientConfigure->my_mac_str, 32, clientConfigure->my_Ethernet);
-    // if(nRtn > 0) // nRtn = 12
-    // {	
-    //     printf("nRtn = %d , MAC ADDR : %s\n", nRtn,clientConfigure->my_mac_str);
-	// 	change_mac_buf(clientConfigure->my_mac_str,clientConfigure->system_info->bs_mac); // 0408 ---- bug
-    // }else{
-	// 	printf("get mac address failed!\n");
-	// }
+	zlog_info(log_handler," configure : measure_cnt_ms = %d  " , Node_->measure_cnt_ms);
 
-	zlog_info(log_handler," configure : measure_cnt_ms = %d  " , clientConfigure->measure_cnt_ms);
-
-	return clientConfigure;
+	return Node_;
 }
 
 /* send main thread */
@@ -151,32 +154,6 @@ void self_test_send(g_air_para* g_air){
 	}	
 }
 
-// void* periodic_distance_measure_send(void* arg){
-// 	g_air_para* g_air = (g_air_para*)arg;
-// 	system_info_para* g_system_info = g_air->node->system_info;
-// 	 // send DISTANC_MEASURE_REQUEST
-// 	zlog_info(g_air->log_handler,"send DISTANC_MEASURE_REQUEST periodic \n");
-// 	for(;;){
-// 		send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
-
-// 		struct msg_st data;
-// 		data.msg_len = 0;
-// 		data.msg_type = MSG_CACULATE_DISTANCE;
-// 		data.msg_number = MSG_CACULATE_DISTANCE;
-// 		postMsgQueue(&data,g_air->g_msg_queue);
-
-// 		//usleep(1000000);
-
-// 		for(int i = 0;i<g_air->node->measure_cnt_ms;i++){
-// 			usleep(1000);
-// 		}
-// 	}
-// }
-
-// void postDistanceMeasureWorkToThreadPool(g_air_para* g_air, ThreadPool* g_threadpool){
-// 	AddWorker(periodic_distance_measure_send,(void*)g_air,g_threadpool);
-// } 
-
 /* receive thread */
 struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
 	struct air_data* tmp_data = (struct air_data*)malloc(sizeof(struct air_data));
@@ -190,30 +167,21 @@ struct air_data* bufTojson(management_frame_Info* Info, g_air_para* g_air){
 }
 
 void process_air_signal(management_frame_Info* Info, g_air_para* g_air){
-	struct msg_st data;
 	struct air_data* json_buf = bufTojson(Info,g_air);
-	data.msg_len = sizeof(struct air_data);
-	memcpy(data.msg_json, (char*)json_buf, data.msg_len);
 	switch(Info->subtype){
 		case DISTANC_MEASURE_REQUEST:
 		{
-			data.msg_type = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
-			data.msg_number = MSG_RECEIVED_DISTANC_MEASURE_REQUEST;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, (char*)json_buf, sizeof(struct air_data), g_air->g_msg_queue);
 			break;
 		}
 		case DELAY_EXCHANGE_REQUEST:
 		{
-			data.msg_type = MSG_RECEIVED_DELAY_EXCHANGE_REQUEST;
-			data.msg_number = MSG_RECEIVED_DELAY_EXCHANGE_REQUEST;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_DELAY_EXCHANGE_REQUEST, (char*)json_buf, sizeof(struct air_data), g_air->g_msg_queue);
 			break;
 		}
 		case DELAY_EXCHANGE_RESPONSE:
 		{
-			data.msg_type = MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE;
-			data.msg_number = MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE;
-			postMsgQueue(&data,g_air->g_msg_queue);
+			postMsgWrapper(MSG_RECEIVED_DELAY_EXCHANGE_RESPONSE, (char*)json_buf, sizeof(struct air_data), g_air->g_msg_queue);
 			break;
 		}
 		default:
@@ -308,12 +276,7 @@ void Enter_self_test(g_air_para* g_air , g_RegDev_para* g_RegDev){
 
 /* ------- retransmit air signal ---------------- */
 void postCheckSendSignal(int32_t subtype, g_msg_queue_para* g_msg_queue){
-	struct msg_st data;
-	data.msg_type = MSG_CHECK_RECEIVED_LIST;
-	data.msg_number = MSG_CHECK_RECEIVED_LIST;
-	data.msg_len = sizeof(int32_t);
-	memcpy(data.msg_json, (char*)(&subtype), data.msg_len);
-	postMsgQueue(&data,g_msg_queue);
+	postMsgWrapper(MSG_CHECK_RECEIVED_LIST, (char*)(&subtype), sizeof(int32_t), g_msg_queue);
 }
 
 void resetReceivedList(received_state_list* list){
@@ -359,12 +322,8 @@ void checkReceivedList(int32_t subtype, system_info_para* g_system_info, g_msg_q
 		if(g_system_info->have_my_initial == 1){
 			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			
-			struct msg_st data;
-			data.msg_len = 0;
-			data.msg_type = MSG_CACULATE_DISTANCE;
-			data.msg_number = MSG_CACULATE_DISTANCE; // who send DISTANC_MEASURE_REQUEST, and recv ack , then who caculate distance
-			postMsgQueue(&data,g_air->g_msg_queue);
-			
+			// who send DISTANC_MEASURE_REQUEST, and recv ack , then who caculate distance
+			postMsgWrapper(MSG_CACULATE_DISTANCE, NULL, 0, g_msg_queue);
 			postCheckWorkToThreadPool(subtype, g_msg_queue, g_threadpool, g_air);
 		}
 	}
@@ -423,7 +382,6 @@ void process_event(struct msg_st* getData, g_air_para* g_air,
 			zlog_info(zlog_handler,"Start Send Distance Measure Air Frame .......................................... \n");
 
 			/* test enterance !!!!!!! */
-			//postDistanceMeasureWorkToThreadPool(g_air,g_threadpool); 
 			send_airSignal(DISTANC_MEASURE_REQUEST, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
 			postCheckWorkToThreadPool(DISTANC_MEASURE_REQUEST, g_msg_queue, g_threadpool, g_air);
 			break;
@@ -544,18 +502,9 @@ int test_exception(char* buf, int buf_len, char *from, void* arg)
 	if(strcmp(from,"mon/all/pub/system_stat") == 0){
 		printf("system_stat is %s \n" , buf);
 		if(strcmp(item->valuestring,"0x20") == 0 || strcmp(item->valuestring,"0x80000020") == 0){
-			struct msg_st data;
-			data.msg_len = 0;
-			data.msg_type = MSG_SYSTEM_READY;
-			data.msg_number = MSG_SYSTEM_READY;
-			postMsgQueue(&data,g_var_value.g_msg_queue);
-
+			postMsgWrapper(MSG_SYSTEM_READY, NULL, 0, g_var_value.g_msg_queue);
 		}else{
-			struct msg_st data;
-			data.msg_len = 0;
-			data.msg_type = MSG_SYSTEM_EXCEPTION;
-			data.msg_number = MSG_SYSTEM_EXCEPTION;
-			postMsgQueue(&data,g_var_value.g_msg_queue);
+			postMsgWrapper(MSG_SYSTEM_EXCEPTION, NULL, 0, g_var_value.g_msg_queue);
 		}
 	}
 	return ret;
@@ -582,7 +531,7 @@ int main(int argc, char *argv[]){
 	fflush(stdout);
     setvbuf(stdout, NULL, _IONBF, 0);
 
-	init_program();
+	init_program(); // if dac disable , program wait .... 
 
 	zlog_info(zlog_handler,"***************** continue start program ******************** \n ");
 

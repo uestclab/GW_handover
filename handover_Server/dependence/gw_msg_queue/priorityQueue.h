@@ -19,7 +19,7 @@ typedef struct priorityQueue{
     zlog_category_t*   log_handler;
     pthread_mutex_t mutex;
     pthread_cond_t  wakeup;
-    Queue_item *data;
+    Queue_item **data;
     int len;
     int size;
     int start;
