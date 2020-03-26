@@ -21,6 +21,10 @@ void send_air_frame(g_periodic_para* g_periodic){
 	memset(my_inital,0x0,6);
 	memcpy(my_inital,(char*)(&(g_system_info->my_initial)), sizeof(uint32_t));
 
+	uint8_t ve_id = 0;
+	ve_id = (uint8_t)(g_periodic->node->vehicle_id);
+	memcpy(my_inital+sizeof(uint32_t),(char*)(&(ve_id)), sizeof(uint8_t));
+
 	{
 		if(g_periodic->running == BEACON){ // send BEACON
 			zlog_info(g_periodic->log_handler,"send BEACON periodic \n");

@@ -73,6 +73,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	Node->system_info = (struct system_info_para*)malloc(sizeof(struct system_info_para));
 	Node->system_info->bs_state = STATE_STARTUP;
 	Node->system_info->have_ve_mac = 0;
+	Node->system_info->ve_id = 0;
 	memset(Node->system_info->ve_mac,0,6);
 	memset(Node->system_info->bs_mac,0,6);
 	memset(Node->system_info->next_bs_mac,0,6); // for MSG_START_HANDOVER_THROUGH_AIR

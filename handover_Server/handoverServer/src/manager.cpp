@@ -7,6 +7,7 @@
 #include "manager.h"
 #include "gw_tunnel.h"
 #include "signal_json.h"
+#include "ThreadFuncWrapper.h"
 
 Manager* Manager::m_pInstance = NULL;
 Manager::GarbageCollection Manager::m_gc;
@@ -20,16 +21,16 @@ Manager::Manager(){
     numBaseStation_ = 0;
     maxId_ = -1;
     pOptions_ = (serverConfigureNode*)malloc(sizeof(serverConfigureNode));   
-    linkBs_ = NULL;
-    nextLinkBs_ = NULL;
-    for(int i=0;i<NUM_ACTIVE;i++)
-        activeBs_[i] = NULL;
-    isRelocation = 0;
-    changeLink_ = 0;
     nextbs_expectId_ = 0;
     reset_count_ = 0;
+    pEventHandlerQueue_ = NULL;
+    pThreadpool_ = NULL;
+    createThreadPool(128, 8, &pThreadpool_);
+
+    mapVe_.clear();
 }
 
+// for test reset system when restart bs on board
 void Manager::resetManager(void){
     reset_count_ = reset_count_ + 1;
     if(reset_count_ != config_num_baseStation()){
@@ -40,16 +41,10 @@ void Manager::resetManager(void){
     countId_ = 0;
     numBaseStation_ = 0;
     maxId_ = -1;
-    linkBs_ = NULL;
-    nextLinkBs_ = NULL;
-    for(int i=0;i<NUM_ACTIVE;i++)
-        activeBs_[i] = NULL;
-    isRelocation = 0;
-    changeLink_ = 0;
     nextbs_expectId_ = 0;
     reset_count_ = 0;
     mapBs_.clear();
-    relativeLocation_.clear();
+    mapBsId_.clear();
     LOG(INFO) << "resetManager !";
 }
 
@@ -76,51 +71,58 @@ enum glory::systemState Manager::state(){
     return state_;
 }
 
-void Manager::change_tunnel_Link(){
-	changeTunnel(nextLinkBs_);
-	LOG(INFO) << "state hold : RUNNING ----> RUNNING";
-    LOG(INFO) << "START_HANDOVER --> tunnel change to target bs and buffer in , nextLinkBs_ = " << nextLinkBs_->getBaseStationID();
+void Manager::change_tunnel_Link(int ve_id){
+
+    VehicleInfo* temp_ve = findVeById(ve_id);
+    if(temp_ve != NULL){
+        temp_ve->changeTunnel();
+    }
+
+	//changeTunnel(nextLinkBs_);
+	// LOG(INFO) << "state hold : RUNNING ----> RUNNING";
+    // LOG(INFO) << "START_HANDOVER --> tunnel change to target bs and buffer in , nextLinkBs_ = " << nextLinkBs_->getBaseStationID();
 }
 
-void Manager::establishLink(BaseStation* bs){
-    linkBs_ = bs;
+void Manager::establishLink(BaseStation* bs, int ve_id){
 
-	changeTunnel(linkBs_);
+	//changeTunnel(bs);
+
+    VehicleInfo* temp_ve = findVeById(ve_id);
+    if(temp_ve != NULL){
+        temp_ve->establishLink(bs->getBaseStationID());
+    }
 
     state_ = glory::RUNNING;
-    LOG(INFO) << "state change : RELOCALIZATION ----> RUNNING";
-    LOG(INFO) << "uplink and downlink start to work, link bs id = " << linkBs_->getBaseStationID();
+    //LOG(INFO) << "state change : RELOCALIZATION ----> RUNNING";
+    LOG(INFO) << "uplink and downlink start to work, link bs id = " << bs->getBaseStationID();
 }
 
-void Manager::notifyHandover(BaseStation* ready_bs){ 
-    nextLinkBs_ = ready_bs;
-    BaseStation* next_bs = NULL;
-    if(linkBs_ != NULL){
-        next_bs = findNextBaseStation(linkBs_);
-        if(next_bs != ready_bs){
-            LOG(WARNING) << "access ready_bs is not the next neighbour";
-        }
-    }
-	send_start_handover_signal(linkBs_, ready_bs, ready_bs->getBaseStationID(), ready_bs->getBsmac()); // notify linkBs , air send signal to vehicle
+void Manager::notifyHandover(BaseStation* ready_bs){
+    // nextLinkBs_ = ready_bs;
+    // BaseStation* next_bs = NULL;
+    // if(linkBs_ != NULL){
+    //     next_bs = findNextBaseStation(linkBs_);
+    //     if(next_bs != ready_bs){
+    //         LOG(WARNING) << "access ready_bs is not the next neighbour";
+    //     }
+    // }
+	// send_start_handover_signal(linkBs_, ready_bs, ready_bs->getBaseStationID(), ready_bs->getBsmac()); // notify linkBs , air send signal to vehicle
 
-	LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel wait change_tunnel signal "; // 
+	// LOG(INFO) << "notifyHandover :: START_HANDOVER --- tunnel wait change_tunnel signal "; //
+
+
+    /* ready handover bs do not know ve_id , can't transfer to manager??? --- 0326 */
+    // VehicleInfo* temp_ve = findVeById(ve_id);
+    // if(temp_ve != NULL){
+    //     temp_ve->notifyHandover(ready_bs->getBaseStationID());
+    // }
 }
 
-int Manager::incChangeLink(BaseStation* bs, int open){
-	if(bs == linkBs_){
-		LOG(INFO) << "server receive LINK_CLOSED bs id " << bs->getBaseStationID();	
-	}else if(bs == nextLinkBs_){
-		LOG(INFO) << "server receive LINK_OPEN bs id " << bs->getBaseStationID();
-	}
-
-    changeLink_ = changeLink_ + 1;
-    if(changeLink_ == 2){
-        changeLink_ = 0;
-        linkBs_ = nextLinkBs_;
-		nextLinkBs_ = NULL;
-        return 0;
+int Manager::incChangeLink(int bs_id, int ve_id, int open){
+    VehicleInfo* temp_ve = findVeById(ve_id);
+    if(temp_ve != NULL){
+        temp_ve->incChangeLink(bs_id, open);
     }
-    return -1;
 }
 
 // ----------------------------- configuration file
@@ -161,7 +163,7 @@ int Manager::addBaseStation(BaseStation* bs){
     struct bufferevent* temp = bs->getBufferevent();
     mapBs_.insert(pair<struct bufferevent*,BaseStation*>(temp,bs));
     numBaseStation_ = mapBs_.size();
-    LOG(INFO) << "addBaseStation() bs = " << bs << " numBaseStation_ = " << numBaseStation_;
+    //LOG(INFO) << "addBaseStation() bs = " << bs << " numBaseStation_ = " << numBaseStation_;
 }
 
 BaseStation* Manager::findBaseStation(struct bufferevent *bev){
@@ -176,7 +178,7 @@ BaseStation* Manager::findBaseStation(struct bufferevent *bev){
     }    
 }
 
-void Manager::completeIdCount(){
+void Manager::tryCompleteBsAccess(){
     countId_ = countId_ + 1;
     if(countId_ >= pOptions_->num_baseStation){
         CHECK(countId_ == pOptions_->num_baseStation)<<"BaseStation number match access error"; 
@@ -185,8 +187,8 @@ void Manager::completeIdCount(){
             BaseStation* bs_temp = iter->second;
 			send_init_location_signal(bs_temp, bs_temp->getBaseStationID());// notify bs
         }
-        state_ = glory::RELOCALIZATION;
-        LOG(INFO) << "state change : PAIR_ID ----> RELOCALIZATION";
+        state_ = glory::RUNNING;
+        LOG(INFO) << "state change : PAIR_ID ----> RUNNING";
         countId_ = 0;
     }
 }
@@ -197,9 +199,9 @@ int Manager::updateIDInfo(BaseStation* bs){
         maxId_ = id;
     
     map<int,BaseStation*>::iterator it;
-    it = relativeLocation_.find(id);
-    if(it == relativeLocation_.end()){
-        relativeLocation_.insert(pair<int,BaseStation*>(id,bs));
+    it = mapBsId_.find(id);
+    if(it == mapBsId_.end()){
+        mapBsId_.insert(pair<int,BaseStation*>(id,bs));
         LOG(INFO) << "new bs_ID = " << id << "  insert in List ";
         return 1;
     }
@@ -207,6 +209,26 @@ int Manager::updateIDInfo(BaseStation* bs){
         LOG(ERROR) << "duplicate baseStation id insert !";
         return 0;
     }
+}
+
+BaseStation* Manager::findBsById(int id){
+    map<int,BaseStation*>::iterator it;
+    it = mapBsId_.find(id);
+    if(it == mapBsId_.end()){
+        return NULL;
+    }else{
+        return it->second;
+    }  
+}
+
+VehicleInfo* Manager::findVeById(int id){
+    map<int,VehicleInfo*>::iterator it;
+    it = mapVe_.find(id);
+    if(it == mapVe_.end()){
+        return NULL;
+    }else{
+        return it->second;
+    }   
 }
 
 //  encapsulation ---- decodec in each baseStation
@@ -226,33 +248,16 @@ BaseStation* Manager::findNextBaseStation(BaseStation* bs){
     
     int nextId = id + 11;
     map<int,BaseStation*>::iterator it;
-    it = relativeLocation_.find(nextId);
-    while(it == relativeLocation_.end()){
+    it = mapBsId_.find(nextId);
+    while(it == mapBsId_.end()){
         LOG(WARNING) << "baseStation id is not continue ";
         nextId = nextId + 1;
         if(maxId_ < nextId){
             return NULL;
         }
-        it = relativeLocation_.find(nextId);
+        it = mapBsId_.find(nextId);
     }
     return it->second;
-}
-// for INIT_LOCATION and RELOCALIZATION
-void Manager::init_num_check(BaseStation* bs){
-    activeBs_[countId_] = bs;
-    countId_ = countId_ + 1;
-    if(countId_ >= pOptions_->init_num_baseStation && isRelocation == 0){
-        CHECK(countId_ == pOptions_->init_num_baseStation)<<"init number error";
-		int index = 0;
-		if(bs->getBaseStationID() == 11){	
-			send_init_link_signal(activeBs_[index], activeBs_[index]->getBaseStationID(), activeBs_[index]->getBsmac());
-		    isRelocation = 1;
-		    LOG(INFO) << "send INIT_LINK signal";
-		}else{
-			LOG(INFO) << " INIT_LINK ready_handover is not bs_id == 11";
-		}
-		countId_ = 0;
-    }
 }
 
 //sequence handover
@@ -280,6 +285,50 @@ void Manager::recall_other_bs(BaseStation* bs){
 	}
 }
 
+/* new add */
+void Manager::StartEventProcess(){
+    pEventHandlerQueue_ = new EventHandlerQueue(this);
+    pEventHandlerQueue_->start_event_process_thread(pThreadpool_);
+}
+
+int Manager::post_msg(long int msg_type, char *buf, int buf_len, int bs_id, int ve_id, double dist){
+    pEventHandlerQueue_->post_msg(msg_type,buf,buf_len, bs_id, ve_id, dist);
+}
+
+// find ve , and transfer beacon info to ve
+void Manager::transferToVe(int ve_id, int bs_id){
+    map<int,VehicleInfo*>::iterator it;
+    VehicleInfo* temp_ve = NULL;
+    it = mapVe_.find(ve_id);
+    if(it == mapVe_.end()){
+        // new and insert
+        temp_ve = new VehicleInfo(ve_id, pThreadpool_, this);
+        mapVe_.insert(pair<int,VehicleInfo*>(ve_id,temp_ve));
+    }else{
+        temp_ve = it->second;
+    }
+
+    temp_ve->recvBeaconAndInit(bs_id);
+}
+
+void Manager::informInitDistance(int ve_id){
+    VehicleInfo* temp_ve = findVeById(ve_id);
+    int ret = temp_ve->sendInitDistance();
+    if(ret == 0){
+        // no more candidate, start make decision and no event come
+        int candidate_bsId = temp_ve->makeDecisionFromCandidate();
+        // trigger candidate bs as init link bs
+        BaseStation* candidate_bs = findBsById(candidate_bsId);
+        send_init_link_signal(candidate_bs, candidate_bs->getBaseStationID(), candidate_bs->getBsmac()); // end of init access by ve -- lq 20200326
+    }
+}
+
+void Manager::saveBsDistance(int ve_id, int bs_id, double dist){
+    VehicleInfo* temp_ve = findVeById(ve_id);
+    if(temp_ve != NULL){
+        temp_ve->veSaveBsDistance(bs_id, dist);
+    }
+}
 
 
 

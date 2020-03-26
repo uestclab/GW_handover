@@ -46,13 +46,6 @@ void* wait_bs_monitor_loop(void* args){
 	free(g_monitor);
 }
 
-void* first_bs_monitor(void* args){
-	g_monitor_para* g_monitor = (g_monitor_para*)args;
-	int32_t quility = 10;
-	postSendReadyHandoverSignal(quility, g_monitor->g_msg_queue);
-	free(g_monitor);
-}
-
 // working source bs monitor itself with distance  
 void* source_bs_monitor_loop(void* args){
 	g_monitor_para* g_monitor = (g_monitor_para*)args;
@@ -96,9 +89,8 @@ void postMonitorWorkToThreadPool(struct ConfigureNode* Node, g_msg_queue_para* g
 	g_monitor->g_RegDev = g_RegDev;
 	g_monitor->g_network = g_network;
 	g_monitor->node = Node;
-	if(running_step == 1)
-		AddWorker(first_bs_monitor,(void*)g_monitor,g_threadpool);
-	else if (running_step == 3)
+
+	if (running_step == 3)
 		AddWorker(wait_bs_monitor_loop,(void*)g_monitor,g_threadpool);
 	else if (running_step == 4)
 		AddWorker(source_bs_monitor_loop,(void*)g_monitor,g_threadpool);

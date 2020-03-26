@@ -13,6 +13,8 @@
 
 void send_id_received_signal(BaseStation* bs,int bs_id);
 
+void send_init_distance_signal(BaseStation* bs, int bs_id, int ve_id);
+
 void send_init_location_signal(BaseStation* bs, int bs_id);
 
 void send_init_link_signal(BaseStation* bs, int bs_id, char* mac);
@@ -22,8 +24,6 @@ void send_start_handover_signal(BaseStation* bs, BaseStation* next_bs, int bs_id
 void send_change_tunnel_ack_signal(BaseStation* bs, int bs_id);
 
 void send_server_recall_monitor_signal(BaseStation* bs, int bs_id);
-
-// void send_server_recall_monitor_signal(BaseStation* bs, int bs_id, int punish_time);
 
 
 

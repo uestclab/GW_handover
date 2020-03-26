@@ -5,6 +5,13 @@
 #include <pthread.h> 
 #include "ThreadPool.h"
 
+typedef struct t_IDInfo{
+    int bs_id;
+    int ve_id;
+    double dist;
+}t_IDInfo;
+
+
 template <typename TYPE, void(TYPE::*_RunThread)() >
 void* _thread_t(void* param)
 {
@@ -18,10 +25,18 @@ void* _thread_t(void* param)
 }
 
 typedef enum msg_event{
-	/* test msg type */
-    MSG_NETWORK = 1,
-	MSG_MONITOR,
+	MSG_SYS_MONITOR = 1,
     MSG_TIMEOUT,
+
+    MSG_REVC_BEACON,
+    MSG_INIT_DISTANCE_CHECK_TIMEOUT,
+    MSG_INIT_DISTANCE_OVER,
+    MSG_READY_HANDOVER,
+    MSG_INIT_COMPLETED,
+    MSG_LINK_CLOSED,
+    MSG_LINK_OPEN,
+    MSG_CHANGE_TUNNEL,
+
 }msg_event;
 
 class Manager;
@@ -31,7 +46,7 @@ public:
     EventHandlerQueue(Manager* pManager);
     ~EventHandlerQueue(void);
     
-    int post_msg(long int msg_type, char *buf, int buf_len);
+    int post_msg(long int msg_type, char *buf, int buf_len, int bs_id, int ve_id, double dist=0);
     int start_event_process_thread(ThreadPool* pThreadpool);
 
     void _RunThread(); // eventLoop

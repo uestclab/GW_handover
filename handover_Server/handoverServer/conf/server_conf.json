@@ -6,7 +6,6 @@
     "timer_duration": 500000,
     "water_max_read": 204800,
     "water_low_read": 0,
-    "init_num_baseStation": 1,
 	"script": "../conf/iptun.sh"
 }
 

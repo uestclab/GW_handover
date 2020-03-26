@@ -10,7 +10,6 @@ typedef struct serverConfigureNode{
     int32_t   timer_duration;
     int32_t   water_max_read;
     int32_t   water_low_read;
-    int32_t   init_num_baseStation;
 	char      local_ip[32];
 	char      my_Ethernet[32];
 	char      script[128];
@@ -23,10 +22,13 @@ namespace glory
 enum signalType {
     ID_PAIR = 1,
     ID_RECEIVED,
+    BEACON_RECV,
+    INIT_DISTANCE,
+    INIT_DISTANCE_OVER,
     READY_HANDOVER,
     INIT_LOCATION,
     INIT_LINK,
-    INIT_COMPLETED, // pair_id , relocalization , 
+    INIT_COMPLETED, // pair_id  , 
     START_HANDOVER,
     LINK_CLOSED,
     LINK_OPEN,
@@ -42,8 +44,6 @@ typedef struct messageInfo{
 }messageInfo;
 
 enum systemState {PAIR_ID=1, RELOCALIZATION, RUNNING};
-
-
 
 
 }// end namespcae

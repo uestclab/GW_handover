@@ -10,15 +10,19 @@
 
 #include "common.h"
 #include "baseStation.h"
+#include "vehicleInfo.h"
+#include "EventHandlerQueue.h"
 #include <map>
 #include <set>
 #include <string>
 #include <stdlib.h>
 #include <glog/logging.h>
-#define NUM_ACTIVE 6
+
 using namespace std;
 struct NodeOptions;
 class BaseStation;
+class VehicleInfo;
+
 class Manager{
 public:
     static Manager*                    getInstance(){
@@ -32,16 +36,16 @@ public:
     int                                addBaseStation(BaseStation* bs);
     BaseStation*                       findBaseStation(struct bufferevent *bev);
     BaseStation*                       findNextBaseStation(BaseStation* bs);
-    void                               completeIdCount();
+    void                               tryCompleteBsAccess(); // inform all access bs monitor air interface
     int                                updateIDInfo(BaseStation* bs);
+    BaseStation*                       findBsById(int id);
     // receive and dispatch message
     void                               dispatch(struct bufferevent *bev);
-    void                               init_num_check(BaseStation* bs);
     //stateMachine
     enum glory::systemState            state();
-    void                               establishLink(BaseStation* bs);
+    void                               establishLink(BaseStation* bs, int ve_id);
     void                               notifyHandover(BaseStation* ready_bs);
-    int                                incChangeLink(BaseStation* bs, int open);
+    int                                incChangeLink(int bs_id, int ve_id, int open);
     //configuration file
     void                               set_NodeOption(serverConfigureNode* options);
     int                                config_watermaxRead();
@@ -51,13 +55,23 @@ public:
 
 	//change tunnel
 	int                                changeTunnel(BaseStation* bs);
-	void                               change_tunnel_Link(); // in running state , tunnel change to target bs
+	void                               change_tunnel_Link(int ve_id); // in running state , tunnel change to target bs
 
-	// sequence handover
+	// sequence handover ????????????????? ---- need change , not by id?
 	int                                next_expectId_check(BaseStation* bs);
 	void                               updateExpectId(BaseStation* bs);
 	void                               recall_other_bs(BaseStation* bs);
-   void                                resetManager(void);
+    void                               resetManager(void);
+
+    // Manager Ve init access
+    void                               transferToVe(int ve_id, int bs_id);
+    VehicleInfo*                       findVeById(int ve_id);
+    void                               informInitDistance(int ve_id);
+    void                               saveBsDistance(int ve_id, int bs_id, double dist);
+
+    //event process handler
+    void                               StartEventProcess();
+    int                                post_msg(long int msg_type, char *buf, int buf_len, int bs_id, int ve_id, double dist=0);
 
 private:    
     Manager();
@@ -85,23 +99,27 @@ private:
     // ----------------------------------------------------------------
     //For BaseStation
     map<struct bufferevent*,BaseStation*>     mapBs_;    
-    event_base*                               base_; // only transfer base variable to libevent , no use    
+    event_base*                               base_; // only transfer base variable to libevent , no use   
 
-    map<int,BaseStation*>                     relativeLocation_;// <key,mapped_type>
+    map<int,BaseStation*>                     mapBsId_;// <key,mapped_type>
     int                                       maxId_;
-    int                                numBaseStation_;
+    int                                       numBaseStation_;
 
-    int                                countId_; // 3 diffrent used for counter 
-    serverConfigureNode*               pOptions_;
-    int                                reset_count_;
+    // VehicleInfo
+    map<int, VehicleInfo*>                    mapVe_;
+
+    int                                       countId_; // 3 diffrent used for counter 
+    serverConfigureNode*                      pOptions_;
+    int                                       reset_count_;
     
-    enum glory::systemState            state_;
-    BaseStation*                       linkBs_;
-    BaseStation*                       nextLinkBs_;
-    BaseStation*                       activeBs_[NUM_ACTIVE];
-    int                                isRelocation;
-    int                                changeLink_;
-	int                                nextbs_expectId_;
+    enum glory::systemState                   state_;
+    // move to VehicleInfo
+	int                                       nextbs_expectId_;
+
+    /* thread pool handler */
+    ThreadPool*                               pThreadpool_;
+    /* event process handler , include queue*/
+    EventHandlerQueue*                        pEventHandlerQueue_;
 };
 
 #endif

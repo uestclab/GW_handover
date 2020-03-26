@@ -21,7 +21,6 @@ BaseStation::BaseStation(struct bufferevent* bev , Manager* pManager){
     receiveRssi_ = -99;
 }
 
-
 BaseStation::~BaseStation(void){
     if(bev_){
         LOG(INFO) << "BaseStation ID = " << baseStationID_;
@@ -114,7 +113,7 @@ void BaseStation::processMessage(char* buf, int32_t length){
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-            if(getIdReady() == false){
+            if(IDReady_ == false){
                 item = cJSON_GetObjectItem(root, "bs_id");
                 baseStationID_ = item->valueint;
                 item = cJSON_GetObjectItem(root, "bs_mac_addr");
@@ -124,24 +123,41 @@ void BaseStation::processMessage(char* buf, int32_t length){
                 IDReady_ = true;
 		        send_id_received_signal(this,baseStationID_);
                 pManager_->updateIDInfo(this);
-                pManager_->completeIdCount();
+                pManager_->tryCompleteBsAccess();
             }else{
 				send_id_received_signal(this,baseStationID_);
 			}
             break;
         }
-        case glory::READY_HANDOVER:
+        case glory::BEACON_RECV:
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-            if(pManager_->state() == glory::RELOCALIZATION){
-                item = cJSON_GetObjectItem(root, "quility");
-                pManager_->init_num_check(this);
-            }else if(pManager_->state() == glory::RUNNING){
+            item = cJSON_GetObjectItem(root, "ve_id");
+            int ve_id = item->valueint;
+            pManager_->post_msg(MSG_REVC_BEACON, NULL, 0, baseStationID_, ve_id);
+            break;
+        }
+        case glory::INIT_DISTANCE_OVER:{
+            item = cJSON_GetObjectItem(root, "signal");
+            LOG(INFO) << "signal : " << item->valuestring;
+            item = cJSON_GetObjectItem(root, "ve_id");
+            int ve_id = item->valueint;
+            item = cJSON_GetObjectItem(root, "dist");
+            double dist = item->valuedouble;
+            pManager_->post_msg(MSG_INIT_DISTANCE_OVER,NULL,0,baseStationID_, ve_id, dist);
+            break;
+        }
+        case glory::READY_HANDOVER: // post to manager
+        {
+            item = cJSON_GetObjectItem(root, "signal");
+            LOG(INFO) << "signal : " << item->valuestring;
+
+            if(pManager_->state() == glory::RUNNING){
                 item = cJSON_GetObjectItem(root, "bs_id");
 				LOG(INFO) << "bs_id : " << item->valuedouble;
 
-				if(0 == pManager_->next_expectId_check(this))
+				if(0 == pManager_->next_expectId_check(this)) // need change --- 0326
                 	pManager_->notifyHandover(this);
 				else{
 					LOG(INFO) << "Not next expect bs id , get ready_handover bs_id : " << baseStationID_;
@@ -150,38 +166,47 @@ void BaseStation::processMessage(char* buf, int32_t length){
             }
             break;
         }
-        case glory::INIT_COMPLETED: 
+        case glory::INIT_COMPLETED:
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-            // tunnel set in establishLink() -----------
-            pManager_->establishLink(this);
-			pManager_->updateExpectId(this);
-			pManager_->recall_other_bs(this);
+            item = cJSON_GetObjectItem(root, "ve_id");
+            int ve_id = item->valueint;
+            // tunnel set in MSG_INIT_COMPLETED event trigger -----------
+            pManager_->post_msg(MSG_INIT_COMPLETED,NULL,0,baseStationID_, ve_id);
             break;
         }
-        case glory::LINK_CLOSED:
+        case glory::LINK_CLOSED: // post to manager
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-            pManager_->incChangeLink(this,0);
-			send_server_recall_monitor_signal(this, this->getBaseStationID());
+            item = cJSON_GetObjectItem(root, "ve_id");
+            int ve_id = item->valueint;
+            pManager_->post_msg(MSG_LINK_CLOSED,NULL,0,baseStationID_, ve_id);
+            // pManager_->incChangeLink(baseStationID_,ve_id,0);
+			// send_server_recall_monitor_signal(this, this->getBaseStationID());
             break;
         }
-        case glory::LINK_OPEN:
+        case glory::LINK_OPEN: // post to manager
         {
             item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-            pManager_->incChangeLink(this,1);
-			pManager_->updateExpectId(this);
+            item = cJSON_GetObjectItem(root, "ve_id");
+            int ve_id = item->valueint;
+            pManager_->post_msg(MSG_LINK_OPEN,NULL,0,baseStationID_, ve_id);
+            // pManager_->incChangeLink(baseStationID_,ve_id,1);
+			// pManager_->updateExpectId(this);
             break;
         }
-		case glory::CHANGE_TUNNEL:
+		case glory::CHANGE_TUNNEL: // post to manager
 		{
 			item = cJSON_GetObjectItem(root, "signal");
             LOG(INFO) << "signal : " << item->valuestring;
-			pManager_->change_tunnel_Link();
-			send_change_tunnel_ack_signal(this, baseStationID_);
+            item = cJSON_GetObjectItem(root, "ve_id");
+            int ve_id = item->valueint;
+            pManager_->post_msg(MSG_CHANGE_TUNNEL,NULL,0,baseStationID_, ve_id);
+			// pManager_->change_tunnel_Link();
+			// send_change_tunnel_ack_signal(this, baseStationID_);
 			break;
 		}
         default:
@@ -211,10 +236,6 @@ char* BaseStation::getBsIP(){
 
 int BaseStation::getBaseStationID(){
     return baseStationID_;
-}
-
-bool BaseStation::getIdReady(){
-    return IDReady_;
 }
 
 double BaseStation::receiverssi(){

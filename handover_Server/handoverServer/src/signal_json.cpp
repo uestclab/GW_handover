@@ -10,6 +10,17 @@ void send_id_received_signal(BaseStation* bs, int bs_id){
 	cJSON_Delete(root);
 }
 
+void send_init_distance_signal(BaseStation* bs, int bs_id, int ve_id){
+	cJSON* root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "signal", "init_distance_signal");
+    cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	cJSON_AddNumberToObject(root, "ve_id", ve_id);
+	char* json_buf = cJSON_Print(root);
+	//bs->sendSignal(glory::INIT_DISTANCE, json_buf);
+	LOG(INFO) << "send_init_distance_signal : " << json_buf;
+	cJSON_Delete(root);
+}
+
 void send_init_location_signal(BaseStation* bs, int bs_id){
 	cJSON* root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "signal", "init_location_signal");
@@ -56,7 +67,6 @@ void send_server_recall_monitor_signal(BaseStation* bs, int bs_id/*int punish_ti
 	cJSON* root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "signal", "server_recall_monitor_signal");
     cJSON_AddNumberToObject(root, "bs_id", bs_id);
-	//cJSON_AddNumberToObject(root, "punish_time", punish_time);
 	char* json_buf = cJSON_Print(root);
 	bs->sendSignal(glory::SERVER_RECALL_MONITOR,json_buf);
 	cJSON_Delete(root);

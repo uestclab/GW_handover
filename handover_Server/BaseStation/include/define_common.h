@@ -23,6 +23,7 @@ typedef struct system_info_para{
 	int32_t     bs_state; // indicate system state while time flow
 	char        bs_mac[6];
 	char        ve_mac[6];
+	int32_t     ve_id; 
 // --------  indicate systme state variable step by step
 	char        next_bs_mac[6]; // MSG_START_HANDOVER_THROUGH_AIR use
 	int         have_ve_mac;
@@ -75,11 +76,16 @@ typedef struct ConfigureNode{
 typedef enum signalType{
     ID_PAIR = 1,
     ID_RECEIVED,
+	/* new ve access to system */
 	BEACON_RECV,
+	INIT_DISTANCE,
+	INIT_DISTANCE_OVER,
     READY_HANDOVER,
     INIT_LOCATION,
+	/* ve access to one bs */
     INIT_LINK,
-    INIT_COMPLETED, // pair_id , relocalization , 
+    INIT_COMPLETED, // pair_id  ,
+	/* ve handover from one bs to another bs */ 
     START_HANDOVER,
     LINK_CLOSED,
     LINK_OPEN,
@@ -107,6 +113,7 @@ typedef enum msg_event{
 	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
 	/* receive network signal , network event */
     MSG_START_MONITOR, // boundary
+	MSG_INIT_DISTANCE,
     MSG_INIT_SELECTED, 
     MSG_START_HANDOVER,
     MSG_SERVER_RECALL_MONITOR,

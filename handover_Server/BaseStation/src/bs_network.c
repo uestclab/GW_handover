@@ -204,6 +204,12 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
 			printcjson(message->buf,g_network);
             break;
         }
+		case INIT_DISTANCE:
+		{
+			int msg_len = strlen(message->buf) + 1;
+			postMsgWrapper(MSG_INIT_DISTANCE, message->buf, msg_len, g_network->g_msg_queue);
+			break;
+		}
         case INIT_LOCATION:
         {
 			printcjson(message->buf,g_network);
@@ -220,11 +226,6 @@ void processMessage(char* buf, int32_t length, g_network_para* g_network){
         {
 			printcjson(message->buf,g_network);
 
-			//item = cJSON_GetObjectItem(root, "target_bs_mac");
-			//char target_mac_buf[6];
-			//change_mac_buf(item->valuestring,target_mac_buf);
-
-			//memcpy(data.msg_json,target_mac_buf,6); // Note : !! 
 			int msg_len = strlen(message->buf) + 1;
 			postMsgWrapper(MSG_START_HANDOVER, message->buf, msg_len, g_network->g_msg_queue);
 

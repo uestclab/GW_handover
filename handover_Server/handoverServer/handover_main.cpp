@@ -179,7 +179,6 @@ run(void){
     node_options->timer_duration = 1000000;
     node_options->water_max_read = 204800;
     node_options->water_low_read = 0;
-    node_options->init_num_baseStation = 2;
     const char* configure_path = "../conf/server_conf.json";
     char* pConfigure_file = readfile(configure_path);
 	if(pConfigure_file == NULL){
@@ -206,8 +205,6 @@ run(void){
         node_options->water_max_read = item->valueint;
         item = cJSON_GetObjectItem(root, "water_low_read");
         node_options->water_low_read = item->valueint;
-        item = cJSON_GetObjectItem(root, "init_num_baseStation");
-        node_options->init_num_baseStation = item->valueint;
 		item = cJSON_GetObjectItem(root, "local_ip");
         memcpy(node_options->local_ip,item->valuestring,strlen(item->valuestring)+1);
 		item = cJSON_GetObjectItem(root, "script");
@@ -222,7 +219,6 @@ run(void){
     LOG(INFO) << " water_max_read = " << node_options->water_max_read ;
     LOG(INFO) << " water_low_read = " << node_options->water_low_read ;
     LOG(INFO) << " num_baseStation = " << node_options->num_baseStation ;
-    LOG(INFO) << " init_num_baseStation = " << node_options->init_num_baseStation;
 	LOG(INFO) << " script = " << node_options->script;
     
     //Singleton design

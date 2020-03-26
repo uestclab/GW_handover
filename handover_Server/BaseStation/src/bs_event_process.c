@@ -5,6 +5,7 @@
 #include "gw_frame.h"
 #include "gw_control.h"
 #include "bs_utility.h"
+#include <assert.h>
 
 // distance measure related function
 void self_test_send(g_air_para* g_air){
@@ -49,6 +50,30 @@ void process_network_event(struct msg_st* getData, g_network_para* g_network, g_
 			zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_STARTUP -> STATE_WAIT_MONITOR");
 
 			startProcessAir(g_air,1); // open air signal receive
+
+			break;
+		}
+		case MSG_INIT_DISTANCE:
+		{
+			zlog_info(zlog_handler," ---------------- EVENT : MSG_INIT_DISTANCE: msg_number = %d",getData->msg_number);
+			char* msg_json = getData->msg_json;
+			assert(getData->msg_len != 0);
+
+			cJSON * root = NULL;
+			cJSON * item = NULL;
+			root = cJSON_Parse(msg_json);
+			item = cJSON_GetObjectItem(root, "ve_id");
+			int ve_id = item->valueint;
+			cJSON_Delete(root);
+			
+			enable_dac(g_RegDev);
+			self_test_send(g_air);
+
+			uint32_t delay =(g_system_info->my_initial+g_system_info->other_initial)/2+32;
+			uint32_t current_tick = get_delay_tick(g_RegDev);
+			double distance = (current_tick - delay) * 0.149896229;
+			disable_dac(g_RegDev);
+			send_init_dist_over_signal(g_network->node->my_id, ve_id, distance, g_network);
 
 			break;
 		}
@@ -157,22 +182,20 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				memcpy((char*)(&other_inital), air_msg->Next_dest_mac_addr, sizeof(uint32_t));
 				g_system_info->other_initial = other_inital;
 				g_system_info->have_other_initial = 1;
-			}
 
-			/* init distance step */
-			// 1. inform server when received beacon
-			send_initcompleted_signal(g_network->node->my_id, g_network);
+				uint8_t ve_id = 0;
+				memcpy((char*)(&ve_id), air_msg->Next_dest_mac_addr + sizeof(uint32_t), sizeof(uint8_t));
+				g_system_info->ve_id = (int32_t)ve_id;
+			}
 
 			// debug code
 			if(g_system_info->bs_state != STATE_WAIT_MONITOR){
 				zlog_info(zlog_handler," ----- Not in state of STATE_WAIT_MONITOR ------ ");
 				break;
 			}
-			// change init access condition , based on distance ?????????????? 
-			if(g_network->node->my_id == 11){
-				// ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
-				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 1);			
-			}	
+
+			send_recvbeacon_signal(g_network->node->my_id, g_system_info->ve_id, g_network);
+
 			break;
 		}
 		case MSG_RECEIVED_ASSOCIATION_RESPONSE:
@@ -193,7 +216,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 
 			// need check system state
 			if(g_system_info->bs_state == STATE_INIT_SELECTED){
-				send_initcompleted_signal(g_network->node->my_id, g_network);
+				send_initcompleted_signal(g_network->node->my_id, g_network->node->system_info->ve_id, g_network);
 				trigger_mac_id(g_RegDev); 
 				open_ddr(g_RegDev);
 				g_system_info->bs_state = STATE_WORKING;
@@ -211,7 +234,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				g_system_info->bs_state = STATE_WORKING;
 				zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_TARGET_SELECTED -> STATE_WORKING");
 
-				send_linkopen_signal(g_network->node->my_id, g_network);
+				send_linkopen_signal(g_network->node->my_id, g_network->node->system_info->ve_id, g_network);
 
 			}
 
@@ -282,6 +305,10 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				memcpy((char*)(&other_inital), air_msg->Next_dest_mac_addr, sizeof(uint32_t));
 				g_system_info->other_initial = other_inital;
 				g_system_info->have_other_initial = 1;
+
+				uint8_t ve_id = 0;
+				memcpy((char*)(&ve_id), air_msg->Next_dest_mac_addr + sizeof(uint32_t), sizeof(uint8_t));
+				g_system_info->ve_id = (int32_t)ve_id;
 			}
 
 			/* check dest mac and state */
@@ -318,7 +345,7 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				reset_bb(g_RegDev);
 				release_bb(g_RegDev);
 
-				send_linkclosed_signal(g_network->node->my_id, g_network);
+				send_linkclosed_signal(g_network->node->my_id, g_network->node->system_info->ve_id, g_network);
 				g_system_info->bs_state = STATE_WAIT_MONITOR;
 				zlog_info(zlog_handler," SYSTEM STATE CHANGE : bs state STATE_WORKING -> STATE_WAIT_MONITOR");
 
@@ -445,7 +472,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air
 			g_system_info->received_handover_start_confirm = 0; // clear status 
 
 			// sync data
-			send_change_tunnel_signal(g_network->node->my_id, g_network);
+			send_change_tunnel_signal(g_network->node->my_id, g_network->node->system_info->ve_id, g_network);
 			postCheckTxBufferWorkToThreadPool(g_network->node, g_msg_queue, g_RegDev, g_threadpool);
 
 			break;
