@@ -22,6 +22,7 @@ if(${PUBLIC} STREQUAL "ON")
 	# zlog
 	link_directories("/home/dpdk/liqing/common/lib/")
 	include_directories("/home/dpdk/liqing/common/include/")
+	add_definitions("-DARM_USE")
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
 endif(${PUBLIC} STREQUAL "ON")
@@ -38,8 +39,12 @@ SET(ROOT_PATH ".")
 
 SET(ALL_LIBRARY_SRCS ThreadPool.c SimpleQueue.c)
 
-add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
-target_link_libraries(${LIB_NAME} -lzlog)
+if(${PUBLIC} STREQUAL "ON")
+	add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
+	target_link_libraries(${LIB_NAME} -lzlog)
+elseif(${PUBLIC} STREQUAL "OFF")
+	add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
+endif(${PUBLIC} STREQUAL "ON")
 
 
 if(${PUBLIC} STREQUAL "ON")
@@ -51,5 +56,4 @@ elseif(${PUBLIC} STREQUAL "OFF")
 endif(${PUBLIC} STREQUAL "ON")
 
 install(FILES ${PROJECT_SOURCE_DIR}/ThreadPool.h ${PROJECT_SOURCE_DIR}/SimpleQueue.h DESTINATION include/)
-
 

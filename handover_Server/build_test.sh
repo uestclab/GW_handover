@@ -81,6 +81,31 @@ cd ./build
 cmake .. -DPUBLIC=OFF
 make && make install
 
+# gw_msg_queue
+cd ../../gw_msg_queue
+if [ -d $b ]
+then 
+    rm -rf $b
+	mkdir $b
+else
+    mkdir $b
+fi
+cd ./build
+cmake .. -DPUBLIC=OFF
+make && make install
+
+# gw_threadpool
+cd ../../gw_threadpool
+if [ -d $b ]
+then 
+    rm -rf $b
+	mkdir $b
+else
+    mkdir $b
+fi
+cd ./build
+cmake .. -DPUBLIC=OFF
+make && make install
 
 cd ../../../BaseStation
 if [ -d $f ]

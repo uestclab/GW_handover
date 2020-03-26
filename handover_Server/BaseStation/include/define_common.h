@@ -75,6 +75,7 @@ typedef struct ConfigureNode{
 typedef enum signalType{
     ID_PAIR = 1,
     ID_RECEIVED,
+	BEACON_RECV,
     READY_HANDOVER,
     INIT_LOCATION,
     INIT_LINK,

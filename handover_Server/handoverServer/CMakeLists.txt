@@ -37,6 +37,8 @@ target_link_libraries(${PROJECT_NAME} -lglog)
 target_link_libraries(${PROJECT_NAME} cjson)
 target_link_libraries(${PROJECT_NAME} gw_tunnel)
 target_link_libraries(${PROJECT_NAME} gw_utility)
+target_link_libraries(${PROJECT_NAME} gw_msgQueue)
+target_link_libraries(${PROJECT_NAME} gw_threadpool)
 
 
 

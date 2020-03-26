@@ -1,4 +1,5 @@
 #include "bs_utility.h"
+#include "cJSON.h"
 
 void postMsgWrapper(long int msg_type, char *buf, int buf_len, g_msg_queue_para* g_msg_queue){
 	struct msg_st* data = (struct msg_st*)malloc(sizeof(struct msg_st));

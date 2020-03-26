@@ -5,11 +5,9 @@ static void * WorkProcess(void *arg);
 void JoinFollower(ThreadPool* g_threadpool);
 void PromoteNewLeader(ThreadPool* g_threadpool);
 
-void createThreadPool(uint32_t nQueueSize,uint32_t nThreadNum, ThreadPool** g_threadpool_p,zlog_category_t* handler)
-{
+void createThreadPool(uint32_t nQueueSize,uint32_t nThreadNum, ThreadPool** g_threadpool_p){
 	*g_threadpool_p = (ThreadPool*)malloc(sizeof(struct ThreadPool));
 	ThreadPool* g_threadpool = *g_threadpool_p;
-	g_threadpool->handler = handler;
 	SimpleQueue(nQueueSize, &(g_threadpool->m_oQueue)); 
 	g_threadpool->m_oLeaderID = NO_CURRENT_LEADER;
 	g_threadpool->m_nThreadNum=nThreadNum;
@@ -74,12 +72,9 @@ int AddWorker(void *(*process)(void *arg),void* arg, ThreadPool* g_threadpool)
 	pNewJob->arg=arg;
 	pNewJob->process=process;
 
-	//zlog_error(g_threadpool->handler, "AddWorker : before pthread_mutex_lock() : current_size = %d \n" , Size(g_threadpool->m_oQueue));
 	pthread_mutex_lock(&(g_threadpool->m_pQueueHeadMutex));
 
 	while(Size(g_threadpool->m_oQueue)>=g_threadpool->m_nMaxTaskNum&&!g_threadpool->m_bQueueClose){
-		// add log to debug
-		//zlog_error(g_threadpool->handler, "AddWorker : Size() = %d ,m_nMaxTaskNum = %d ,m_bQueueClose = %d \n", Size(g_threadpool->m_oQueue), g_threadpool->m_nMaxTaskNum, g_threadpool->m_bQueueClose);
 		pthread_cond_wait(&(g_threadpool->m_pQueueNotFull), &(g_threadpool->m_pQueueHeadMutex));
 	}
 
@@ -134,11 +129,8 @@ void * WorkProcess(void *arg)
 void JoinFollower(ThreadPool* g_threadpool)
 {
 	pthread_mutex_lock(&(g_threadpool->m_pLeaderMutex));
-	while(g_threadpool->m_oLeaderID!=NO_CURRENT_LEADER&&!g_threadpool->m_bPoolClose){     
-		//printf("thread block\n");
-
+	while(g_threadpool->m_oLeaderID!=NO_CURRENT_LEADER&&!g_threadpool->m_bPoolClose){
 		pthread_cond_wait(&(g_threadpool->m_pNoLeader),&(g_threadpool->m_pLeaderMutex));
-		//printf("the win thread is %lu\n",pthread_self());
 	}
 
 	if(g_threadpool->m_bPoolClose){

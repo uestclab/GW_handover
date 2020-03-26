@@ -4,12 +4,12 @@
  * init queue
  * @param   queue   queue handler
  */
-priorityQueue* init_queue(int size,zlog_category_t* log_handler){
+
+priorityQueue* init_queue(int size){
     priorityQueue* queue = (priorityQueue*)malloc(sizeof(priorityQueue));
     if(queue == NULL){
         return NULL;
     }
-    queue->log_handler = log_handler;
     queue->data = (Queue_item**)malloc(sizeof(Queue_item*)*size);
     if(queue->data == NULL){
         return NULL;
@@ -60,27 +60,6 @@ int resize(priorityQueue* queue){
     queue->size = new_size;
 
     return 0;
-}
-
-
-void print_array(priorityQueue* queue, int flag){
-    if(queue->len == 0){
-        zlog_error(queue->log_handler,"empty queue \n");
-        return;
-    }
-    if(flag == 0){
-        zlog_info(queue->log_handler,"enqueue : head --------- length = %d ", queue->len);
-    }else if(flag == 1){
-        zlog_info(queue->log_handler,"dequeue : head ********* length = %d ", queue->len);
-    }else if(flag == 2){
-        zlog_info(queue->log_handler,"debug ????????? length = %d ", queue->len);
-    }
-    for(int i=queue->start;i<queue->len;i++){
-        if(queue->data[i]->level == -1){
-            zlog_info(queue->log_handler, "item(level, data address): %d, 0x%x",queue->data[i]->level,queue->data[i]->data);
-        }
-    }
-    zlog_info(queue->log_handler,"tail of queue \n");
 }
 
 /**
@@ -146,7 +125,6 @@ int enPriorityQueue(void* newData, int level, priorityQueue* queue){
     pthread_mutex_lock(&queue->mutex);
     if(queue->size <= queue->len){
         if(resize(queue)<0){
-            zlog_error(queue->log_handler, "resize in priority queue failed !\n");
             return -1;
         }
     }
@@ -157,18 +135,10 @@ int enPriorityQueue(void* newData, int level, priorityQueue* queue){
     queue->data[queue->len] = temp;
     queue->len++;
 
-    if(level == -1){
-        zlog_error(queue->log_handler, "start upAdjust() !\n");
-    }
     upAdjust(queue);
-
-    //print_array(queue,0);
 
     pthread_mutex_unlock(&queue->mutex);
     pthread_cond_signal(&queue->wakeup);
-    if(level == -1){
-        zlog_error(queue->log_handler, "end enPriorityQueue() !\n");
-    }
     return 0;
 }
 
@@ -195,16 +165,9 @@ void* dePriorityQueue(priorityQueue* queue){
     queue->len = queue->len - 1;
 
     int level = head_level;
-    if(level == -1){
-        zlog_error(queue->log_handler, "start downAdjust() !\n");
-    }
     downAdjust(queue,0);
 
-    //print_array(queue,1);
     pthread_mutex_unlock(&queue->mutex);
-    if(level == -1){
-        zlog_error(queue->log_handler, "end dePriorityQueue() !\n");
-    }
 
     return head; 
 }

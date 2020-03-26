@@ -23,6 +23,7 @@ if(${PUBLIC} STREQUAL "ON")
 	# zlog
 	link_directories("/home/dpdk/liqing/common/lib/")
 	include_directories("/home/dpdk/liqing/common/include/")
+	add_definitions("-DARM_USE")
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
 	link_directories("${PROJECT_SOURCE_DIR}/../lib")
@@ -44,8 +45,12 @@ add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
 
 include_directories("${PROJECT_SOURCE_DIR}/../include/")
 
-target_link_libraries(${LIB_NAME} -lzlog)
-target_link_libraries(${LIB_NAME} gw_utility)
+if(${PUBLIC} STREQUAL "ON")
+	target_link_libraries(${LIB_NAME} -lzlog)
+	target_link_libraries(${LIB_NAME} gw_utility)
+elseif(${PUBLIC} STREQUAL "OFF")
+	target_link_libraries(${LIB_NAME} gw_utility)
+endif(${PUBLIC} STREQUAL "ON")
 
 
 if(${PUBLIC} STREQUAL "ON")

@@ -12,6 +12,17 @@ void send_id_pair_signal(int bs_id, char* bs_mac, g_network_para* g_network){
 	cJSON_Delete(root);
 }
 
+// inform server when received beacon
+void send_recvbeacon_signal(int bs_id, int ve_id, g_network_para* g_network){
+	cJSON* root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "signal", "recvbeacon_signal");
+    cJSON_AddNumberToObject(root, "bs_id", bs_id);
+	cJSON_AddNumberToObject(root, "ve_id", ve_id);
+	char* json_buf = cJSON_Print(root);
+	sendSignal(BEACON_RECV, json_buf, g_network);
+	cJSON_Delete(root);
+}
+
 //READY_HANDOVER
 void send_ready_handover_signal(int bs_id, char* bs_mac, int quility, g_network_para* g_network){
 	cJSON* root = cJSON_CreateObject();

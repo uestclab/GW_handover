@@ -243,16 +243,12 @@ int main(int argc, char *argv[]) // main thread
 	zlog_info(zlog_handler,"initBroker : ret = %d \n", ret);
 	
 	/* msg_queue */
-	const char* pro_path = "/tmp/handover_test/";
-	int proj_id = 'b';
-	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
+	g_msg_queue_para* g_msg_queue = createMsgQueue();
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
-
-	state = clearMsgQueue(g_msg_queue);
 	
 	/* network thread */
 	g_network_para* g_network = NULL;
@@ -280,7 +276,7 @@ int main(int argc, char *argv[]) // main thread
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
 	printf("Thread pool parameter : task_queue_size = %d , threads_num = %d \n", Node->task_queue_size, Node->threads_num);
-	createThreadPool(Node->task_queue_size, Node->threads_num, &g_threadpool,zlog_handler); // 4096 , 8
+	createThreadPool(Node->task_queue_size, Node->threads_num, &g_threadpool); // 4096 , 8
 
 	gw_sleep();
 

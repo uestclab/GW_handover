@@ -49,7 +49,5 @@ elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform library.")
 	install(TARGETS ${LIB_NAME} LIBRARY DESTINATION lib/)
 endif(${PUBLIC} STREQUAL "ON")
-
 install(FILES ${PROJECT_SOURCE_DIR}/gw_utility.h DESTINATION include/)
-
 

@@ -26,6 +26,8 @@
 #include "manager.h"
 #include "gw_utility.h"
 #include "gw_tunnel.h"
+#include "EventHandlerQueue.h"
+#include <pthread.h>
 
 using namespace std;
 vector<struct event*> eventSet; // add to manage and delete event to end event-loop
@@ -62,6 +64,8 @@ signal_callback(evutil_socket_t fd, short event, void *pArg){
 
 void
 handle_timeout(evutil_socket_t fd, short event, void *pArg){
+
+    Manager* pManager = (Manager*)pArg;
 
 }
 
@@ -172,7 +176,7 @@ run(void){
     node_options->listen_port = 44444;
     node_options->num_baseStation = 1;
     node_options->max_listen_backlog = 16;
-    node_options->timer_duration = 200000;
+    node_options->timer_duration = 1000000;
     node_options->water_max_read = 204800;
     node_options->water_low_read = 0;
     node_options->init_num_baseStation = 2;
@@ -225,6 +229,7 @@ run(void){
     Manager* pManager = Manager::getInstance();
     pManager->setBase(base);
     pManager->set_NodeOption(node_options);
+    pManager->StartEventProcess();
 	//init tunnel system
 	//initTunnelSystem(node_options->script);	
     /* Initalize signal event */

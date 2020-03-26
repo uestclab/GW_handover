@@ -546,16 +546,13 @@ int main(int argc, char *argv[]){
 	}
 
 	/* msg_queue */
-	const char* pro_path = "/tmp/gw_app/distance/";
-	int proj_id = 0x3;
-	g_msg_queue_para* g_msg_queue = createMsgQueue(pro_path, proj_id, zlog_handler);
+	g_msg_queue_para* g_msg_queue = createMsgQueue();
 	if(g_msg_queue == NULL){
 		zlog_info(zlog_handler,"No msg_queue created \n");
 		return 0;
 	}
 	zlog_info(zlog_handler, "g_msg_queue->msgid = %d \n", g_msg_queue->msgid);
 
-	state = clearMsgQueue(g_msg_queue);
 
 	g_air_para* g_air = NULL;
 	state = initTestAirThread(Node, &g_air, g_msg_queue, zlog_handler);
@@ -573,7 +570,7 @@ int main(int argc, char *argv[]){
 
 	/* ThreadPool handler */
 	ThreadPool* g_threadpool = NULL;
-	createThreadPool(4096, 8, &g_threadpool, zlog_handler); // 4096 , 8
+	createThreadPool(4096, 8, &g_threadpool); // 4096 , 8
 
 	gw_sleep();
 

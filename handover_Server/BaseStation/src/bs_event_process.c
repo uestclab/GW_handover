@@ -159,11 +159,16 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 				g_system_info->have_other_initial = 1;
 			}
 
+			/* init distance step */
+			// 1. inform server when received beacon
+			send_initcompleted_signal(g_network->node->my_id, g_network);
+
+			// debug code
 			if(g_system_info->bs_state != STATE_WAIT_MONITOR){
 				zlog_info(zlog_handler," ----- Not in state of STATE_WAIT_MONITOR ------ ");
 				break;
 			}
-			
+			// change init access condition , based on distance ?????????????? 
 			if(g_network->node->my_id == 11){
 				// ------- notify bs start to monitor : simulate code -------------------- first trigger ready_handover
 				postMonitorWorkToThreadPool(g_network->node, g_msg_queue, g_network, g_RegDev, g_threadpool, 1);			
@@ -454,7 +459,7 @@ void init_state(g_air_para* g_air, g_network_para* g_network, g_RegDev_para* g_R
 	system_info_para* g_system_info = g_network->node->system_info;
 	reset_bb(g_RegDev);
 	/* init src_mac */
-	int ret = set_src_mac_fast(g_RegDev, g_system_info->bs_mac);
+	//int ret = set_src_mac_fast(g_RegDev, g_system_info->bs_mac);
 	disable_dac(g_RegDev);
 	close_ddr(g_RegDev);
 	release_bb(g_RegDev);

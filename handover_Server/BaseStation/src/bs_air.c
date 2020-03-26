@@ -41,7 +41,7 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // 
 		}
 		case DISTANC_MEASURE_REQUEST:
 		{
-			postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, (char*)json_buf, buf_len, g_air->g_msg_queue);
+			//postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
 		default:

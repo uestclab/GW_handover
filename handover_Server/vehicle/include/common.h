@@ -61,6 +61,7 @@ typedef enum msg_event{
 	/* self event */
 	MSG_STARTUP,
 	MSG_CHECK_RECEIVED_LIST,
+	MSG_ACCESS_FAIL,
 }msg_event;
 
 

@@ -21,11 +21,21 @@ then
     rm -rf $f
 fi
 
+if [ -d $b ]
+then 
+    rm -rf $b
+fi
+
 # gw_msg_queue
 cd ../gw_msg_queue
 if [ -d $f ]
 then 
     rm -rf $f
+fi
+
+if [ -d $b ]
+then 
+    rm -rf $b
 fi
 
 # gw_regdev
@@ -114,6 +124,8 @@ if [ -d $f ]
 then 
     rm -rf $f
 fi
+
+
 
 
 

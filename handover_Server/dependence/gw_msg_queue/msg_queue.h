@@ -1,5 +1,11 @@
 #ifndef GW_MSG_QUEUE_H
 #define GW_MSG_QUEUE_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdio.h>  
 #include <pthread.h>  
 #include <stdlib.h>  
@@ -9,8 +15,6 @@
 #include <errno.h>  
 #include <sys/msg.h> 
 #include <ctype.h>
-#include "cJSON.h"
-#include "zlog.h"
 
 #include "gw_utility.h" 
 #include "priorityQueue.h"
@@ -33,19 +37,19 @@ typedef struct g_msg_queue_para{
 	priorityQueue*	   queue;
 	para_thread*       para_t;
 	int                seq_id;
-	zlog_category_t*   log_handler;
 }g_msg_queue_para;
 
 
-g_msg_queue_para* createMsgQueue(const char *pathname, int proj_id, zlog_category_t* handler);
+g_msg_queue_para* createMsgQueue();
 int delMsgQueue(g_msg_queue_para* g_msg_queue);
 
-void postMsgQueue(struct msg_st* data, int level, g_msg_queue_para* g_msg_queue);
+int postMsgQueue(struct msg_st* data, int level, g_msg_queue_para* g_msg_queue);
 struct msg_st* getMsgQueue(g_msg_queue_para* g_msg_queue);
 
-int clearMsgQueue(g_msg_queue_para* g_msg_queue);
-int debugMsgQueue(g_msg_queue_para* g_msg_queue);
-int debugMsgDeQueue(g_msg_queue_para* g_msg_queue);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif//GW_MSG_QUEUE_H
 

@@ -50,3 +50,4 @@ endif(${PUBLIC} STREQUAL "ON")
 
 install(FILES ${PROJECT_SOURCE_DIR}/cJSON.h DESTINATION include/)
 
+

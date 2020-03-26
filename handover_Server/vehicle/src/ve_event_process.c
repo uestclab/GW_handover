@@ -254,6 +254,10 @@ void process_self_event(struct msg_st* getData, g_air_para* g_air, g_periodic_pa
 			checkReceivedList(tmp.subtype, tmp.id, g_system_info, g_air->g_msg_queue, g_air, g_threadpool);
 			break;
 		}
+		case MSG_ACCESS_FAIL:
+		{
+			break;
+		}
 		default:
 			break;
 	}

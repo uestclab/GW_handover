@@ -1,6 +1,11 @@
 #ifndef SIMPLEQUEUE_H
 #define SIMPLEQUEUE_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h>
 
 typedef struct Job
@@ -28,6 +33,10 @@ int Fetch(struct Job** out, simple_queue* g_queue);
 uint32_t MaxSize(simple_queue* g_queue);
 
 uint32_t Size(simple_queue* g_queue);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif//SIMPLEQUEUE_H
 

@@ -1,10 +1,14 @@
 #ifndef __PRIORITY_QUEUE__
 #define __PRIORITY_QUEUE__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "zlog.h"
 
 #define QUEUE_SIZE 1024
 
@@ -16,7 +20,6 @@ typedef struct Queue_item{
 }Queue_item;
 
 typedef struct priorityQueue{
-    zlog_category_t*   log_handler;
     pthread_mutex_t mutex;
     pthread_cond_t  wakeup;
     Queue_item **data;
@@ -25,11 +28,15 @@ typedef struct priorityQueue{
     int start;
 }priorityQueue;
 
-priorityQueue* init_queue(int size,zlog_category_t* log_handler);
+
+priorityQueue* init_queue(int size);
 int queue_destory(priorityQueue* queue);
 int enPriorityQueue(void* newData, int level, priorityQueue* queue);
 void* dePriorityQueue(priorityQueue* queue);
 
-void print_array(priorityQueue* queue, int flag);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //__PRIORITY_QUEUE__

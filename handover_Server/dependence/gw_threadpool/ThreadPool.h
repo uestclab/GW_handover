@@ -1,10 +1,14 @@
 #ifndef __THREADPOOL_H
 #define __THREADPOOL_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <pthread.h>
 #include <stdio.h>
 #include "SimpleQueue.h"
-#include "zlog.h"
-
 #define NO_CURRENT_LEADER 0
 
 
@@ -23,13 +27,15 @@ typedef struct ThreadPool{
 	pthread_t m_oLeaderID;
 	uint32_t m_nThreadNum;
 	uint32_t m_nMaxTaskNum;
-	zlog_category_t* handler;
 }ThreadPool;
 
-
-void createThreadPool(uint32_t nQueueSize, uint32_t nThreadNum, ThreadPool** g_threadpool, zlog_category_t* handler); // uint32_t nQueueSize=4096,uint32_t nThreadNum=8
+void createThreadPool(uint32_t nQueueSize, uint32_t nThreadNum, ThreadPool** g_threadpool); // uint32_t nQueueSize=4096,uint32_t nThreadNum=8
 void destoryThreadPool(ThreadPool* g_threadpool);
 int AddWorker(void *(*process)(void *arg),void* arg, ThreadPool* g_threadpool);
 void Destroy(ThreadPool* g_threadpool);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif//__THREADPOOL_H
