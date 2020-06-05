@@ -557,7 +557,7 @@ int main(int argc, char *argv[]){
 	g_air_para* g_air = NULL;
 	state = initTestAirThread(Node, &g_air, g_msg_queue, zlog_handler);
 	if(state != 0){
-		printf("initTestAirThread : state = %d \n", state);
+		zlog_info(zlog_handler, "initTestAirThread : state = %d \n", state);
 		return 0;
 	}
 
