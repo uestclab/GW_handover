@@ -8,13 +8,15 @@
 typedef struct received_state_list{
 	int32_t            received_association_request;
 	int32_t            received_handover_start_request;
-	int32_t            received_deassociation; 
+	int32_t            received_deassociation;
+	int32_t            received_keepAlive_ack; 
 }received_state_list;
 
 typedef struct system_info_para{
 	int32_t     ve_state; // indicate system state while time flow
 	char        link_bs_mac[6];
 	char        ve_mac[6];
+	int32_t     ve_id;
 	char        next_bs_mac[6]; // send REASSOCIATION as dst
 	int         isLinked;
 // --------  handover signal sequece 
@@ -27,7 +29,9 @@ typedef struct system_info_para{
 	uint32_t other_initial;
 	int      have_my_initial;
 	int      have_other_initial;
-	int		 new_distance_test_id;   
+	int		 new_distance_test_id;
+// --------- relocalization variable
+	int 	 miss_response_cnt;
 }system_info_para;
 
 
@@ -58,6 +62,7 @@ typedef enum msg_event{
     MSG_RECEIVED_DEASSOCIATION,
     MSG_RECEIVED_HANDOVER_START_REQUEST,
 	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
+	MSG_RECEIVED_KEEP_ALIVE_ACK,
 	/* self event */
 	MSG_STARTUP,
 	MSG_CHECK_RECEIVED_LIST,

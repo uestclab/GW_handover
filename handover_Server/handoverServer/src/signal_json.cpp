@@ -16,8 +16,7 @@ void send_init_distance_signal(BaseStation* bs, int bs_id, int ve_id){
     cJSON_AddNumberToObject(root, "bs_id", bs_id);
 	cJSON_AddNumberToObject(root, "ve_id", ve_id);
 	char* json_buf = cJSON_Print(root);
-	//bs->sendSignal(glory::INIT_DISTANCE, json_buf);
-	LOG(INFO) << "send_init_distance_signal : " << json_buf;
+	bs->sendSignal(glory::INIT_DISTANCE, json_buf);
 	cJSON_Delete(root);
 }
 

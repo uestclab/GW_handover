@@ -68,6 +68,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	Node->system_info->received_air_state_list->received_association_request = 0;
 	Node->system_info->received_air_state_list->received_handover_start_request = 0;
 	Node->system_info->received_air_state_list->received_deassociation = 0;
+	Node->system_info->received_air_state_list->received_keepAlive_ack = 0;
+	Node->system_info->miss_response_cnt = 0;
 
 	// // -------- init tick
 	Node->system_info->my_initial = 0;
@@ -116,6 +118,8 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
     }else{
 		printf("get mac address failed!\n");
 	}
+
+	Node->system_info->ve_id = Node->vehicle_id;
 
 	return Node;
 }

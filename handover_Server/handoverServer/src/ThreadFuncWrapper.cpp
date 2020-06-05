@@ -5,7 +5,7 @@
 void* timeoutInquire(void* args){
 	threadpool_data_t* tmp = (threadpool_data_t*)args;
 	Manager* pManager = (Manager*)tmp->pTemp;
-    sleep(5);
+    sleep(3);
 	pManager->post_msg(MSG_INIT_DISTANCE_CHECK_TIMEOUT,NULL,0, tmp->bs_id, tmp->ve_id);
 }
 

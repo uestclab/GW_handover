@@ -19,6 +19,8 @@ extern "C" {
 #define DEASSOCIATION           4
 #define HANDOVER_START_REQUEST  5
 #define HANDOVER_START_RESPONSE 6
+#define KEEP_ALIVE              7 // new add , ve send, carry veID ... 
+#define KEEP_ALIVE_ACK          8  
 
 #define DISTANC_MEASURE_REQUEST    9
 #define DELAY_EXCHANGE_REQUEST     10

@@ -6,6 +6,8 @@
 
 #include "gw_tunnel.h"
 
+// sudo ip tunnel add tunl2 mode ipip local 10.0.1.4 remote 10.0.1.5
+// sudo ip tunnel add ethn mode ipip local 10.0.1.4 remote 10.0.1.5
 void show_help(){
     printf("------ help ------- \n");
     printf("example: \n");

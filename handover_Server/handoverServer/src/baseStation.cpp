@@ -234,6 +234,10 @@ char* BaseStation::getBsIP(){
 	return cstr; 
 } 
 
+void BaseStation::setBsID(int bs_id){
+    baseStationID_ = bs_id;
+}
+
 int BaseStation::getBaseStationID(){
     return baseStationID_;
 }
@@ -254,7 +258,7 @@ void BaseStation::sendSignal(glory::signalType type, char* json){
     message->buf = json;
 	message->length = strlen(message->buf) + 1;
 	LOG(INFO) << endl << " server send : cjson = " << message->buf;
-    codec(message);
+    //codec(message);
 	free(json);
     delete message;
 }

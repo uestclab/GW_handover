@@ -41,7 +41,7 @@ void VehicleInfo::recvBeaconAndInit(int bs_id){
             postTimeOutWorkToThreadPool(veId_, pManager_, pThreadpool_);
         } 
         beaconBsCandidate_.insert(pair<int, BaseStation*>(bs_id,bs)); 
-        LOG(INFO) << "insert id : " << bs_id;    
+        LOG(INFO) << "ve_id " << veId_<< " insert bs_id : " << bs_id;    
     }
 }
 
@@ -53,6 +53,8 @@ int VehicleInfo::sendInitDistance(){
         map<int,BaseStation*>::iterator it = beaconBsCandidate_.begin();
         BaseStation* bs = it->second;
         send_init_distance_signal(bs, bs->getBaseStationID(), veId_);// notify bs to init measure distance
+        //ut code
+        //pManager_->post_msg(MSG_INIT_DISTANCE_OVER,NULL,0,bs->getBaseStationID(), veId_, bs->getBaseStationID() * 0.5);
         beaconBsCandidate_.erase(bs->getBaseStationID());
         return 1;
     }else{
@@ -62,6 +64,7 @@ int VehicleInfo::sendInitDistance(){
 
 void VehicleInfo::veSaveBsDistance(int bs_id, double dist){
     initCandidateDistance_.insert(pair<int,double>(bs_id,dist));
+    LOG(INFO) << "veSaveBsDistance : bs_id " << bs_id << " dist " << dist; 
 }
 
 int VehicleInfo::makeDecisionFromCandidate(){

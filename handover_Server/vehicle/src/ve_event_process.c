@@ -155,6 +155,9 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 			uint32_t delay =(g_system_info->my_initial + g_system_info->other_initial)/2+32;
 			set_delay_tick(g_RegDev,delay);
 			
+			// heart beat start working
+			sendAndCheck_keepAlive(g_system_info, g_air, g_threadpool);
+
 			/* configure link_bs_mac to BB */
 			memcpy(g_system_info->link_bs_mac,msgJsonSourceMac(getData->msg_json), 6); // 20191024 for initial value transfer 
 			configureDstMacToBB(g_system_info->link_bs_mac,g_RegDev,zlog_handler);
@@ -226,6 +229,12 @@ void process_air_event(struct msg_st* getData, g_air_para* g_air, g_periodic_par
 		{
 			//zlog_info(zlog_handler," -------- EVENT : MSG_RECEIVED_DISTANC_MEASURE_REQUEST: msg_number = %d ", getData->msg_number);
 
+			break;
+		}
+		case MSG_RECEIVED_KEEP_ALIVE_ACK:
+		{
+			//zlog_info(zlog_handler," -------- EVENT : MSG_RECEIVED_KEEP_ALIVE_ACK: msg_number = %d ", getData->msg_number);
+			g_system_info->received_air_state_list->received_keepAlive_ack = 1;
 			break;
 		}
 		default:

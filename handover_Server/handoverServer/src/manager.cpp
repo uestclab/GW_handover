@@ -304,8 +304,10 @@ void Manager::transferToVe(int ve_id, int bs_id){
         // new and insert
         temp_ve = new VehicleInfo(ve_id, pThreadpool_, this);
         mapVe_.insert(pair<int,VehicleInfo*>(ve_id,temp_ve));
+        LOG(INFO) << "mapVe insert -- ve_id : " << ve_id << "bs_id : " << bs_id;
     }else{
         temp_ve = it->second;
+        LOG(INFO) << "mapVe already have -- ve_id : " << it->first << "bs_id : " << bs_id;
     }
 
     temp_ve->recvBeaconAndInit(bs_id);

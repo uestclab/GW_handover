@@ -44,6 +44,11 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){ // 
 			//postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, (char*)json_buf, buf_len, g_air->g_msg_queue);
 			break;
 		}
+		case KEEP_ALIVE:
+		{
+			postMsgWrapper(MSG_RECEIVED_KEEP_ALIVE, (char*)json_buf, buf_len, g_air->g_msg_queue);
+			break;
+		}
 		default:
 		{
 			zlog_error(g_air->log_handler,"error ! --- error subtype : Info->subtype = %d \n", Info->subtype);

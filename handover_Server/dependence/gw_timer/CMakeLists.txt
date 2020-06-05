@@ -19,6 +19,9 @@ if(${PUBLIC} STREQUAL "ON")
 	SET(CMAKE_C_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-gnueabihf-gcc-6.2.1)
 	SET(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-gnueabihf-g++)
 	# cross complie
+	# zlog
+	link_directories("/home/dpdk/liqing/common/lib/")
+	include_directories("/home/dpdk/liqing/common/include/")
 elseif(${PUBLIC} STREQUAL "OFF")
     message(STATUS "start to build PC platform.")
 endif(${PUBLIC} STREQUAL "ON")
@@ -29,15 +32,18 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 SET(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/..")
 
 
-SET(LIB_NAME cjson)
+SET(LIB_NAME gw_timer)
 SET(CMAKE_VERBOSE_MAKEFILE ON)    
 SET(ROOT_PATH ".")  
 
-SET(ALL_LIBRARY_SRCS cJSON.c)
+SET(ALL_LIBRARY_SRCS event_timer.c rbtree.c)
 
-add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
-
-#target_link_libraries(${LIB_NAME} -lm)
+if(${PUBLIC} STREQUAL "ON")
+	add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
+	target_link_libraries(${LIB_NAME} -lzlog)
+elseif(${PUBLIC} STREQUAL "OFF")
+	add_library(${LIB_NAME} SHARED ${ALL_LIBRARY_SRCS})
+endif(${PUBLIC} STREQUAL "ON")
 
 
 if(${PUBLIC} STREQUAL "ON")
@@ -48,6 +54,5 @@ elseif(${PUBLIC} STREQUAL "OFF")
 	install(TARGETS ${LIB_NAME} LIBRARY DESTINATION lib/)
 endif(${PUBLIC} STREQUAL "ON")
 
-install(FILES ${PROJECT_SOURCE_DIR}/cJSON.h DESTINATION include/)
-
+install(FILES ${PROJECT_SOURCE_DIR}/event_timer.h ${PROJECT_SOURCE_DIR}/rbtree.h DESTINATION include/)
 

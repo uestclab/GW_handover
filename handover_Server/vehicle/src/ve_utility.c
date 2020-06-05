@@ -26,6 +26,8 @@ void* retrans_air_process_thread(void* arg){
 		for(int i = 0;i<tmp->g_air->node->distance_measure_cnt_ms;i++){
 			usleep(1000);
 		}
+	}else if(subtype == KEEP_ALIVE){
+		usleep(50000);
 	}
 	postCheckSendSignal(tmp, tmp->g_msg_queue);
 	free(tmp);
@@ -53,12 +55,31 @@ void checkReceivedList(int32_t subtype, int id, system_info_para* g_system_info,
 		}else{
 			zlog_info(g_air->log_handler,"stop send air frame DISTANC_MEASURE_REQUEST !! \n ");
 		}
+	}else if(subtype == KEEP_ALIVE){
+		received_state_list* list = g_system_info->received_air_state_list;
+		if(list->received_keepAlive_ack == 0){// not received 
+			g_system_info->miss_response_cnt++;
+			if(g_system_info->miss_response_cnt == 5){
+				// start relocalization process and reset system
+				;
+			}else{
+				sendAndCheck_keepAlive(g_system_info,g_air,g_threadpool);
+			}
+		}else{ // received response
+			sendAndCheck_keepAlive(g_system_info,g_air,g_threadpool);
+			list->received_keepAlive_ack = 0;
+			g_system_info->miss_response_cnt = 0;
+		}
 	}
 }
 
+void sendAndCheck_keepAlive(system_info_para* g_system_info, g_air_para* g_air, ThreadPool* g_threadpool){
+	char my_inital[6];
+	memset(my_inital,0x0,6);
+	uint8_t ve_id = 0;
+	ve_id = (uint8_t)(g_system_info->ve_id);
+	memcpy(my_inital+sizeof(uint32_t),(char*)(&(ve_id)), sizeof(uint8_t));
 
-
-
-
-
-
+	send_airSignal(KEEP_ALIVE, g_system_info->ve_mac, g_system_info->link_bs_mac, my_inital, g_air);
+	postCheckWorkToThreadPool(KEEP_ALIVE, 0, g_air->g_msg_queue, g_air, g_threadpool);
+}

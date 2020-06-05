@@ -362,6 +362,18 @@ void process_air_event(struct msg_st* getData, g_network_para* g_network, g_air_
 
 			break;
 		}
+		case MSG_RECEIVED_KEEP_ALIVE:
+		{
+			g_system_info->received_air_state_list->received_keepAlive = 1;
+			if(g_system_info->bs_state == STATE_WAIT_MONITOR){ // for target bs and other waiting bs
+				uint8_t ve_id = 0;
+				memcpy((char*)(&ve_id), air_msg->Next_dest_mac_addr + sizeof(uint32_t), sizeof(uint8_t));
+				g_system_info->ve_id = (int32_t)ve_id;
+			}else if(g_system_info->bs_state == STATE_WORKING){ // for source bs
+				send_airSignal(KEEP_ALIVE_ACK, g_system_info->bs_mac, g_system_info->ve_mac, g_system_info->bs_mac, g_air);
+			}
+			break;
+		}
 		default:
 			break;
 	}
@@ -430,6 +442,7 @@ void process_self_event(struct msg_st* getData, g_network_para* g_network, g_air
 			memcpy((char*)(&quility), getData->msg_json, getData->msg_len);
 			send_ready_handover_signal(g_network->node->my_id, g_network->node->my_mac_str, quility, g_network);
 			g_system_info->monitored = 0;
+			break;
         }
 		case MSG_CHECK_RECEIVED_NETWORK_LIST:
 		{

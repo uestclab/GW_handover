@@ -85,6 +85,18 @@ then
     rm -rf $f
 fi
 
+# gw_timer
+cd ../gw_timer
+if [ -d $f ]
+then 
+    rm -rf $f
+fi
+
+if [ -d $b ]
+then 
+    rm -rf $b
+fi
+
 cd ../../BaseStation
 if [ -d $f ]
 then 

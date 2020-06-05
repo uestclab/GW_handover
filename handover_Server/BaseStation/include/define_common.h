@@ -15,7 +15,8 @@ typedef struct received_network_list{
 typedef struct received_state_list{
 	int32_t            received_association_response;
 	int32_t            received_handover_start_response;
-	int32_t            received_reassociation; 
+	int32_t            received_reassociation;
+	int32_t            received_keepAlive; 
 }received_state_list;
 
 
@@ -111,6 +112,7 @@ typedef enum msg_event{
     MSG_RECEIVED_HANDOVER_START_RESPONSE,
     MSG_RECEIVED_REASSOCIATION,
 	MSG_RECEIVED_DISTANC_MEASURE_REQUEST,
+	MSG_RECEIVED_KEEP_ALIVE,
 	/* receive network signal , network event */
     MSG_START_MONITOR, // boundary
 	MSG_INIT_DISTANCE,

@@ -25,6 +25,7 @@ file(GLOB_RECURSE SOURCE_FILES_3 "gw_msg_queue/*.c")
 file(GLOB_RECURSE SOURCE_FILES_4 "gw_regdev/*.c")
 file(GLOB_RECURSE SOURCE_FILES_5 "gw_threadpool/*.c")
 file(GLOB_RECURSE SOURCE_FILES_6 "gw_utility/*.c")
+file(GLOB_RECURSE SOURCE_FILES_7 "gw_timer/*.c")
 
 message(STATUS "PROJECT_SOURCE_DIR": ${PROJECT_SOURCE_DIR})
 
@@ -34,12 +35,13 @@ include_directories("${PROJECT_SOURCE_DIR}/gw_msg_queue")
 include_directories("${PROJECT_SOURCE_DIR}/gw_regdev")
 include_directories("${PROJECT_SOURCE_DIR}/gw_threadpool")
 include_directories("${PROJECT_SOURCE_DIR}/gw_utility")
+include_directories("${PROJECT_SOURCE_DIR}/gw_timer")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 link_directories("${PROJECT_SOURCE_DIR}/lib_arm")
 
 SET(LIB_NAME gwapp)
 
-add_library(${LIB_NAME} SHARED ${SOURCE_FILES_1} ${SOURCE_FILES_2} ${SOURCE_FILES_3} ${SOURCE_FILES_4} ${SOURCE_FILES_5} ${SOURCE_FILES_6})
+add_library(${LIB_NAME} SHARED ${SOURCE_FILES_1} ${SOURCE_FILES_2} ${SOURCE_FILES_3} ${SOURCE_FILES_4} ${SOURCE_FILES_5} ${SOURCE_FILES_6} ${SOURCE_FILES_7})
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib_arm/)
 

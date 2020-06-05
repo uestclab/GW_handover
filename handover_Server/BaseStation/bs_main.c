@@ -89,6 +89,7 @@ struct ConfigureNode* configure(zlog_category_t* log_handler){
 	Node->system_info->received_air_state_list->received_association_response = 0;
 	Node->system_info->received_air_state_list->received_handover_start_response = 0;
 	Node->system_info->received_air_state_list->received_reassociation = 0;
+	Node->system_info->received_air_state_list->received_keepAlive = 0;
 
 	Node->system_info->received_network_state_list = (struct received_network_list*)malloc(sizeof(struct received_network_list));
 	Node->system_info->received_network_state_list->received_dac_closed_x2_ack = 0;

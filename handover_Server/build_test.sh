@@ -54,6 +54,7 @@ cp ../gw_regdev/regdev_common.h ../include
 cp ../gw_threadpool/SimpleQueue.h ../include
 cp ../gw_threadpool/ThreadPool.h ../include
 cp ../gw_utility/gw_utility.h ../include
+cp ../gw_timer/event_timer.h ../include
 
 # gw_tunnel
 cd ../gw_tunnel
@@ -96,6 +97,19 @@ make && make install
 
 # gw_threadpool
 cd ../../gw_threadpool
+if [ -d $b ]
+then 
+    rm -rf $b
+	mkdir $b
+else
+    mkdir $b
+fi
+cd ./build
+cmake .. -DPUBLIC=OFF
+make && make install
+
+# gw_timer
+cd ../../gw_timer
 if [ -d $b ]
 then 
     rm -rf $b

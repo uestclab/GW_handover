@@ -44,6 +44,11 @@ void process_recived_signal(management_frame_Info* Info, g_air_para* g_air){
 			postMsgWrapper(MSG_RECEIVED_DISTANC_MEASURE_REQUEST, NULL, 0, g_air->g_msg_queue);
 			break;
 		}
+		case KEEP_ALIVE_ACK:
+		{
+			postMsgWrapper(MSG_RECEIVED_KEEP_ALIVE_ACK, NULL, 0, g_air->g_msg_queue);
+			break;
+		}
 		default:
 		{
 			zlog_info(g_air->log_handler,"error subtype : Info->subtype = %d !!!!!!!!!!!!!!!!!!!!!!!\n", Info->subtype);
